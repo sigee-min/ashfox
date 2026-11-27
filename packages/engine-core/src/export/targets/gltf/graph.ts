@@ -6,6 +6,7 @@ export interface GltfSceneCompileOptions {
   writer: GltfBinaryWriter;
   materialByTextureId: ReadonlyMap<string, number>;
   singleSidedMaterialByTextureId: ReadonlyMap<string, number>;
+  normalMaterialIndices?: ReadonlySet<number>;
   unitScale: number;
   cubeFaceOcclusion?: CubeFaceOcclusion;
 }

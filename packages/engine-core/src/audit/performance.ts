@@ -300,14 +300,14 @@ const BUDGET_SPECS: Readonly<Record<GlbPerformanceKind, Omit<GlbPerformanceBudge
   creature: {
     maxDrawCalls: 4,
     maxTriangles: 1500,
-    maxGlbBytes: 45 * 1024,
+    maxGlbBytes: 64 * 1024,
     maxLod1Ratio: 0.55,
     requiredLod2DrawCalls: 1,
   },
   prop: {
     maxDrawCalls: 4,
     maxTriangles: 1500,
-    maxGlbBytes: 45 * 1024,
+    maxGlbBytes: 64 * 1024,
     maxLod1Ratio: 0.55,
     requiredLod2DrawCalls: 1,
   },

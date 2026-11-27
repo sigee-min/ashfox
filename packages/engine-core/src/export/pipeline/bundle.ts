@@ -31,7 +31,7 @@ const bundleEnvelope = (bundle: ExportBundle): string =>
   });
 
 interface GlbJsonImages {
-  images?: readonly { bufferView?: number }[];
+  images?: readonly { bufferView?: number; name?: string }[];
   bufferViews?: readonly { byteOffset?: number; byteLength?: number }[];
 }
 
@@ -83,6 +83,9 @@ const glbImageDigest = (
   return sha256ByteDigest(binary.subarray(start, start + view.byteLength!));
 };
 
+const isAuxPbrImageName = (name: string | undefined): boolean =>
+  typeof name === 'string' && (name.endsWith('_mr') || name.endsWith('_normal'));
+
 const embeddedGlbImageDigests = (file: ExportFile | undefined): readonly string[] => {
   if (file?.kind !== 'binary' || !file.path.toLowerCase().endsWith('.glb')) {
     return [];
@@ -92,7 +95,8 @@ const embeddedGlbImageDigests = (file: ExportFile | undefined): readonly string[
     if (parsed === null) return [];
     const { json, binary } = parsed;
     return json
-      .images!.map((image) => glbImageDigest(image, json.bufferViews!, binary))
+      .images!.filter((image) => !isAuxPbrImageName(image.name))
+      .map((image) => glbImageDigest(image, json.bufferViews!, binary))
       .filter((digest) => digest.length > 0);
   } catch {
     return [];
@@ -180,7 +184,12 @@ const texturePathLookup = (
   orderedTextures: readonly ExportAdaptedDocument['textures'][string][],
   contentFiles: readonly ExportFile[],
 ): ReadonlyMap<string, string | null> => {
-  const textureFiles = contentFiles.filter((file) => file.role === 'texture');
+  const textureFiles = contentFiles.filter(
+    (file) =>
+      file.role === 'texture' &&
+      !file.path.endsWith('_mr.png') &&
+      !file.path.endsWith('_normal.png'),
+  );
   if (textureFiles.length !== orderedTextures.length) {
     return new Map(orderedTextures.map((texture) => [texture.id, null]));
   }

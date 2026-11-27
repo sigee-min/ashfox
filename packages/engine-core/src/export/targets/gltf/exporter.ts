@@ -47,6 +47,7 @@ const materialForTexture = (
   masked: boolean,
   forceSingleSided = false,
   mrTexIndex?: number,
+  normalTexIndex?: number,
 ): GltfMaterial =>
   createGltfMaterial(
     texture,
@@ -57,6 +58,7 @@ const materialForTexture = (
     undefined,
     forceSingleSided ? `${texture.name} (front-sided)` : texture.name,
     mrTexIndex,
+    normalTexIndex,
   );
 
 interface CompiledGltfTextures {
@@ -113,9 +115,11 @@ const embeddedTextureImage = (
   };
 };
 
-const appendMetallicRoughnessTexture = (
+const appendAuxPbrTexture = (
   texture: TextureAsset,
   index: number,
+  suffix: string,
+  base64: string | undefined,
   textureDirectory: string,
   imageStorage: 'embedded' | 'external',
   writer: GltfBinaryWriter,
@@ -124,35 +128,35 @@ const appendMetallicRoughnessTexture = (
   gltfTextures: GltfTexture[],
   textureFiles: MaterializedTextureFile[],
 ): number | undefined => {
-  const b64 = texture.pbr?.metallicRoughnessPngBase64;
-  if (!b64) return undefined;
-  const bytes = decodeBase64Bytes(b64);
-  const mrSamplerIdx = samplers.length;
+  if (!base64) return undefined;
+  const bytes = decodeBase64Bytes(base64);
+  const samplerIdx = samplers.length;
   samplers.push(textureSampler(texture));
-  const mrImgIdx = images.length;
+  const imgIdx = images.length;
+  const label = `${texture.name}_${suffix}`;
   if (imageStorage === 'embedded') {
     images.push({
       bufferView: writer.addBufferView(bytes),
       mimeType: 'image/png',
-      name: `${texture.name}_mr`,
+      name: label,
     });
   } else {
     images.push({
-      uri: `textures/texture_${index}_mr.png`,
+      uri: `textures/texture_${index}_${suffix}.png`,
       mimeType: 'image/png',
-      name: `${texture.name}_mr`,
+      name: label,
     });
     textureFiles.push({
       kind: 'binary',
       role: 'texture',
-      path: `${textureDirectory}/texture_${index}_mr.png`,
+      path: `${textureDirectory}/texture_${index}_${suffix}.png`,
       contentType: 'image/png',
       data: bytes,
     });
   }
-  const mrTexIdx = gltfTextures.length;
-  gltfTextures.push({ sampler: mrSamplerIdx, source: mrImgIdx, name: `${texture.name}_mr` });
-  return mrTexIdx;
+  const texIdx = gltfTextures.length;
+  gltfTextures.push({ sampler: samplerIdx, source: imgIdx, name: label });
+  return texIdx;
 };
 
 const appendColorTexture = (
@@ -190,6 +194,42 @@ const appendColorTexture = (
   return baseTexIdx;
 };
 
+const appendPbrTexturesForEntry = (
+  texture: TextureAsset,
+  index: number,
+  textureDirectory: string,
+  imageStorage: 'embedded' | 'external',
+  writer: GltfBinaryWriter,
+  acc: Omit<CompiledGltfTextures, 'materialByTextureId' | 'singleSidedMaterialByTextureId'>,
+): Readonly<{ readonly mrTexIdx?: number; readonly normalTexIdx?: number }> => ({
+  mrTexIdx: appendAuxPbrTexture(
+    texture,
+    index,
+    'mr',
+    texture.pbr?.metallicRoughnessPngBase64,
+    textureDirectory,
+    imageStorage,
+    writer,
+    acc.samplers,
+    acc.images,
+    acc.gltfTextures,
+    acc.textureFiles,
+  ),
+  normalTexIdx: appendAuxPbrTexture(
+    texture,
+    index,
+    'normal',
+    texture.pbr?.normalPngBase64,
+    textureDirectory,
+    imageStorage,
+    writer,
+    acc.samplers,
+    acc.images,
+    acc.gltfTextures,
+    acc.textureFiles,
+  ),
+});
+
 const compileSingleGltfTexture = (
   document: ExportAdaptedDocument,
   texture: TextureAsset,
@@ -217,22 +257,21 @@ const compileSingleGltfTexture = (
     acc.gltfTextures,
     acc.textureFiles,
   );
-  const mrTexIdx = appendMetallicRoughnessTexture(
+  const { mrTexIdx, normalTexIdx } = appendPbrTexturesForEntry(
     texture,
     index,
     textureDirectory,
     imageStorage,
     writer,
-    acc.samplers,
-    acc.images,
-    acc.gltfTextures,
-    acc.textureFiles,
+    acc,
   );
   const masked = planeTextureIds.has(texture.id);
-  acc.materials.push(materialForTexture(texture, baseTexIdx, masked, false, mrTexIdx));
+  acc.materials.push(
+    materialForTexture(texture, baseTexIdx, masked, false, mrTexIdx, normalTexIdx),
+  );
   if (masked && texture.renderSides === 'double') {
     singleSidedMaterialByTextureId.set(texture.id, acc.materials.length);
-    acc.materials.push(materialForTexture(texture, baseTexIdx, true, true, mrTexIdx));
+    acc.materials.push(materialForTexture(texture, baseTexIdx, true, true, mrTexIdx, normalTexIdx));
   }
 };
 
@@ -361,10 +400,15 @@ export const buildGltf = (
     options,
   );
   const unitScale = GLTF_UNIT_SCALE;
+  const normalMaterialIndices = new Set<number>();
+  compiledTextures.materials.forEach((m, idx) => {
+    if (m.normalTexture !== undefined) normalMaterialIndices.add(idx);
+  });
   const scene = compileGltfScene(document, {
     writer,
     materialByTextureId: compiledTextures.materialByTextureId,
     singleSidedMaterialByTextureId: compiledTextures.singleSidedMaterialByTextureId,
+    normalMaterialIndices,
     unitScale,
   });
   const animations = compileGltfAnimations(document, {

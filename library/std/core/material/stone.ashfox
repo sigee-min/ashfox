@@ -12,6 +12,8 @@ module stone {
     sandstone_light: color = #dec699;
     roughness: ratio = 0.82;
     wear: ratio = 0.25;
+    normal_strength: ratio = 0.48;
+    edge_wear: ratio = 0.25;
   }
 
   export surface contract StoneSurface {
@@ -21,7 +23,13 @@ module stone {
   }
 
   export surface dressed_stone: StoneSurface {
-    material = opaque;
+    material opaque {
+      roughness = 0.82;
+      metallic = 0.0;
+      roughness_variation = 0.12;
+      normal_strength = 0.48;
+      edge_wear = 0.25;
+    }
     texture atlas {
       density = 2;
       background = void; background_alpha = 255;

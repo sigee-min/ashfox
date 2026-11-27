@@ -221,7 +221,16 @@ const readChartOriginAndFill = (
   );
   const entries = properties(
     propertyEntries,
-    ['origin', 'fill', 'grain', 'roughness', 'metallic', 'roughness_variation'],
+    [
+      'origin',
+      'fill',
+      'grain',
+      'roughness',
+      'metallic',
+      'roughness_variation',
+      'normal_strength',
+      'edge_wear',
+    ],
     chart.span,
     report.path,
     propertyIssue(report),

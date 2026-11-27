@@ -227,3 +227,48 @@ export const applyAoPattern = (
     applyAoRegion(grid, region, owner, nearby, params.radius, params.strength);
   return true;
 };
+
+const bentAoAtTexel = (
+  surface: Readonly<{ readonly point: Vec3; readonly normal: Vec3 }>,
+  nearby: readonly SceneObb[],
+  radius: number,
+): number => {
+  const step = 0.25;
+  const px = surface.point[0] + surface.normal[0] * step;
+  const py = surface.point[1] + surface.normal[1] * step;
+  const pz = surface.point[2] + surface.normal[2] * step;
+  let nearest = Infinity;
+  for (const other of nearby) {
+    const d = distanceToObb(px, py, pz, other, radius);
+    if (d < nearest) nearest = d;
+    if (nearest === 0) break;
+  }
+  if (nearest >= radius) return 0;
+  return 1 - nearest / radius;
+};
+
+/** Compute continuous pure-CPU 3D Bent-AO values in [0, 1] for a chart when neighboring OBBs exist. */
+export const computeBentAoForChart = (
+  chartKey: string,
+  width: number,
+  height: number,
+  regions: readonly TextureRegion[],
+  scene: TextureSceneContext | undefined,
+): Float32Array | undefined => {
+  if (scene === undefined || sampleBudget(regions, 6) === null) return undefined;
+  const owner = scene.byChart.get(chartKey)?.[0];
+  if (owner === undefined) return undefined;
+  const radius = 1.5;
+  const nearby = filterNearbyObbs(owner, scene.obbs, radius);
+  if (nearby.length === 0) return undefined;
+  const out = new Float32Array(width * height);
+  for (const region of regions) {
+    for (let y = 0; y < region.height; y += 1) {
+      for (let x = 0; x < region.width; x += 1) {
+        const surface = texelSurfaceAndNormal(owner, region, x, y);
+        out[(region.y + y) * width + region.x + x] = bentAoAtTexel(surface, nearby, radius);
+      }
+    }
+  }
+  return out;
+};

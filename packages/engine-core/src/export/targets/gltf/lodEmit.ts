@@ -18,7 +18,15 @@ import { computePositionsBounds, type PositionBounds } from './vertexLayout';
 export const DEFAULT_STRUCTURE_LOD_DISTANCES: readonly [number, number, number] = [0, 28, 75];
 export const DEFAULT_MODEL_LOD_DISTANCES: readonly [number, number, number] = [0, 18, 45];
 export const DEFAULT_LOD_HYSTERESIS = 2.5;
-const ATTR_KEYS = ['POSITION', 'NORMAL', 'TEXCOORD_0', 'COLOR_0', 'JOINTS_0', 'WEIGHTS_0'] as const;
+const ATTR_KEYS = [
+  'POSITION',
+  'NORMAL',
+  'TANGENT',
+  'TEXCOORD_0',
+  'COLOR_0',
+  'JOINTS_0',
+  'WEIGHTS_0',
+] as const;
 
 export interface AshfoxLodMetadata {
   readonly distances: readonly number[];
@@ -224,6 +232,7 @@ const buildStructLod1 = (product: StructureProduct, st: State): QMesh | undefine
       bounds,
       (uvTx) => resolveMat(st, lod1.textures[b.textureId], b.layer, mats, uvTx),
       b.colors.length ? b.colors : undefined,
+      (matIdx) => matIdx !== undefined && st.materials[matIdx]?.normalTexture !== undefined,
     ),
   );
   return { meshIdx: st.meshes.push({ name: `${product.id}_lod1`, primitives: prims }) - 1, bounds };
@@ -306,22 +315,32 @@ export const attachStructureLods = (
   return finalize(compiled, st, [wrapIdx]);
 };
 
+const collectLod1MaterialMaps = (doc: ProjectDocument, materials: readonly GltfMaterial[]) => {
+  const [matMap, ssMap] = [new Map<string, number>(), new Map<string, number>()];
+  for (const t of Object.values(doc.textures).sort((a, b) => compareText(a.id, b.id))) {
+    const i = materials.findIndex((m) => m.name === t.name);
+    const s = materials.findIndex((m) => m.name === `${t.name} (front-sided)`);
+    if (i >= 0) matMap.set(t.id, i);
+    if (s >= 0) ssMap.set(t.id, s);
+  }
+  const normalMaterialIndices = new Set<number>();
+  materials.forEach((m, idx) => {
+    if (m.normalTexture !== undefined) normalMaterialIndices.add(idx);
+  });
+  return { matMap, ssMap, normalMaterialIndices };
+};
+
 const appendLod1Model = (
   doc: ProjectDocument,
   st: State,
   baseById: ReadonlyMap<string, number>,
 ) => {
-  const [matMap, ssMap] = [new Map<string, number>(), new Map<string, number>()];
-  for (const t of Object.values(doc.textures).sort((a, b) => compareText(a.id, b.id))) {
-    const i = st.materials.findIndex((m) => m.name === t.name);
-    const s = st.materials.findIndex((m) => m.name === `${t.name} (front-sided)`);
-    if (i >= 0) matMap.set(t.id, i);
-    if (s >= 0) ssMap.set(t.id, s);
-  }
+  const { matMap, ssMap, normalMaterialIndices } = collectLod1MaterialMaps(doc, st.materials);
   const l1 = compileGltfScene(buildModelLod1Document(doc), {
     writer: st.writer,
     materialByTextureId: matMap,
     singleSidedMaterialByTextureId: ssMap,
+    normalMaterialIndices,
     unitScale: 1 / 16,
   });
   const [mOff, sOff] = [st.meshes.length, st.skins.length];

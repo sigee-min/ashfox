@@ -56,6 +56,7 @@ export interface GltfPrimitive {
   attributes: {
     POSITION: number;
     NORMAL?: number;
+    TANGENT?: number;
     TEXCOORD_0?: number;
     COLOR_0?: number;
     JOINTS_0?: number;
@@ -195,6 +196,7 @@ export interface GltfMaterial {
     metallicFactor: number;
     roughnessFactor: number;
   };
+  normalTexture?: GltfTextureInfo & { scale?: number };
   occlusionTexture?: GltfTextureInfo;
   emissiveTexture?: GltfTextureInfo;
   emissiveFactor?: [number, number, number];

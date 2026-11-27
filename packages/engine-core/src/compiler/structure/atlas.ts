@@ -8,7 +8,10 @@ import type {
 } from '../../model/texture';
 import type { StructureDensity } from '../../project/structure/contract';
 import { encodeCanonicalPngSummary } from '../../textures/textureRecipe/png';
-import { rasterizeTextureSpec } from '../../textures/textureRecipe/raster';
+import {
+  canonicalRgbaBackingBuffer,
+  rasterizeTextureSpec,
+} from '../../textures/textureRecipe/raster';
 import type { BlockRenderLayer } from './blocks';
 import type { StructureBakedBatch, StructureGrid } from './contract';
 import { appendDemotedFullBatch, countMultiQuadSavings } from './atlasDemote';
@@ -72,9 +75,10 @@ const makeTextureAsset = (
   layer: AtlasBatchLayer,
   rasterSpec: TextureRaster,
   pbr?: TexturePbrMaterial,
+  canonical = rasterizeTextureSpec(width, height, deepFreeze(rasterSpec)),
 ): TextureAsset => {
   const frozenRaster = deepFreeze(rasterSpec);
-  const summary = encodeCanonicalPngSummary(rasterizeTextureSpec(width, height, frozenRaster));
+  const summary = encodeCanonicalPngSummary(canonical);
   return {
     id,
     name: id,
@@ -174,13 +178,15 @@ const buildPackedLayerAtlas = (
       pushExtrudedRect(details, textureId, seq++, px0, py0, tilePx, r);
     }
   }
-  const pbr = synthesizeStructureAtlasPbr(width, height, pbrRegions);
-  const raster = {
+  const raster = deepFreeze({
     background: '#000000',
     backgroundAlpha: (layer === 'cutout' ? 0 : 255) as 0 | 255,
     canvasDetails: details,
-  };
-  const asset = makeTextureAsset(textureId, width, height, layer, raster, pbr);
+  });
+  const canonical = rasterizeTextureSpec(width, height, raster);
+  const albedo = canonicalRgbaBackingBuffer(canonical.rgba) ?? canonical.rgba.copy();
+  const pbr = synthesizeStructureAtlasPbr(width, height, pbrRegions, albedo);
+  const asset = makeTextureAsset(textureId, width, height, layer, raster, pbr, canonical);
   if (PACKED_ATLAS_CACHE.size < 64) PACKED_ATLAS_CACHE.set(cacheKey, { asset, rects: layerRects });
   return cloneTex(asset);
 };
@@ -217,8 +223,10 @@ const buildMultiTileTexture = (
   const textureId = structureTileTextureId(layer, tileId);
   const details: TextureCanvasDetail[] = [];
   let seq = 0;
+  const pbrRegions: PackedTilePbrRegion[] = [];
   for (let variant = 0; variant < 4; variant += 1) {
     const [ox, oy] = [(variant & 1) * tilePx, (variant >> 1) * tilePx];
+    pbrRegions.push({ tileId, x: ox, y: oy, size: tilePx });
     for (const r of paintTileRects(tileId, density, seed, variant)) {
       details.push({
         id: `${textureId}_d${seq++}`,
@@ -231,13 +239,15 @@ const buildMultiTileTexture = (
       });
     }
   }
-  const pbr = synthesizeStructureAtlasPbr(size, size, [{ tileId, x: 0, y: 0, size }]);
-  const raster = {
+  const raster = deepFreeze({
     background: '#000000',
     backgroundAlpha: (layer === 'cutout' ? 0 : 255) as 0 | 255,
     canvasDetails: details,
-  };
-  const asset = makeTextureAsset(textureId, size, size, layer, raster, pbr);
+  });
+  const canonical = rasterizeTextureSpec(size, size, raster);
+  const albedo = canonicalRgbaBackingBuffer(canonical.rgba) ?? canonical.rgba.copy();
+  const pbr = synthesizeStructureAtlasPbr(size, size, pbrRegions, albedo);
+  const asset = makeTextureAsset(textureId, size, size, layer, raster, pbr, canonical);
   if (TILE_TEX_CACHE.size < 256) TILE_TEX_CACHE.set(cacheKey, asset);
   return cloneTex(asset);
 };

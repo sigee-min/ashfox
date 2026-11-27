@@ -27,33 +27,36 @@ export interface LodMaterialState {
 const uvTransformKey = (uvTx: UvTransform): string =>
   `${uvTx.offset.join(',')},${uvTx.scale.join(',')}`;
 
-const ensureLodMrTexture = (
+const ensureLodAuxTexture = (
   st: LodMaterialState,
-  tex: TextureAsset,
+  name: string,
+  b64: string | undefined,
   samp: number,
 ): number | undefined => {
-  const b64 = tex.pbr?.metallicRoughnessPngBase64;
   if (!b64) return undefined;
-  const mrName = `${tex.name}_mr`;
-  const existing = st.textures.findIndex((t) => t.name === mrName);
+  const existing = st.textures.findIndex((t) => t.name === name);
   if (existing >= 0) return existing;
   const img =
     st.images.push({
       bufferView: st.bvOff + st.writer.addBufferView(decodeBase64Bytes(b64)),
       mimeType: 'image/png',
-      name: mrName,
+      name,
     }) - 1;
-  return st.textures.push({ sampler: samp, source: img, name: mrName }) - 1;
+  return st.textures.push({ sampler: samp, source: img, name }) - 1;
 };
 
 const ensureLodTexture = (
   st: LodMaterialState,
   tex: TextureAsset,
-): { readonly tid: number; readonly mrTid?: number } | undefined => {
+): { readonly tid: number; readonly mrTid?: number; readonly normalTid?: number } | undefined => {
   const existing = st.textures.findIndex((t) => t.name === tex.name);
   if (existing >= 0) {
     const samp = st.textures[existing]?.sampler ?? 0;
-    return { tid: existing, mrTid: ensureLodMrTexture(st, tex, samp) };
+    return {
+      tid: existing,
+      mrTid: ensureLodAuxTexture(st, `${tex.name}_mr`, tex.pbr?.metallicRoughnessPngBase64, samp),
+      normalTid: ensureLodAuxTexture(st, `${tex.name}_normal`, tex.pbr?.normalPngBase64, samp),
+    };
   }
   if (!tex.raster) return undefined;
   const png = encodeCanonicalPng(rasterizeTextureSpec(tex.width, tex.height, tex.raster));
@@ -66,7 +69,11 @@ const ensureLodTexture = (
   const f = tex.sampling === 'nearest' ? 9728 : 9729;
   const samp = st.samplers.push({ magFilter: f, minFilter: f, wrapS: 10497, wrapT: 10497 }) - 1;
   const tid = st.textures.push({ sampler: samp, source: img, name: tex.name }) - 1;
-  return { tid, mrTid: ensureLodMrTexture(st, tex, samp) };
+  return {
+    tid,
+    mrTid: ensureLodAuxTexture(st, `${tex.name}_mr`, tex.pbr?.metallicRoughnessPngBase64, samp),
+    normalTid: ensureLodAuxTexture(st, `${tex.name}_normal`, tex.pbr?.normalPngBase64, samp),
+  };
 };
 
 const lodLayerAlpha = (layer: StructureBakedBatch['layer']): Partial<GltfMaterial> => {
@@ -76,13 +83,8 @@ const lodLayerAlpha = (layer: StructureBakedBatch['layer']): Partial<GltfMateria
   return {};
 };
 
-const buildLodMaterialPayload = (
-  tex: TextureAsset,
-  resolved: { readonly tid: number; readonly mrTid?: number },
-  layer: StructureBakedBatch['layer'],
-  uvTx?: UvTransform,
-): GltfMaterial => {
-  const ext = uvTx
+const buildLodUvExt = (uvTx?: UvTransform) =>
+  uvTx
     ? {
         KHR_texture_transform: {
           offset: [...uvTx.offset] as [number, number],
@@ -90,11 +92,34 @@ const buildLodMaterialPayload = (
         },
       }
     : undefined;
-  const texInfo = ext ? { index: resolved.tid, extensions: ext } : { index: resolved.tid };
-  const mrInfo =
-    resolved.mrTid === undefined
+
+const buildLodTexInfo = (
+  index: number | undefined,
+  ext: ReturnType<typeof buildLodUvExt>,
+  scale?: number,
+) => {
+  if (index === undefined) return undefined;
+  return {
+    index,
+    ...(scale !== undefined && scale !== 1 ? { scale } : {}),
+    ...(ext ? { extensions: ext } : {}),
+  };
+};
+
+const buildLodMaterialPayload = (
+  tex: TextureAsset,
+  resolved: { readonly tid: number; readonly mrTid?: number; readonly normalTid?: number },
+  layer: StructureBakedBatch['layer'],
+  uvTx?: UvTransform,
+): GltfMaterial => {
+  const ext = buildLodUvExt(uvTx);
+  const texInfo = { index: resolved.tid, ...(ext ? { extensions: ext } : {}) };
+  const mrInfo = buildLodTexInfo(resolved.mrTid, ext);
+  const normalInfo =
+    layer === 'sun_shaft'
       ? undefined
-      : { index: resolved.mrTid, ...(ext ? { extensions: ext } : {}) };
+      : buildLodTexInfo(resolved.normalTid, ext, tex.pbr?.normalScale);
+  const emissive = layer === 'emissive' || tex.renderMode === 'emissive';
   return {
     name: tex.name,
     pbrMetallicRoughness: {
@@ -103,8 +128,9 @@ const buildLodMaterialPayload = (
       metallicFactor: mrInfo ? 1 : (tex.pbr?.metallic ?? 0),
       roughnessFactor: mrInfo ? 1 : (tex.pbr?.roughness ?? 0.88),
     },
+    ...(normalInfo ? { normalTexture: normalInfo } : {}),
     ...(mrInfo ? { occlusionTexture: mrInfo } : {}),
-    ...(layer === 'emissive' || tex.renderMode === 'emissive'
+    ...(emissive
       ? { emissiveTexture: texInfo, emissiveFactor: [1, 1, 1] as [number, number, number] }
       : {}),
     ...lodLayerAlpha(layer),
@@ -194,7 +220,7 @@ export const resolveLod2FaceColor = (
   return [base[0] * sh, base[1] * sh, base[2] * sh];
 };
 
-/** Encode ordered canonical textures + metallicRoughness maps into GLB buffers. */
+/** Encode ordered canonical textures + metallicRoughness + normal maps into GLB buffers. */
 export const encodeOrderedGltfTextures = (
   ordered: readonly TextureAsset[],
   writer: GltfBinaryWriter,
@@ -204,6 +230,7 @@ export const encodeOrderedGltfTextures = (
   const gltfTextures: GltfTexture[] = [];
   const texIndexById = new Map<string, number>();
   const mrTexIndexById = new Map<string, number>();
+  const normalTexIndexById = new Map<string, number>();
   for (const tex of ordered) {
     const filter = tex.sampling === 'nearest' ? 9728 : 9729;
     const png = encodeCanonicalPng(rasterizeTextureSpec(tex.width, tex.height, tex.raster!));
@@ -232,6 +259,19 @@ export const encodeOrderedGltfTextures = (
         gltfTextures.push({ sampler: sampIdx, source: mrImgIdx, name: `${tex.name}_mr` }) - 1,
       );
     }
+    const normalB64 = tex.pbr?.normalPngBase64;
+    if (normalB64) {
+      const nImgIdx =
+        images.push({
+          bufferView: writer.addBufferView(decodeBase64Bytes(normalB64)),
+          mimeType: 'image/png',
+          name: `${tex.name}_normal`,
+        }) - 1;
+      normalTexIndexById.set(
+        tex.id,
+        gltfTextures.push({ sampler: sampIdx, source: nImgIdx, name: `${tex.name}_normal` }) - 1,
+      );
+    }
   }
-  return { images, samplers, gltfTextures, texIndexById, mrTexIndexById };
+  return { images, samplers, gltfTextures, texIndexById, mrTexIndexById, normalTexIndexById };
 };

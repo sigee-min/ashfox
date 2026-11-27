@@ -14,6 +14,7 @@ export interface GltfBinaryState {
 export interface GltfVertexAccessors {
   position: number;
   normal: number;
+  tangent?: number;
   uv?: number;
   color?: number;
   joints?: number;
@@ -107,6 +108,26 @@ const writeVertexColor = (
   }
 };
 
+const writeVertexTangent = (
+  view: DataView,
+  base: number,
+  vertex: number,
+  tangents: readonly number[],
+  layout: VertexLayout,
+): void => {
+  if (layout.tangentOffset === undefined) return;
+  const stride = layout.quantizedTangent ? 1 : 4;
+  for (let component = 0; component < 4; component += 1) {
+    const value = tangents[vertex * 4 + component]!;
+    const offset = base + layout.tangentOffset + component * stride;
+    if (layout.quantizedTangent) {
+      view.setInt8(offset, normalizedByte(value));
+    } else {
+      view.setFloat32(offset, value, true);
+    }
+  }
+};
+
 const encodeInterleavedVertices = (
   count: number,
   layout: VertexLayout,
@@ -115,6 +136,7 @@ const encodeInterleavedVertices = (
   uvs: readonly number[] | undefined,
   joints: readonly number[] | undefined,
   colors: readonly number[] | undefined,
+  tangents: readonly number[] | undefined,
 ): Uint8Array => {
   const bytes = new Uint8Array(count * layout.stride);
   const view = new DataView(bytes.buffer);
@@ -136,12 +158,18 @@ const encodeInterleavedVertices = (
         layout.quantizedNormal,
       );
     }
+    if (tangents) writeVertexTangent(view, base, vertex, tangents, layout);
     if (uvs) writeVertexUv(view, base, vertex, uvs, layout);
     if (colors) writeVertexColor(view, base, vertex, colors, layout);
     if (joints) writeVertexSkin(view, base, joints[vertex]!, layout);
   }
   return bytes;
 };
+
+const optionalComponentProps = (quantized: boolean, quantizedType: 5120 | 5123) =>
+  quantized
+    ? ({ componentType: quantizedType, normalized: true } as const)
+    : ({ componentType: 5126 } as const);
 
 export class GltfBinaryWriter {
   constructor(private readonly quantize = true) {}
@@ -236,12 +264,33 @@ export class GltfBinaryWriter {
     uvs?: readonly number[],
     joints?: readonly number[],
     colors?: readonly number[],
+    tangents?: readonly number[],
   ): GltfVertexAccessors {
-    const count = assertValidInterleavedInputs(positions, normals, uvs, joints, colors);
-    const layout = computeVertexLayout(positions, normals, uvs, joints, colors, this.quantize);
-    const bytes = encodeInterleavedVertices(count, layout, positions, normals, uvs, joints, colors);
+    const count = assertValidInterleavedInputs(positions, normals, uvs, joints, colors, tangents);
+    const layout = computeVertexLayout(
+      positions,
+      normals,
+      uvs,
+      joints,
+      colors,
+      this.quantize,
+      tangents,
+    );
+    const bytes = encodeInterleavedVertices(
+      count,
+      layout,
+      positions,
+      normals,
+      uvs,
+      joints,
+      colors,
+      tangents,
+    );
     this.state.usesMeshQuantization ||=
-      layout.quantizedPosition || layout.quantizedNormal || layout.quantizedUv;
+      layout.quantizedPosition ||
+      layout.quantizedNormal ||
+      layout.quantizedTangent ||
+      layout.quantizedUv;
     const bufferView = this.append(bytes, 34962, layout.stride);
     const encodedPositions = layout.quantizedPosition ? positions.map(normalizedShort) : positions;
     return this.createInterleavedAccessors(
@@ -252,7 +301,47 @@ export class GltfBinaryWriter {
       uvs !== undefined,
       joints !== undefined,
       colors !== undefined,
+      tangents !== undefined,
     );
+  }
+
+  private appendOptionalVertexAccessors(
+    result: GltfVertexAccessors,
+    bufferView: number,
+    count: number,
+    layout: VertexLayout,
+    hasUvs: boolean,
+    hasColors: boolean,
+    hasTangents: boolean,
+  ): void {
+    if (hasTangents && layout.tangentOffset !== undefined) {
+      result.tangent = this.addAccessor({
+        bufferView,
+        byteOffset: layout.tangentOffset,
+        ...optionalComponentProps(layout.quantizedTangent, 5120),
+        count,
+        type: 'VEC4',
+      });
+    }
+    if (hasUvs && layout.uvOffset !== undefined) {
+      result.uv = this.addAccessor({
+        bufferView,
+        byteOffset: layout.uvOffset,
+        ...optionalComponentProps(layout.quantizedUv, 5123),
+        count,
+        type: 'VEC2',
+      });
+    }
+    if (hasColors && layout.colorOffset !== undefined) {
+      result.color = this.addAccessor({
+        bufferView,
+        byteOffset: layout.colorOffset,
+        componentType: 5121,
+        normalized: true,
+        count,
+        type: layout.colorComponentCount === 4 ? 'VEC4' : 'VEC3',
+      });
+    }
   }
 
   private createInterleavedAccessors(
@@ -263,6 +352,7 @@ export class GltfBinaryWriter {
     hasUvs: boolean,
     hasJoints: boolean,
     hasColors: boolean,
+    hasTangents: boolean,
   ): GltfVertexAccessors {
     const position = this.addAccessor({
       bufferView,
@@ -282,26 +372,15 @@ export class GltfBinaryWriter {
       type: 'VEC3',
     });
     const result: GltfVertexAccessors = { position, normal };
-    if (hasUvs && layout.uvOffset !== undefined) {
-      result.uv = this.addAccessor({
-        bufferView,
-        byteOffset: layout.uvOffset,
-        componentType: layout.quantizedUv ? 5123 : 5126,
-        ...(layout.quantizedUv ? { normalized: true } : {}),
-        count,
-        type: 'VEC2',
-      });
-    }
-    if (hasColors && layout.colorOffset !== undefined) {
-      result.color = this.addAccessor({
-        bufferView,
-        byteOffset: layout.colorOffset,
-        componentType: 5121,
-        normalized: true,
-        count,
-        type: layout.colorComponentCount === 4 ? 'VEC4' : 'VEC3',
-      });
-    }
+    this.appendOptionalVertexAccessors(
+      result,
+      bufferView,
+      count,
+      layout,
+      hasUvs,
+      hasColors,
+      hasTangents,
+    );
     if (hasJoints) this.appendSkinAccessors(result, bufferView, count, layout);
     return result;
   }

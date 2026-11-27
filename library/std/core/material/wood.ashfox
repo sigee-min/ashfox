@@ -12,6 +12,8 @@ module wood {
     birch_light: color = #e3d2ae;
     roughness: ratio = 0.68;
     grain_depth: ratio = 0.32;
+    normal_strength: ratio = 0.36;
+    edge_wear: ratio = 0.15;
   }
 
   export surface contract WoodSurface {
@@ -21,7 +23,13 @@ module wood {
   }
 
   export surface oak_timber: WoodSurface {
-    material = opaque;
+    material opaque {
+      roughness = 0.68;
+      metallic = 0.0;
+      roughness_variation = 0.10;
+      normal_strength = 0.36;
+      edge_wear = 0.15;
+    }
     texture atlas {
       density = 2;
       background = void; background_alpha = 255;

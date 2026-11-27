@@ -13,11 +13,11 @@
   "packageName": "models",
   "entryName": "goblin_raider",
   "entryPath": "assets/models/goblin_raider.ashfox",
-  "workspaceHash": "sha256:414c8809c83d53ee5e0e43a2ab50f817ab7ae8eb17af40d90acec9c2f160716d",
-  "closureHash": "sha256:2994fbb420f528d84a412617d4db3232c0428e7aefd81b0ceaa57f13e6070fff",
-  "buildKey": "sha256:e5ed172e82f820ca64db0dec4c2d67532d91a712f2b74d5c65b3752565ca957e",
+  "workspaceHash": "sha256:fabb5c692e25ff6e19fef217aa6c73265da0968af0810dc44ef2e885c1b75313",
+  "closureHash": "sha256:31b57aee017b2f04b6b5846c45b46b67bc1facb685c401c0dabc249f86402de9",
+  "buildKey": "sha256:20a2ab0fa8aba1cf42d81f7376a203363e83b8dc41b5facc4cc83b3b615f9cbb",
   "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+parent-space-rig+typed-hir+instantiation+canonical:v1",
-  "productHash": "sha256:f84f5a6dedde48d568039dad9b97148261b16305243245fc8c7554cd65fcfb88",
+  "productHash": "sha256:a95fd2abcafb22eceec4bc0ed51dcdd11c531df11390a5f64a56c038896de9dc",
   "textures": [
     {
       "id": "raider_shield_9a3c843d9efe",
@@ -36,7 +36,7 @@
         "raider_skin_4590fcad60ba\u0000face_snarl",
         "raider_skin_4590fcad60ba\u0000loincloth"
       ],
-      "embeddedSha256": "sha256:b63df22bbddd3c5c4fc845b3dec4087544f3f46e8959784ee2c0dbac2f51b733",
+      "embeddedSha256": "sha256:b60c88e2288cf14618c74de91c1e067b8d0e48a63aef77029211d94dfd450a4c",
       "pngSha256": "sha256:b60c88e2288cf14618c74de91c1e067b8d0e48a63aef77029211d94dfd450a4c",
       "byteLength": 2626
     },
@@ -44,7 +44,7 @@
       "id": "raider_weapon_c2c899704213",
       "path": null,
       "coverageIds": [],
-      "embeddedSha256": "sha256:b60c88e2288cf14618c74de91c1e067b8d0e48a63aef77029211d94dfd450a4c",
+      "embeddedSha256": "sha256:fbabb5ad7a3b6c3f90acb02396e5ecdad3ef0d94b8ac810e428acc3364f05755",
       "pngSha256": "sha256:fbabb5ad7a3b6c3f90acb02396e5ecdad3ef0d94b8ac810e428acc3364f05755",
       "byteLength": 706
     }
@@ -55,8 +55,8 @@
       "role": "model",
       "path": "goblin.glb",
       "contentType": "model/gltf-binary",
-      "sha256": "sha256:5d55ac3758a935e2e4ede3887c5e52f9ef4f64fa346bb69dc481216b44dc15db",
-      "byteLength": 46988
+      "sha256": "sha256:6ef4ecc86a36d0882e61869569824724bb58f3f821463bd994ac7bd1c4419472",
+      "byteLength": 55440
     }
   ]
 }

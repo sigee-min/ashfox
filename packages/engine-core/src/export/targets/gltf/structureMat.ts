@@ -9,6 +9,7 @@ export interface MaterialRegistry {
   readonly materials: GltfMaterial[];
   readonly texIndexById: ReadonlyMap<string, number>;
   readonly mrTexIndexById: ReadonlyMap<string, number>;
+  readonly normalTexIndexById: ReadonlyMap<string, number>;
   readonly cache: Map<string, number>;
   usesTextureTransform: boolean;
   usesUnlit: boolean;
@@ -32,10 +33,12 @@ const applyModeOverrides = (mat: GltfMaterial, mode: StructureMaterialMode): voi
 export const createMaterialRegistry = (
   texIndexById: ReadonlyMap<string, number>,
   mrTexIndexById: ReadonlyMap<string, number>,
+  normalTexIndexById: ReadonlyMap<string, number> = new Map(),
 ): MaterialRegistry => ({
   materials: [],
   texIndexById,
   mrTexIndexById,
+  normalTexIndexById,
   cache: new Map(),
   usesTextureTransform: false,
   usesUnlit: false,
@@ -71,6 +74,7 @@ export const getMaterialIndex = (
     uvTransform,
     tex.name,
     reg.mrTexIndexById.get(tex.id),
+    reg.normalTexIndexById.get(tex.id),
   );
   applyModeOverrides(mat, mode);
   reg.materials.push(mat);
