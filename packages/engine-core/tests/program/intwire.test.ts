@@ -414,6 +414,7 @@ structure placed_host {
           mezzanine loft { on = north; depth = 2; y_offset = 4; railing = timber; }
           low_table lt_def { at = (2, 1, 2); facing = east; }
           chair c_ctr { on = center; }
+          wall_line { on = south; table wl_t {} chair wl_c {} }
           drapery diag_c { kind = chains; from = (32, 64, 32); to = (96, 80, 96); }
         }
       }
@@ -437,6 +438,7 @@ structure placed_host {
     gv('alcove'),
   ];
   const diagD = placedRoom.input.draperies?.[0];
+  const [wlT, wlC] = [gp('wl_t'), gp('wl_c')];
   assert.deepEqual(
     [gp('lt_def')?.at, gp('c_ctr')?.facing, loftV?.kind === 'mezzanine' ? loftV.on : undefined],
     [[12, 1, 5], 'west', 'east'],
@@ -448,10 +450,12 @@ structure placed_host {
       alcV?.kind === 'alcove' ? alcV.wall : undefined,
       diagD?.from_16,
       diagD?.to_16,
+      wlT?.facing,
+      wlC?.at[0] === wlT?.at[0],
+      (wlC?.at[2] ?? 0) - (wlT?.at[2] ?? 0),
     ],
-    [['east', [2, 3]], 10, 'east', [208, 64, 80], [144, 80, 144]],
+    [['east', [2, 3]], 10, 'east', [208, 64, 80], [144, 80, 144], 'east', true, 1],
   );
-
   const yawCollisionSrc = `ashfox 1
 structure yaw_col {
   size = (11b, 8b, 11b);
@@ -482,12 +486,9 @@ structure yaw_col {
   );
   const clrHit = yawRoom.ir.clear_path_cells.some((c) => (c[0] === 5 || c[0] === 6) && c[2] === 3);
   assert.deepEqual([yawRoom.custom_mounts[0]?.at_16, clrHit], [[24, 16, 120], false]);
-  assert.throws(() =>
-    parseStructureSource(
-      'ashfox 1 structure d { size = (9b, 6b, 9b); floor f { y = 0b; height = 5b; room r { from = (0b, 0b); size = (9b, 9b); kind = living; interior { drapery noren { split_panels = 1000000000; } } } } }',
-      'd.ashfox',
-    ),
-  );
+  const badDrap =
+    'ashfox 1 structure d { size = (9b, 6b, 9b); floor f { y = 0b; height = 5b; room r { from = (0b, 0b); size = (9b, 9b); kind = living; interior { drapery noren { split_panels = 1000000000; } } } } }';
+  assert.throws(() => parseStructureSource(badDrap, 'd.ashfox'));
   console.log('ashfox interior wiring integration tests ok');
 };
 

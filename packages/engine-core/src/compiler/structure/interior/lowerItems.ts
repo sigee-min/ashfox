@@ -27,6 +27,7 @@ import {
   type TrussStyle,
 } from './contract';
 import {
+  DEFAULT_PROP_SIZE,
   rectToFootprint,
   resolveAnchor,
   resolveMezzanineRect,
@@ -34,19 +35,6 @@ import {
   resolvePlatformRect,
   type ZoneFootprint,
 } from './zoneRect';
-
-const DEFAULT_PROP_SIZE: Readonly<Record<string, IntVec2>> = {
-  dining_set: [3, 1],
-  low_table: [2, 1],
-  sofa: [2, 1],
-  sofas: [2, 1],
-  counter: [3, 1],
-  l_counter: [3, 1],
-  console_terminal: [3, 1],
-  fireplace: [2, 1],
-  shelving: [2, 1],
-  barrel_rack: [2, 1],
-};
 
 const ANCHOR_FACING: Readonly<Record<InteriorAnchor, CardinalFacing>> = {
   north: 'south',
@@ -78,7 +66,7 @@ const optFields = <T extends object>(entries: readonly [string, unknown][]): Par
 };
 
 const anchorPos = (
-  room: StructureRoomMeta,
+  room: Pick<StructureRoomMeta, 'from' | 'to'>,
   on: InteriorAnchor,
   size: IntVec2 = [1, 1],
   yB = room.from[1] + 1,
@@ -310,13 +298,14 @@ export const lowerVolumeAst = (
   }
 };
 
-const placeWallLineProp = (
+/** Computes local wall_line placement [at, facing, advance] for a prop at cursor. */
+export const wallLineStep = (
   pAst: InteriorPropAst,
-  room: StructureRoomMeta,
+  room: Pick<StructureRoomMeta, 'from' | 'to'>,
   anchor: InteriorAnchor,
   cursor: number,
   floorY: number,
-): { readonly prop: InteriorPropSpec | null; readonly advance: number } => {
+): { readonly at: Vec3; readonly facing: CardinalFacing; readonly advance: number } => {
   const size = resolvePropSize(pAst);
   const facing = pAst.facing ?? ANCHOR_FACING[anchor];
   const [rw, rd] = facingSize(size, facing);
@@ -327,10 +316,18 @@ const placeWallLineProp = (
   const at: Vec3 = alongX
     ? [Math.min(maxU, room.from[0] + 1 + cursor), floorY, base[2]]
     : [base[0], floorY, Math.min(maxU, room.from[2] + 1 + cursor)];
-  return {
-    prop: convertPropAst({ ...pAst, at, facing }, room, anchor, floorY),
-    advance: span,
-  };
+  return { at, facing, advance: span };
+};
+
+const placeWallLineProp = (
+  pAst: InteriorPropAst,
+  room: StructureRoomMeta,
+  anchor: InteriorAnchor,
+  cursor: number,
+  floorY: number,
+): { readonly prop: InteriorPropSpec | null; readonly advance: number } => {
+  const { at, facing, advance } = wallLineStep(pAst, room, anchor, cursor, floorY);
+  return { prop: convertPropAst({ ...pAst, at, facing }, room, anchor, floorY), advance };
 };
 
 const lowerAnchoredGroupItem = (
@@ -407,17 +404,11 @@ export const lowerGroupProps = (
   });
 };
 
-const OPENING_INWARD_X: Readonly<Record<CardinalFacing, number>> = {
-  north: 0,
-  south: 0,
-  west: 1,
-  east: -1,
-};
-const OPENING_INWARD_Z: Readonly<Record<CardinalFacing, number>> = {
-  north: 1,
-  south: -1,
-  west: 0,
-  east: 0,
+const OPENING_INWARD: Readonly<Record<CardinalFacing, IntVec2>> = {
+  north: [0, 1],
+  south: [0, -1],
+  west: [1, 0],
+  east: [-1, 0],
 };
 
 const expandOpeningDrapery = (
@@ -432,8 +423,8 @@ const expandOpeningDrapery = (
       : o.kind === 'door' || o.kind === 'arch',
   );
   return matches.map((op, i) => {
-    const offX = OPENING_INWARD_X[op.wall] * 9.5;
-    const offZ = OPENING_INWARD_Z[op.wall] * 9.5;
+    const [dx, dz] = OPENING_INWARD[op.wall];
+    const [offX, offZ] = [dx * 9.5, dz * 9.5];
     return {
       id: `${d.id}_${i}`,
       kind: d.kind as InteriorDraperyKind,

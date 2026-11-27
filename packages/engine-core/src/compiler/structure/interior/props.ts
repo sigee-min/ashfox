@@ -290,6 +290,7 @@ const emitLitPropHooks = (
   if (
     !isFire &&
     spec.kind !== 'terminal' &&
+    spec.kind !== 'terminals' &&
     spec.kind !== 'console_terminal' &&
     spec.kind !== 'holo_screen'
   ) {

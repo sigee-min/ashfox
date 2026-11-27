@@ -2,9 +2,12 @@ import {
   MAX_STRUCTURE_DIM,
   type CardinalFacing,
   type IntVec2,
+  type IntVec3,
 } from '../../../project/structure/contract';
 import {
   SUBVOXEL_UNITS_PER_BLOCK,
+  type InteriorOpeningSpan,
+  type InteriorPropKind,
   type InteriorPropSpec,
   type InteriorRoomInput,
   type InteriorVolumeSpec,
@@ -335,4 +338,81 @@ export const propFootprintCoords = (
     out.push([Math.floor(pose.cx), Math.floor(pose.cz)]);
   }
   return out;
+};
+
+export const DIRS_4: readonly (readonly [number, number])[] = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
+
+export const TALL_WALL_PROPS = new Set<InteriorPropKind>(
+  'shelving,cabinet,fireplace,barrel_rack,display_case'.split(',') as InteriorPropKind[],
+);
+
+export const DEFAULT_PROP_SIZE: Readonly<Record<string, IntVec2>> = {
+  dining_set: [3, 1],
+  low_table: [2, 1],
+  sofa: [2, 1],
+  sofas: [2, 1],
+  counter: [3, 1],
+  l_counter: [3, 1],
+  console_terminal: [3, 1],
+  fireplace: [2, 1],
+  shelving: [2, 1],
+  barrel_rack: [2, 1],
+};
+
+export const cellKey = (x: number, z: number): string => `${x},${z}`;
+
+export const openingInwardCell = (op: InteriorOpeningSpan): IntVec3 => {
+  const cx = Math.floor((op.from[0] + op.to[0]) / 2);
+  const cz = Math.floor((op.from[2] + op.to[2]) / 2);
+  if (op.wall === 'north') return [cx, op.from[1], cz + 1];
+  if (op.wall === 'south') return [cx, op.from[1], cz - 1];
+  if (op.wall === 'west') return [cx + 1, op.from[1], cz];
+  return [cx - 1, op.from[1], cz];
+};
+
+export interface CellSpan {
+  readonly y0: number;
+  readonly y1: number;
+}
+export type OccupiedMap = Map<string, CellSpan[]>;
+
+export const addOccupied = (map: OccupiedMap, k: string, y0: number, y1: number): void => {
+  const list = map.get(k);
+  if (list) list.push({ y0, y1 });
+  else map.set(k, [{ y0, y1 }]);
+};
+
+export const isCellBlockedAt = (map: OccupiedMap, k: string, span: CellSpan): boolean =>
+  map.get(k)?.some((s) => s.y0 < span.y1 - 1e-3 && span.y0 < s.y1 - 1e-3) ?? false;
+
+export const propSpanY = (spec: InteriorPropSpec): CellSpan => ({
+  y0: spec.at[1],
+  y1: spec.at[1] + (TALL_WALL_PROPS.has(spec.kind) ? 1.95 : 1.5),
+});
+
+export const collectDoorClearZones = (openings: readonly InteriorOpeningSpan[]): OccupiedMap => {
+  const zones: OccupiedMap = new Map();
+  for (const op of openings) {
+    if (op.kind === 'window' || op.kind === 'bay_window') continue;
+    const [ix, , iz] = openingInwardCell(op);
+    const [y0, y1] = [op.from[1], op.to[1] + 1];
+    addOccupied(zones, cellKey(ix, iz), y0, y1);
+    for (const [dx, dz] of DIRS_4) addOccupied(zones, cellKey(ix + dx, iz + dz), y0, y1);
+  }
+  return zones;
+};
+
+export const collectWindowZones = (openings: readonly InteriorOpeningSpan[]): OccupiedMap => {
+  const zones: OccupiedMap = new Map();
+  for (const o of openings) {
+    if (o.kind !== 'window' && o.kind !== 'bay_window') continue;
+    const [x, , z] = openingInwardCell(o);
+    addOccupied(zones, cellKey(x, z), o.from[1], o.to[1] + 1);
+  }
+  return zones;
 };

@@ -387,9 +387,14 @@ const testInteriorAuditPassAndFailureGates = (): void => {
   assert.equal(passReport.passed, true, JSON.stringify(passReport));
   assert.ok(passReport.score >= 75, `Expected passing score >= 75, got ${passReport.score}`);
   assert.ok(passReport.hard_gates.every((g) => g.passed));
-  assert.equal(passReport.metrics.organic_calibration_delta, 0);
-  assert.equal(passReport.metrics.volume_feature_count, 3);
-  assert.equal(passReport.metrics.shell_layer_count, 5);
+  assert.deepEqual(
+    [
+      passReport.metrics.organic_calibration_delta,
+      passReport.metrics.volume_feature_count,
+      passReport.metrics.shell_layer_count,
+    ],
+    [0, 3, 5],
+  );
 
   const noisyZenRoom = {
     ...room,
@@ -402,9 +407,7 @@ const testInteriorAuditPassAndFailureGates = (): void => {
   };
   const noisyZenReport = evaluateInteriorAudit({ ...passInput, room: noisyZenRoom });
   assert.ok(noisyZenReport.metrics.organic_calibration_delta >= 0.79);
-  const zenOrgSub = noisyZenReport.submetrics.find((s) => s.id === 'interior.organic')!;
-  assert.ok(zenOrgSub.score < 2);
-
+  assert.ok(noisyZenReport.submetrics.find((s) => s.id === 'interior.organic')!.score < 2);
   const badNbt: VanillaNbtLoweringIR = {
     data_version: 3955,
     size: [10, 6, 10],
@@ -418,11 +421,10 @@ const testInteriorAuditPassAndFailureGates = (): void => {
     },
   };
   const failNbtReport = evaluateInteriorAudit({ ...passInput, nbt: badNbt });
-  assert.equal(failNbtReport.passed, false);
-  assert.ok(failNbtReport.score <= 45);
-  assert.equal(failNbtReport.hard_gates.find((g) => g.id === 'vanilla_headroom')!.passed, false);
-  assert.equal(failNbtReport.hard_gates.find((g) => g.id === 'no_floating_blocks')!.passed, false);
-  assert.equal(failNbtReport.hard_gates.find((g) => g.id === 'unblocked_openings')!.passed, false);
+  assert.ok(!failNbtReport.passed && failNbtReport.score <= 45);
+  for (const id of ['vanilla_headroom', 'no_floating_blocks', 'unblocked_openings']) {
+    assert.equal(failNbtReport.hard_gates.find((g) => g.id === id)!.passed, false);
+  }
 
   const blockedIr: InteriorSubVoxelIR = {
     ...ir,
@@ -439,27 +441,15 @@ const testInteriorAuditPassAndFailureGates = (): void => {
   };
   const directFail = evaluateInteriorAudit({ ...passInput, ir: blockedIr });
   assert.equal(directFail.passed, false);
-  assert.ok(directFail.metrics.blocked_opening_count >= 1);
-  assert.ok(directFail.metrics.floating_block_count >= 1);
+  assert.ok(
+    directFail.metrics.blocked_opening_count >= 1 && directFail.metrics.floating_block_count >= 1,
+  );
   assert.equal(directFail.metrics.clear_path_ratio, 0);
 };
 
 const testContactAoPropagationAndOversizedPropRejection = (): void => {
-  const makeAoSrc = (ao: number) => `ashfox 1
-structure ao_room {
-  size = (9b, 7b, 9b);
-  palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; }
-  floor f { y = 0b; height = 5b;
-    room r { from = (1b, 1b); size = (7b, 7b); kind = living; floor = oak; wall = oak; ceiling = oak;
-      interior {
-        dna { arch = rustic; organic = 0; }
-        lighting { contact_ao_strength = ${ao}; }
-        table tbl { at = (4, 1, 4); size = (2, 1); facing = north; }
-      }
-    }
-    facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
-  }
-}`;
+  const makeAoSrc = (ao: number) =>
+    `ashfox 1 structure ao_room { size = (9b, 7b, 9b); palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; } floor f { y = 0b; height = 5b; room r { from = (1b, 1b); size = (7b, 7b); kind = living; floor = oak; wall = oak; ceiling = oak; interior { dna { arch = rustic; organic = 0; } lighting { contact_ao_strength = ${ao}; } table tbl { at = (4, 1, 4); size = (2, 1); facing = north; } } } facade r.south { door { at = center; width = 1b; height = 2b; block = door; } } } }`;
   const compileAoColorAvg = (ao: number): number => {
     const u = new Map([['a.ashfox', parseStructureSource(makeAoSrc(ao), 'a.ashfox')]]);
     const p = compileStructureUnits('a.ashfox', u, {}, (_o, s) => s);
@@ -472,16 +462,27 @@ structure ao_room {
   const badSrc =
     'ashfox 1 structure x { size = (9b, 6b, 9b); floor f { y = 0b; height = 5b; room r { from = (0b, 0b); size = (9b, 9b); kind = living; interior { table huge { size = (1000000, 1000000); } } } } }';
   assert.throws(() => parseStructureSource(badSrc, 'x.ashfox'), StructureInputError);
-  const huge = {
-    id: 'huge',
-    kind: 'table',
-    at: [2, 1, 2],
-    size: [1_000_000, 1_000_000],
-    facing: 'north',
-  } as const;
-  assert.equal(propFitsBounds(huge, 2, 2, { x0: 1, x1: 8, z0: 1, z1: 8 }), false);
-  assert.equal(mountInstanceRotation('north', 90), 270);
-  assert.equal(mountInstanceRotation('east', 90), 180);
+  assert.equal(
+    propFitsBounds(
+      { id: 'huge', kind: 'table', at: [2, 1, 2], size: [1_000_000, 1_000_000], facing: 'north' },
+      2,
+      2,
+      { x0: 1, x1: 8, z0: 1, z1: 8 },
+    ),
+    false,
+  );
+  assert.deepEqual(
+    [mountInstanceRotation('north', 90), mountInstanceRotation('east', 90)],
+    [270, 180],
+  );
+  const fpSrc = makeAoSrc(0.4).replace(
+    'table tbl { at = (4, 1, 4); size = (2, 1); facing = north; }',
+    'fireplace hearth { at = (2, 1, 2); facing = south; }',
+  );
+  const fpUnit = new Map([['f.ashfox', parseStructureSource(fpSrc, 'f.ashfox')]]);
+  const fpHooks = compileStructureUnits('f.ashfox', fpUnit, {}, (_o, s) => s).grid.interiors![0]!
+    .playable_meta.hooks;
+  assert.equal(fpHooks.filter((h) => h.kind === 'audio_emitter').length, 1);
 };
 
 testTwoBounceRadiosityAndPerformance();

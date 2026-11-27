@@ -383,42 +383,37 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
     [6, 1, 5],
   ]);
   const screenSolved = solveInteriorLayout(screenRoom, screenVol.boxes);
-  assert.equal(screenSolved.clearance.passed, true);
-  assert.equal(
-    screenSolved.clearance.clear_path_cells.some((c) => c[2] < 5),
-    true,
+  assert.ok(
+    screenSolved.clearance.passed && screenSolved.clearance.clear_path_cells.some((c) => c[2] < 5),
   );
 
   // Verify nested props inside explicit-from platform anchor & stay inside platform bounds under collision nudging.
   const nestedVols: InteriorRoomInput['volumes'][number][] = [];
   const nestedProps: NonNullable<InteriorRoomInput['props']>[number][] = [];
-  lowerVolumeAst(
-    {
-      kind: 'platform',
-      id: 'dais',
-      from: [1, 1],
-      size: [2, 2],
-      height_16: 4,
-      nested: [
-        { item: 'prop', spec: { id: 'p_c1', kind: 'chair' } },
-        { item: 'prop', spec: { id: 'p_c2', kind: 'chair' } },
-      ],
-    },
-    {
-      name: 'r1',
-      kind: 'room',
-      acousticSpace: 'timber_room',
-      from: [0, 0, 0],
-      to: [10, 8, 10],
-      enclosed: true,
-    },
-    nestedVols,
-    nestedProps,
-    [],
-  );
+  const platAst = {
+    kind: 'platform' as const,
+    id: 'dais',
+    from: [1, 1] as const,
+    size: [2, 2] as const,
+    height_16: 4,
+    nested: [
+      { item: 'prop' as const, spec: { id: 'p_c1', kind: 'chair' as const } },
+      { item: 'prop' as const, spec: { id: 'p_c2', kind: 'chair' as const } },
+    ],
+  };
+  const r1Meta = {
+    name: 'r1',
+    kind: 'room' as const,
+    acousticSpace: 'timber_room' as const,
+    from: [0, 0, 0] as const,
+    to: [10, 8, 10] as const,
+    enclosed: true,
+  };
+  lowerVolumeAst(platAst, r1Meta, nestedVols, nestedProps, []);
   for (const np of nestedProps) {
-    assert.ok(np.at[0] >= 1 && np.at[0] <= 2 && np.at[2] >= 1 && np.at[2] <= 2);
-    assert.equal(np.at[1], 1.25);
+    assert.ok(
+      np.at[0] >= 1 && np.at[0] <= 2 && np.at[2] >= 1 && np.at[2] <= 2 && np.at[1] === 1.25,
+    );
   }
   const daisSolved = solveInteriorLayout({
     ...screenRoom,
@@ -431,14 +426,16 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
     [p1.resolved_at[0], p1.resolved_at[2]],
     [p2.resolved_at[0], p2.resolved_at[2]],
   );
-  for (const pp of daisSolved.placed_props) {
-    assert.ok(
-      pp.resolved_at[0] >= 1 &&
+  assert.equal(
+    daisSolved.placed_props.every(
+      (pp) =>
+        pp.resolved_at[0] >= 1 &&
         pp.resolved_at[0] <= 2 &&
         pp.resolved_at[2] >= 1 &&
         pp.resolved_at[2] <= 2,
-    );
-  }
+    ),
+    true,
+  );
   const chairSolve = solveInteriorLayout({
     ...screenRoom,
     volumes: [],
@@ -448,15 +445,9 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
     ],
   });
   assert.equal(chairSolve.placed_props.find((p) => p.id === 'adj_cab')?.nudged, true);
-
-  assert.throws(
-    () =>
-      parseStructureSource(
-        'ashfox 1 structure p { size = (11b, 8b, 11b); floor f { y = 0b; height = 6b; room r { from = (0b, 0b); size = (11b, 11b); kind = living; interior { partition s { style = screen; span_from = 1; span_to = 1000000000; } } } } }',
-        'p.ashfox',
-      ),
-    StructureInputError,
-  );
+  const badPartSrc =
+    'ashfox 1 structure p { size = (11b, 8b, 11b); floor f { y = 0b; height = 6b; room r { from = (0b, 0b); size = (11b, 11b); kind = living; interior { partition s { style = screen; span_from = 1; span_to = 1000000000; } } } } }';
+  assert.throws(() => parseStructureSource(badPartSrc, 'p.ashfox'), StructureInputError);
   const bigPart = {
     kind: 'partition',
     id: 'big',
@@ -483,7 +474,20 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
   assert.equal(
     colonnadeSolved.clearance.clear_path_cells.some((c) => c[0] === 2 && c[2] === 5),
     true,
-    'Colonnade alternating gap at [2,1,5] must remain walkable',
+  );
+  const mezStack = solveInteriorLayout({
+    ...screenRoom,
+    volumes: [
+      { kind: 'mezzanine', id: 'loft', on: 'north', depth: 4, y_offset_b: 4, railing: 'timber' },
+    ],
+    props: [
+      { id: 'gf_tbl', kind: 'table', at: [4, 1, 4], size: [1, 1], facing: 'north' },
+      { id: 'mz_chr', kind: 'chair', at: [4, 5, 4], size: [1, 1], facing: 'south' },
+    ],
+  });
+  assert.equal(
+    mezStack.placed_props.every((p) => !p.nudged),
+    true,
   );
 };
 

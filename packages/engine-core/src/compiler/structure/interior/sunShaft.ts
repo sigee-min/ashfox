@@ -428,11 +428,19 @@ const ALCOVE_AUDIO: Readonly<Record<string, readonly [InteriorAudioCueKind, numb
   cryo_pod: ['tech_hum', 6, -11],
 };
 
-const emitAudioHooks = (room: InteriorRoomInput, hooks: PlayableInteriorHook[]): void => {
+const emitPropAudioHooks = (room: InteriorRoomInput, hooks: PlayableInteriorHook[]): void => {
   for (const prop of room.props ?? []) {
     if (prop.kind === 'fireplace') pushAudio(hooks, prop.id, 'fire_loop', prop.at, 9, -6);
     else if (TECH_KINDS.has(prop.kind)) pushAudio(hooks, prop.id, 'tech_hum', prop.at, 7, -10);
   }
+};
+
+const emitAudioHooks = (
+  room: InteriorRoomInput,
+  hooks: PlayableInteriorHook[],
+  includeProps: boolean,
+): void => {
+  if (includeProps) emitPropAudioHooks(room, hooks);
   const center: Vec3 = [
     (room.bounds_from[0] + room.bounds_to[0] + 1) * 0.5,
     room.bounds_from[1] + 1,
@@ -470,7 +478,7 @@ export const emitPlayableInteriorMeta = (
   if (resolvedHooks) hooks.push(...resolvedHooks);
   else emitPropAndStoryHooks(room, hooks);
   emitLightToggleHooks(ir, lights, hooks);
-  emitAudioHooks(room, hooks);
+  emitAudioHooks(room, hooks, !resolvedHooks);
   const w = Math.max(1, room.bounds_to[0] - room.bounds_from[0] + 1);
   const d = Math.max(1, room.bounds_to[2] - room.bounds_from[2] + 1);
   const uniqueXz = new Set<string>();

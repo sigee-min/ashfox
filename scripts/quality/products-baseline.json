@@ -1137,7 +1137,7 @@
           "entry": "structures/scifi_outpost",
           "kind": "structure",
           "nbt": "2f2362aa1b92979ce966492caade233408cf7a316c904f96f1aa6e97b9ec64b2",
-          "playableMeta": "290cda0ca6e5571b8e1f27de2f40d81128cb451104e89b0dd53f00effdc0280b",
+          "playableMeta": "cef9d33f57d4b635df2a09ae822a4117802512cae24af061f2d0bb215a041d0a",
           "document": "3b24331ceed31e2958b590230ddac5ba7501a8afa5dc6bcc02bd1991182f363f"
         },
         {
@@ -1162,7 +1162,7 @@
           "document": "725cf6491c52d939a2c277d54937c41245dcca51231123f8de7a1a407026f6ab"
         }
       ],
-      "catalogHash": "dee026b501179ea63d4fcae82771b0dafcc3e4747923d26f79803f57785fc1b4",
+      "catalogHash": "4e6480ff52874f6a17491f8b314cf84bc05a52cc558eed86e1aa8006eeaa2805",
       "files": [
         {
           "path": "assets/blacksmith_glb/ashfox-lineage.json",
@@ -1238,23 +1238,23 @@
         },
         {
           "path": "assets/scifi_outpost_glb/ashfox-lineage.json",
-          "sha256": "b15c1710308916681971cb574642f55225e247ff1f57b14a8979277026c99fc4"
+          "sha256": "abaa45d1b40be673b69d7e33380c54352d4d49c85463f6641562799239d984c0"
         },
         {
           "path": "assets/scifi_outpost_glb/scifi_outpost_glb.glb",
-          "sha256": "78361cedfa489c2bf02107cff3493ed72c1bd1c926b6f868b5705bfdac936492"
+          "sha256": "892a15db77cbd52cc220d228e685487087055e002b5dba13b8cfeacc40dbfb13"
         },
         {
           "path": "assets/scifi_outpost_glb/scifi_outpost_glb.hooks.json",
-          "sha256": "b3f2ddc347739fd75aec2d57dd1ea9b93337103d46391fc4c3b3789530fd2a65"
+          "sha256": "08f56d3affdc62a8b684d610c621c0f73d35b5cb52229f9e2f6ae1a372997898"
         },
         {
           "path": "assets/scifi_outpost_glb/scifi_outpost_glb.structure.json",
-          "sha256": "e9bdf60afb168df8e9efba26d0d8bd6d7b14624a35c369553d21eca20c329d14"
+          "sha256": "eda95a0a2ffa09ad98d4f35d82dacdfe0c20261fbfb73ae5df0ca9ad5844f4cf"
         },
         {
           "path": "assets/scifi_outpost_nbt/scifi_outpost_nbt.hooks.json",
-          "sha256": "b3f2ddc347739fd75aec2d57dd1ea9b93337103d46391fc4c3b3789530fd2a65"
+          "sha256": "08f56d3affdc62a8b684d610c621c0f73d35b5cb52229f9e2f6ae1a372997898"
         },
         {
           "path": "assets/scifi_outpost_nbt/scifi_outpost_nbt.nbt",
@@ -1310,7 +1310,7 @@
         },
         {
           "path": "assets/village_pack/game-assets/assets.json",
-          "sha256": "40fd2011307e82e7ff9fef7e51275194b30483e52d1363242f2bd0dbe6f22cae"
+          "sha256": "0d13c722409426152b32e032e9e29f193a79f92461e4975c19cbca547a8c458b"
         },
         {
           "path": "assets/village_pack/game-assets/structures/blacksmith/blacksmith_glb.glb",
@@ -1338,11 +1338,11 @@
         },
         {
           "path": "assets/village_pack/game-assets/structures/scifi_outpost/scifi_outpost_glb.glb",
-          "sha256": "fcecec947da3f8a01901aebffe1e4d77d8a512f9f25cf85aa6763359f8b967d3"
+          "sha256": "5b6dd90e01d84b8bf825b23036c8cec801ff39269d51ca109a51df488e4112c2"
         },
         {
           "path": "assets/village_pack/game-assets/structures/scifi_outpost/scifi_outpost_glb.structure.json",
-          "sha256": "e9bdf60afb168df8e9efba26d0d8bd6d7b14624a35c369553d21eca20c329d14"
+          "sha256": "eda95a0a2ffa09ad98d4f35d82dacdfe0c20261fbfb73ae5df0ca9ad5844f4cf"
         },
         {
           "path": "assets/village_pack/game-assets/structures/tavern/tavern_glb.glb",
@@ -1714,7 +1714,7 @@
         },
         {
           "path": "assets/village_pack/village_pack.zip",
-          "sha256": "26a9745ba8e5b2fcde2cc456e9bd3a0d12743655467f2306e51c207deea5ef29"
+          "sha256": "05403a36b6a630f4fe3fc359257b8ad7e650b46c4c5b940024211092237079eb"
         },
         {
           "path": "assets/watchtower_glb/ashfox-lineage.json",
@@ -1742,7 +1742,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "dee026b501179ea63d4fcae82771b0dafcc3e4747923d26f79803f57785fc1b4"
+          "sha256": "4e6480ff52874f6a17491f8b314cf84bc05a52cc558eed86e1aa8006eeaa2805"
         }
       ]
     }

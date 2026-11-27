@@ -1,4 +1,9 @@
-import type { CardinalFacing, IntVec2 } from '../../../project/structure/contract';
+import type {
+  BlockRotation,
+  CardinalFacing,
+  IntVec2,
+  IntVec3,
+} from '../../../project/structure/contract';
 import type {
   InteriorAnchor,
   InteriorDraperyAst,
@@ -10,9 +15,9 @@ import type {
 } from '../../../project/structure/interiorDef';
 import type { StructureRoomMeta } from '../contract';
 import { transformAnchor, transformFacing } from '../frameOps';
-import { applyFrame, applyLinear, type FrameTransform } from '../weathering';
+import { applyFrame, applyLinear, rotatePt, type FrameTransform } from '../weathering';
 import { SUBVOXEL_UNITS_PER_BLOCK } from './contract';
-import { resolvePropSize } from './lowerItems';
+import { resolvePropSize, wallLineStep } from './lowerItems';
 
 const ANCHOR_FACING: Readonly<Record<InteriorAnchor, CardinalFacing>> = {
   north: 'south',
@@ -235,6 +240,68 @@ const xformGroupAst = (
   };
 };
 
+const unframePt = ([wx, wy, wz]: IntVec3, f: FrameTransform): IntVec3 => {
+  const [dx, dy, dz] = [wx - f.offset[0], wy - f.offset[1], wz - f.offset[2]];
+  const invRot = ((360 - f.rotate) % 360) as BlockRotation;
+  const [rx, ry, rz] = rotatePt([dx, dy, dz], invRot);
+  return [f.mirrorX ? -rx : rx, ry, rz];
+};
+
+const unframeRoomBounds = (
+  room: StructureRoomMeta,
+  f: FrameTransform,
+): Pick<StructureRoomMeta, 'from' | 'to'> => {
+  const a = unframePt(room.from, f);
+  const b = unframePt(room.to, f);
+  return {
+    from: [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.min(a[2], b[2])],
+    to: [Math.max(a[0], b[0]), Math.max(a[1], b[1]), Math.max(a[2], b[2])],
+  };
+};
+
+const xformWallLineAnchor = (
+  g: InteriorGroupAst,
+  anchor: InteriorAnchor,
+  aIdx: number,
+  f: FrameTransform,
+  localRoom: Pick<StructureRoomMeta, 'from' | 'to'>,
+  outProps: InteriorPropAst[],
+): void => {
+  const suffix = g.on.length > 1 ? `@${anchor}_${aIdx}` : '';
+  let cursor = 0;
+  for (const sub of g.items) {
+    if (sub.item !== 'prop') continue;
+    const spec = suffix ? { ...sub.spec, id: `${sub.spec.id}${suffix}` } : sub.spec;
+    if (spec.at) {
+      outProps.push(xformPropAst(spec, f, anchor));
+      continue;
+    }
+    const step = wallLineStep(spec, localRoom, anchor, cursor, localRoom.from[1] + 1);
+    cursor += step.advance;
+    outProps.push(xformPropAst({ ...spec, at: step.at, facing: step.facing }, f, anchor));
+  }
+};
+
+const xformWallLineGroups = (
+  groups: readonly InteriorGroupAst[],
+  f: FrameTransform,
+  room: StructureRoomMeta,
+): { readonly groups: readonly InteriorGroupAst[]; readonly props: readonly InteriorPropAst[] } => {
+  const localRoom = unframeRoomBounds(room, f);
+  const outProps: InteriorPropAst[] = [];
+  const outGroups: InteriorGroupAst[] = [];
+  for (const g of groups) {
+    if (g.kind !== 'wall_line') {
+      outGroups.push(xformGroupAst(g, f, room));
+      continue;
+    }
+    const nonProps = g.items.filter((i) => i.item !== 'prop');
+    if (nonProps.length > 0) outGroups.push(xformGroupAst({ ...g, items: nonProps }, f, room));
+    g.on.forEach((anchor, aIdx) => xformWallLineAnchor(g, anchor, aIdx, f, localRoom, outProps));
+  }
+  return { groups: outGroups, props: outProps };
+};
+
 /** Transforms a deferred InteriorRoomOp by its owning prefab placement frame. */
 export const transformInteriorOpByFrame = (
   op: InteriorRoomOp,
@@ -249,11 +316,12 @@ export const transformInteriorOpByFrame = (
         return [lx, sun.sun_dir[1], lz] as const;
       })()
     : undefined;
+  const wl = xformWallLineGroups(op.groups, f, room);
   return {
     ...op,
     volumes: op.volumes.map((v) => xformVolumeAst(v, f, room)),
-    groups: op.groups.map((g) => xformGroupAst(g, f, room)),
-    props: op.props.map((p) => xformPropAst(p, f)),
+    groups: wl.groups,
+    props: [...op.props.map((p) => xformPropAst(p, f)), ...wl.props],
     draperies: op.draperies.map((d) => xformDraperyAst(d, f)),
     stories: op.stories.map((s) => (s.facing ? { ...s, facing: transformFacing(s.facing, f) } : s)),
     ...(sun ? { sunShaft: { ...sun, ...(sunDir ? { sun_dir: sunDir } : {}) } } : {}),

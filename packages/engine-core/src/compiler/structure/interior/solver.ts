@@ -1,8 +1,6 @@
 import {
   MIN_VANILLA_HEADROOM_BLOCKS,
   SUBVOXEL_UNITS_PER_BLOCK,
-  type InteriorOpeningSpan,
-  type InteriorPropKind,
   type InteriorPropSpec,
   type InteriorRoomInput,
   type InteriorStorySpec,
@@ -17,12 +15,23 @@ import { compileInteriorProps, type CustomPropMount } from './props';
 import { hashSeed01 } from './propsGeo';
 import { compileStoryVignette } from './vignettes';
 import {
+  DIRS_4,
+  TALL_WALL_PROPS,
+  addOccupied,
   boxCellRange16,
+  cellKey,
+  collectDoorClearZones,
+  collectWindowZones,
+  isCellBlockedAt,
+  openingInwardCell,
   propFitsBounds,
   propFootprintCoords,
+  propSpanY,
+  resolveMezzanineYOffset,
   resolvePartitionDoorway,
   resolvePartitionSpan,
   resolveZoneRect,
+  type OccupiedMap,
   type ZoneFootprint,
 } from './zoneRect';
 
@@ -53,51 +62,13 @@ export interface SolvedRoomLayout {
   readonly resolved_room: InteriorRoomInput;
 }
 
-const DIRS_4: readonly (readonly [number, number])[] = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-];
-const TALL_WALL_PROPS = new Set<InteriorPropKind>(
-  'shelving,cabinet,fireplace,barrel_rack,display_case'.split(',') as InteriorPropKind[],
-);
-
-const cellKey = (x: number, z: number): string => `${x},${z}`;
-
-const openingInwardCell = (op: InteriorOpeningSpan): IntVec3 => {
-  const cx = Math.floor((op.from[0] + op.to[0]) / 2);
-  const cz = Math.floor((op.from[2] + op.to[2]) / 2);
-  if (op.wall === 'north') return [cx, op.from[1], cz + 1];
-  if (op.wall === 'south') return [cx, op.from[1], cz - 1];
-  if (op.wall === 'west') return [cx + 1, op.from[1], cz];
-  return [cx - 1, op.from[1], cz];
-};
-
-const collectDoorClearZones = (openings: readonly InteriorOpeningSpan[]): ReadonlySet<string> => {
-  const zones = new Set<string>();
-  for (const op of openings) {
-    if (op.kind === 'window' || op.kind === 'bay_window') continue;
-    const [ix, , iz] = openingInwardCell(op);
-    zones.add(cellKey(ix, iz));
-    for (const [dx, dz] of DIRS_4) zones.add(cellKey(ix + dx, iz + dz));
-  }
-  return zones;
-};
-
-const collectWindowZones = (openings: readonly InteriorOpeningSpan[]): ReadonlySet<string> =>
-  new Set(
-    openings
-      .filter((o) => o.kind === 'window' || o.kind === 'bay_window')
-      .map((o) => openingInwardCell(o))
-      .map(([x, , z]) => cellKey(x, z)),
-  );
-
-const collectStairCells = (room: InteriorRoomInput): ReadonlySet<string> => {
-  const out = new Set<string>();
+const collectStairCells = (room: InteriorRoomInput): OccupiedMap => {
+  const out: OccupiedMap = new Map();
+  const iy0 = room.bounds_from[1] + 1;
   for (const vol of room.volumes) {
     if (vol.kind === 'mezzanine' && vol.stair_at) {
-      out.add(cellKey(vol.stair_at[0], vol.stair_at[1]));
+      const y1 = iy0 + resolveMezzanineYOffset(room, vol.y_offset_b);
+      addOccupied(out, cellKey(vol.stair_at[0], vol.stair_at[1]), iy0, y1);
     }
   }
   return out;
@@ -105,9 +76,12 @@ const collectStairCells = (room: InteriorRoomInput): ReadonlySet<string> => {
 
 const collectPartitionBlocked = (room: InteriorRoomInput): ReadonlySet<string> => {
   const blocked = new Set<string>();
+  const iy0 = room.bounds_from[1] + 1;
   for (const vol of room.volumes) {
     if (vol.kind !== 'partition') continue;
-    addPartitionCells(room, vol, blocked);
+    addPartitionCells(room, vol, (k, y0) => {
+      if (y0 < iy0 + MIN_VANILLA_HEADROOM_BLOCKS) blocked.add(k);
+    });
   }
   return blocked;
 };
@@ -115,23 +89,30 @@ const collectPartitionBlocked = (room: InteriorRoomInput): ReadonlySet<string> =
 const addPartitionCells = (
   room: InteriorRoomInput,
   vol: PartitionVolumeSpec,
-  blocked: Set<string>,
+  visit: (k: string, y0: number, y1: number) => void,
 ): void => {
   const span = resolvePartitionSpan(room, vol);
   if (!span) return;
   const [lo, hi] = span;
   const { doorAt, doorW } = resolvePartitionDoorway(vol);
+  const y0 = room.bounds_from[1] + 1;
+  const y1 =
+    vol.style === 'booth'
+      ? y0 + 18 / SUBVOXEL_UNITS_PER_BLOCK
+      : vol.style === 'screen'
+        ? y0 + 24 / SUBVOXEL_UNITS_PER_BLOCK
+        : room.bounds_to[1];
   for (let u = lo; u <= hi; u += 1) {
     if (u >= doorAt && u < doorAt + doorW) continue;
     if (vol.style === 'colonnade' && (u - vol.span_from) % 2 !== 0) continue;
     const x = vol.axis === 'x' ? u : vol.at_pos;
     const z = vol.axis === 'z' ? u : vol.at_pos;
-    blocked.add(cellKey(x, z));
+    visit(cellKey(x, z), y0, y1);
   }
 };
 
 const NON_WALK_OBSTACLE_PREFIXES =
-  'drapery:,floor_,baseboard_,wainscot_,molding_,volume_platform,volume_step,volume_sunken,window_pane_,partition_door,railing_'.split(
+  'drapery:,floor_,baseboard_,wainscot_,molding_,volume_platform,volume_step,volume_sunken,volume_mezzanine,window_pane_,partition_door,railing_'.split(
     ',',
   );
 
@@ -321,7 +302,7 @@ export const validateClearPath = (
   const reachable = new Set(clearCells.map(([x, , z]) => cellKey(x, z)));
   const blockedOpenings = countBlockedOpenings(room, grid, boxes);
   const stairs = collectStairCells(room);
-  const blockedStairs = [...stairs].filter((k) => grid.blocked.has(k)).length;
+  const blockedStairs = [...stairs.keys()].filter((k) => grid.blocked.has(k)).length;
   const blockedSeats = countBlockedSeats(hooks, reachable);
   const totalCells = Math.max(1, (grid.x1 - grid.x0 + 1) * (grid.z1 - grid.z0 + 1));
   const finalHeadroom = minHeadroomForCells(grid, clearCells);
@@ -346,22 +327,24 @@ const canPlacePropAt = (
   x: number,
   z: number,
   bounds: ZoneFootprint,
-  occupied: ReadonlySet<string>,
-  doorClear: ReadonlySet<string>,
-  winClear: ReadonlySet<string>,
-  stairCells: ReadonlySet<string>,
+  occupied: OccupiedMap,
+  doorClear: OccupiedMap,
+  winClear: OccupiedMap,
+  stairCells: OccupiedMap,
 ): boolean => {
   if (!propFitsBounds(spec, x, z, bounds)) return false;
   const coords = propFootprintCoords(spec, x, z, bounds);
   const allowWindow = !TALL_WALL_PROPS.has(spec.kind);
   const highMount = spec.mount_on === 'wall' || spec.mount_on === 'ceiling';
+  const span = propSpanY(spec);
   return coords.every(([cx, cz]) => {
     if (cx < bounds.x0 || cx > bounds.x1 || cz < bounds.z0 || cz > bounds.z1) return false;
     const c = cellKey(cx, cz);
     return (
-      !stairCells.has(c) &&
-      (highMount || (!occupied.has(c) && !doorClear.has(c))) &&
-      (allowWindow || !winClear.has(c))
+      !isCellBlockedAt(stairCells, c, span) &&
+      (highMount ||
+        (!isCellBlockedAt(occupied, c, span) && !isCellBlockedAt(doorClear, c, span))) &&
+      (allowWindow || !isCellBlockedAt(winClear, c, span))
     );
   });
 };
@@ -369,10 +352,10 @@ const canPlacePropAt = (
 const findCandidatePlacement = (
   spec: InteriorPropSpec,
   room: InteriorRoomInput,
-  occupied: ReadonlySet<string>,
-  doorClear: ReadonlySet<string>,
-  winClear: ReadonlySet<string>,
-  stairCells: ReadonlySet<string>,
+  occupied: OccupiedMap,
+  doorClear: OccupiedMap,
+  winClear: OccupiedMap,
+  stairCells: OccupiedMap,
 ): readonly [number, number] => {
   const bounds = resolveZoneRect(room, spec.zone_id);
   const sx = Math.round(spec.at[0]);
@@ -394,21 +377,29 @@ const findCandidatePlacement = (
   return candidates.length > 0 ? [candidates[0]![1], candidates[0]![2]] : [sx, sz];
 };
 
-const addStructuralBoxCells = (box: SubVoxelBoxIR, occupied: Set<string>): void => {
+const addStructuralBoxCells = (box: SubVoxelBoxIR, occupied: OccupiedMap): void => {
   const [bx0, bz0, bx1, bz1] = boxCellRange16(box);
+  const [y0, y1] = [
+    box.from_16[1] / SUBVOXEL_UNITS_PER_BLOCK,
+    box.to_16[1] / SUBVOXEL_UNITS_PER_BLOCK,
+  ];
   for (let z = bz0; z <= bz1; z += 1) {
-    for (let x = bx0; x <= bx1; x += 1) occupied.add(cellKey(x, z));
+    for (let x = bx0; x <= bx1; x += 1) addOccupied(occupied, cellKey(x, z), y0, y1);
   }
 };
 
 const collectStructuralOccupied = (
   room: InteriorRoomInput,
   structuralBoxes: readonly SubVoxelBoxIR[],
-): Set<string> => {
-  const occupied = new Set<string>(collectPartitionBlocked(room));
-  const floorY16 = (room.bounds_from[1] + 1) * SUBVOXEL_UNITS_PER_BLOCK;
+): OccupiedMap => {
+  const occupied: OccupiedMap = new Map();
+  for (const vol of room.volumes) {
+    if (vol.kind === 'partition')
+      addPartitionCells(room, vol, (k, y0, y1) => addOccupied(occupied, k, y0, y1));
+  }
   for (const box of structuralBoxes) {
-    if (boxHeightClearance(box, floorY16).blocksWalk) addStructuralBoxCells(box, occupied);
+    if (isNonWalkObstacle(box.semantic_tag ?? '') || box.to_16[1] - box.from_16[1] <= 3.5) continue;
+    addStructuralBoxCells(box, occupied);
   }
   return occupied;
 };
@@ -432,8 +423,9 @@ const resolvePropSpecs = (
     const nextAt: Vec3 = nudged ? [rx, spec.at[1], rz] : spec.at;
     if (spec.mount_on !== 'wall' && spec.mount_on !== 'ceiling') {
       const bounds = resolveZoneRect(room, spec.zone_id);
+      const { y0, y1 } = propSpanY(spec);
       for (const [cx, cz] of propFootprintCoords(spec, rx, rz, bounds))
-        occupied.add(cellKey(cx, cz));
+        addOccupied(occupied, cellKey(cx, cz), y0, y1);
     }
     resolvedSpecs.push({ ...spec, at: nextAt });
     placements.push({ id: spec.id, original_at: spec.at, resolved_at: nextAt, nudged });
