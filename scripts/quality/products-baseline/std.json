@@ -7,7 +7,7 @@
     {
       "input": "library/std",
       "ok": true,
-      "sourceHash": "67111575e170f2ecf5feeb8cd750cba0615d73d655b3681f78d948151cc4862c",
+      "sourceHash": "6fea6284a720c5a7fa263ea80cf7a2f25d1d747ad90d53d877a5a1c85cc13481",
       "modules": [
         {
           "path": "library/std/core/hook/combat.ashfox",
@@ -52,7 +52,7 @@
         {
           "path": "library/std/core/material/fabric.ashfox",
           "specifier": "std/core/material/fabric",
-          "sha256": "db64b47c09bc0ef6343de2543931b932d48307ddabfb5a33ad2d21ba7f5877d0",
+          "sha256": "02e98531c9da0ac09645f6e067d82a3f23610e39ba745476d007ca9961f5f847",
           "exports": [
             "FabricParams",
             "FabricSurface",
@@ -60,12 +60,14 @@
           ],
           "imports": [],
           "params": [
+            "edge_wear",
             "leather_base",
             "leather_light",
             "leather_shadow",
             "linen_base",
             "linen_light",
             "linen_shadow",
+            "normal_strength",
             "roughness",
             "weave_contrast",
             "wool_crimson_base",
@@ -76,7 +78,7 @@
         {
           "path": "library/std/core/material/metal.ashfox",
           "specifier": "std/core/material/metal",
-          "sha256": "db16796c5653d3bc2fc3b4505d09d94f80ad54c0f63095a9545de0a8c73d7dd5",
+          "sha256": "febdef05bc861bfd96b6165850230963c936540dcd037d08e0a56d991733a597",
           "exports": [
             "MetalParams",
             "MetalSurface",
@@ -87,6 +89,7 @@
             "copper_base",
             "copper_light",
             "copper_shadow",
+            "edge_wear",
             "gold_base",
             "gold_light",
             "gold_shadow",
@@ -94,13 +97,14 @@
             "iron_light",
             "iron_shadow",
             "metallic",
+            "normal_strength",
             "roughness"
           ]
         },
         {
           "path": "library/std/core/material/stone.ashfox",
           "specifier": "std/core/material/stone",
-          "sha256": "ecd75f7f86e5c622573150154780fb00c1d185dc6d20c1885d6d3cbfb58ca1a8",
+          "sha256": "910077a64a2a4bbdacd461148c2088c3bbd438eb769c3314fcf4e48a1ffcea22",
           "exports": [
             "StoneParams",
             "StoneSurface",
@@ -114,6 +118,8 @@
             "cobble_base",
             "cobble_light",
             "cobble_shadow",
+            "edge_wear",
+            "normal_strength",
             "roughness",
             "sandstone_base",
             "sandstone_light",
@@ -124,7 +130,7 @@
         {
           "path": "library/std/core/material/wood.ashfox",
           "specifier": "std/core/material/wood",
-          "sha256": "0d369416ea5862a619fda5f1db08068e19559a90ee64a3d4359bc7fb330e37df",
+          "sha256": "8b3a5e1c5fb1c3b0680fc188c28f2a3eab80821b46e52bcf8489536d97f0d54d",
           "exports": [
             "WoodParams",
             "WoodSurface",
@@ -135,7 +141,9 @@
             "birch_base",
             "birch_light",
             "birch_shadow",
+            "edge_wear",
             "grain_depth",
+            "normal_strength",
             "oak_base",
             "oak_light",
             "oak_shadow",

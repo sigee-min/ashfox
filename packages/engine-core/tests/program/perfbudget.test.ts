@@ -211,7 +211,7 @@ const testPerformanceInspectionAndBudgets = (): void => {
       lod0Prims: 1,
       lod1Tris: 1000,
       lod2Prims: 2,
-      padBytes: 46 * 1024,
+      padBytes: 66 * 1024,
     }),
     'creature',
   );

@@ -30,7 +30,30 @@ const buildEmissiveFields = (
     ? { emissiveTexture: texInfo, emissiveFactor: [1, 1, 1] as [number, number, number] }
     : {};
 
-/** Build a glTF PBR material payload with optional metallic-roughness map and blend overrides. */
+const buildUvExt = (uvTransform?: UvTransform) =>
+  uvTransform
+    ? {
+        KHR_texture_transform: {
+          offset: [uvTransform.offset[0], uvTransform.offset[1]] as [number, number],
+          scale: [uvTransform.scale[0], uvTransform.scale[1]] as [number, number],
+        },
+      }
+    : undefined;
+
+const buildTexInfo = (
+  index: number | undefined,
+  ext: ReturnType<typeof buildUvExt>,
+  scale?: number,
+) =>
+  index === undefined
+    ? undefined
+    : {
+        index,
+        ...(scale !== undefined && scale !== 1 ? { scale } : {}),
+        ...(ext ? { extensions: ext } : {}),
+      };
+
+/** Build a glTF PBR material payload with optional metallic-roughness and normal maps. */
 export const createGltfMaterial = (
   texture: TextureAsset,
   texIndex: number,
@@ -40,21 +63,15 @@ export const createGltfMaterial = (
   uvTransform?: UvTransform,
   name = texture.name,
   mrTexIndex?: number,
+  normalTexIndex?: number,
 ): GltfMaterial => {
-  const ext = uvTransform
-    ? {
-        KHR_texture_transform: {
-          offset: [uvTransform.offset[0], uvTransform.offset[1]] as [number, number],
-          scale: [uvTransform.scale[0], uvTransform.scale[1]] as [number, number],
-        },
-      }
-    : undefined;
+  const ext = buildUvExt(uvTransform);
   const isUnlit = texture.renderMode === 'additive' || texture.metadata?.ashfoxUnlit === true;
   const blendMode = resolveGltfBlendMode(texture);
-  const mrInfo =
-    mrTexIndex === undefined
-      ? undefined
-      : { index: mrTexIndex, ...(ext ? { extensions: ext } : {}) };
+  const mrInfo = buildTexInfo(mrTexIndex, ext);
+  const normalInfo = isUnlit
+    ? undefined
+    : buildTexInfo(normalTexIndex, ext, texture.pbr?.normalScale);
   const texInfo = { index: texIndex, ...(ext ? { extensions: ext } : {}) };
   return {
     name,
@@ -64,6 +81,7 @@ export const createGltfMaterial = (
       metallicFactor: mrInfo ? 1 : (texture.pbr?.metallic ?? 0),
       roughnessFactor: mrInfo ? 1 : (texture.pbr?.roughness ?? 0.88),
     },
+    ...(normalInfo ? { normalTexture: normalInfo } : {}),
     ...(mrInfo ? { occlusionTexture: mrInfo } : {}),
     ...buildEmissiveFields(isEmissive, isUnlit, texInfo),
     ...resolveGltfAlphaMode(texture, masked),

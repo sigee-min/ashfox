@@ -111,7 +111,22 @@ export interface TextureResource {
   texture: TextureAsset;
   map: THREE.Texture | null;
   mrMap: THREE.Texture | null;
+  normalMap?: THREE.Texture | null;
 }
+
+const loadOptionalPbrMap = (
+  label: string,
+  base64: string | undefined,
+  texture: TextureAsset,
+  readiness: Promise<void>[],
+): THREE.Texture | null => {
+  if (!base64) return null;
+  const loaded = loadTextureFromBytes(label, decodeBase64Png(base64), 'image/png', (m) =>
+    configurePbrDataMap(m, texture),
+  );
+  readiness.push(loaded.ready);
+  return loaded.map;
+};
 
 const collectTextureResources = (
   document: ProjectDocument,
@@ -122,7 +137,6 @@ const collectTextureResources = (
   const resources = new Map<string, TextureResource>();
   for (const texture of showTextures ? Object.values(document.textures) : []) {
     let map: THREE.Texture | null = null;
-    let mrMap: THREE.Texture | null = null;
     if (texture.raster) {
       map = createRasterTextureMap(document, texture);
     } else if (assets[texture.id]) {
@@ -132,18 +146,19 @@ const collectTextureResources = (
     } else {
       readiness.push(Promise.reject(new Error(`Texture "${texture.name}" has no local bytes.`)));
     }
-    const mrBase64 = texture.pbr?.metallicRoughnessPngBase64;
-    if (mrBase64) {
-      const mrLoaded = loadTextureFromBytes(
-        `${texture.name}_mr`,
-        decodeBase64Png(mrBase64),
-        'image/png',
-        (m) => configurePbrDataMap(m, texture),
-      );
-      mrMap = mrLoaded.map;
-      readiness.push(mrLoaded.ready);
-    }
-    resources.set(texture.id, { texture, map, mrMap });
+    const mrMap = loadOptionalPbrMap(
+      `${texture.name}_mr`,
+      texture.pbr?.metallicRoughnessPngBase64,
+      texture,
+      readiness,
+    );
+    const normalMap = loadOptionalPbrMap(
+      `${texture.name}_normal`,
+      texture.pbr?.normalPngBase64,
+      texture,
+      readiness,
+    );
+    resources.set(texture.id, { texture, map, mrMap, normalMap });
   }
   return { resources, readiness };
 };
@@ -182,6 +197,34 @@ const materialFlags = (texture: TextureAsset) => {
   };
 };
 
+const normalMapMaterialProps = (
+  normalMap: THREE.Texture | null | undefined,
+  normalScaleVal: number,
+): Partial<THREE.MeshStandardMaterialParameters> =>
+  normalMap ? { normalMap, normalScale: new THREE.Vector2(normalScaleVal, -normalScaleVal) } : {};
+
+const standardPbrOptions = (
+  resource: TextureResource,
+  baseColor: string,
+  emission: number,
+): THREE.MeshStandardMaterialParameters => {
+  const pbr = resource.texture.pbr;
+  const hasMrMap = resource.mrMap !== null;
+  return {
+    roughness: hasMrMap ? 1.0 : (pbr?.roughness ?? 0.88),
+    metalness: hasMrMap ? 1.0 : (pbr?.metallic ?? 0.0),
+    roughnessMap: resource.mrMap,
+    metalnessMap: resource.mrMap,
+    ...normalMapMaterialProps(resource.normalMap, pbr?.normalScale ?? 1),
+    aoMap: resource.mrMap,
+    aoMapIntensity: hasMrMap ? 0.45 : 0,
+    envMapIntensity: 1.15,
+    emissive: emission > 0 ? baseColor : '#000000',
+    emissiveMap: emission > 0 ? resource.map : null,
+    emissiveIntensity: emission,
+  };
+};
+
 export const buildStandardMaterial = (
   resource: TextureResource,
   emission: number,
@@ -197,8 +240,6 @@ export const buildStandardMaterial = (
       flags.side,
     );
   }
-  const pbr = resource.texture.pbr;
-  const hasMrMap = resource.mrMap !== null;
   return new THREE.MeshStandardMaterial({
     color: baseColor,
     map: resource.map,
@@ -207,20 +248,11 @@ export const buildStandardMaterial = (
     blending: flags.additive ? THREE.AdditiveBlending : THREE.NormalBlending,
     depthWrite: flags.depthWrite,
     side: flags.side,
-    roughness: hasMrMap ? 1.0 : (pbr?.roughness ?? 0.88),
-    metalness: hasMrMap ? 1.0 : (pbr?.metallic ?? 0.0),
-    roughnessMap: resource.mrMap,
-    metalnessMap: resource.mrMap,
-    aoMap: resource.mrMap,
-    aoMapIntensity: hasMrMap ? 0.45 : 0,
-    envMapIntensity: 1.15,
-    emissive: emission > 0 ? baseColor : '#000000',
-    emissiveMap: emission > 0 ? resource.map : null,
-    emissiveIntensity: emission,
+    ...standardPbrOptions(resource, baseColor, emission),
   });
 };
 
-const disposeTextureMap = (map: THREE.Texture | null): void => {
+const disposeTextureMap = (map: THREE.Texture | null | undefined): void => {
   if (!map) return;
   const url = map.userData.ashfoxObjectUrl;
   if (typeof url === 'string') URL.revokeObjectURL(url);
@@ -234,9 +266,10 @@ const disposeProjectResources = (
 ): void => {
   for (const material of materials.values()) material.dispose();
   fallback.dispose();
-  for (const { map, mrMap } of resources.values()) {
+  for (const { map, mrMap, normalMap } of resources.values()) {
     disposeTextureMap(map);
     disposeTextureMap(mrMap);
+    disposeTextureMap(normalMap);
   }
 };
 
@@ -342,12 +375,18 @@ export const createProjectMaterials = (
   };
 };
 
+const disposeMaterialSlot = (
+  material: THREE.Material,
+  key: 'map' | 'roughnessMap' | 'metalnessMap' | 'normalMap' | 'aoMap',
+): void => {
+  if (!(key in material)) return;
+  const candidate = Reflect.get(material, key);
+  if (candidate instanceof THREE.Texture) disposeTextureMap(candidate);
+};
+
 export const disposeMaterial = (material: THREE.Material): void => {
-  if ('map' in material) {
-    const map = material.map as THREE.Texture | null;
-    const url = map?.userData.ashfoxObjectUrl;
-    if (typeof url === 'string') URL.revokeObjectURL(url);
-    map?.dispose();
+  for (const key of ['map', 'roughnessMap', 'metalnessMap', 'normalMap', 'aoMap'] as const) {
+    disposeMaterialSlot(material, key);
   }
   material.dispose();
 };

@@ -225,7 +225,7 @@ const validateTexturePbr = (value: unknown, path: string, context: ContractConte
     value,
     path,
     ['roughness', 'metallic'],
-    ['metallicRoughnessPngBase64'],
+    ['metallicRoughnessPngBase64', 'normalPngBase64', 'normalScale'],
     context,
   );
   if (!pbr) return;
@@ -239,6 +239,15 @@ const validateTexturePbr = (value: unknown, path: string, context: ContractConte
   }
   if (hasOwn(pbr, 'metallicRoughnessPngBase64')) {
     expectString(pbr.metallicRoughnessPngBase64, `${path}.metallicRoughnessPngBase64`, context);
+  }
+  if (hasOwn(pbr, 'normalPngBase64')) {
+    expectString(pbr.normalPngBase64, `${path}.normalPngBase64`, context);
+  }
+  if (hasOwn(pbr, 'normalScale')) {
+    expectFiniteNumber(pbr.normalScale, `${path}.normalScale`, context);
+    if (typeof pbr.normalScale === 'number' && (pbr.normalScale < 0 || pbr.normalScale > 2)) {
+      reject(context, `${path}.normalScale`, `${path}.normalScale must be between 0 and 2.`);
+    }
   }
 };
 

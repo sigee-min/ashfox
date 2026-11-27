@@ -178,7 +178,7 @@ const readMaterial = (
     checkClosedProperties(
       reader,
       props,
-      ['roughness', 'metallic', 'roughness_variation'],
+      ['roughness', 'metallic', 'roughness_variation', 'normal_strength', 'edge_wear'],
       'surface material',
     );
     state.materialProperties = [...props];

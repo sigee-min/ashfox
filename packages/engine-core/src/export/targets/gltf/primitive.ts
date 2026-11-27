@@ -1,5 +1,6 @@
 import type { GltfBinaryWriter } from './binary';
 import type { GltfAccessor, GltfBufferView, GltfDocument, GltfPrimitive } from './contract';
+import { computeOrthogonalTangents } from './tangent';
 import {
   computeUvTransform,
   normalizePositionsWithBounds,
@@ -18,12 +19,21 @@ export const compileGltfPrimitive = (
   material: number | undefined,
   indices: readonly number[],
   colors?: readonly number[],
+  tangents?: readonly number[],
 ): GltfPrimitive => {
-  const attributes = writer.addInterleavedVertexAccessors(positions, normals, uvs, joints, colors);
+  const attributes = writer.addInterleavedVertexAccessors(
+    positions,
+    normals,
+    uvs,
+    joints,
+    colors,
+    tangents,
+  );
   return {
     attributes: {
       POSITION: attributes.position,
       NORMAL: attributes.normal,
+      ...(attributes.tangent === undefined ? {} : { TANGENT: attributes.tangent }),
       ...(attributes.uv === undefined ? {} : { TEXCOORD_0: attributes.uv }),
       ...(attributes.color === undefined ? {} : { COLOR_0: attributes.color }),
       ...(attributes.joints === undefined || attributes.weights === undefined
@@ -48,12 +58,17 @@ export const compileQuantizedGltfPrimitive = (
   bounds: PositionBounds,
   resolveMaterial: (uvTransform: UvTransform | undefined) => number | undefined,
   colors?: readonly number[],
+  includeTangents?: (material: number | undefined) => boolean,
 ): GltfPrimitive => {
   const quantize = writer.isQuantized;
   const qPositions = quantize ? normalizePositionsWithBounds(positions, bounds) : positions;
   const uvResult = quantize && uvs !== undefined ? computeUvTransform(uvs) : undefined;
   const qUvs = uvResult ? uvResult.normalizedUvs : uvs;
   const matIdx = resolveMaterial(uvResult?.transform);
+  const tangents =
+    includeTangents?.(matIdx) && uvs !== undefined && indices.length >= 3
+      ? computeOrthogonalTangents(positions, normals, uvs, indices)
+      : undefined;
   return compileGltfPrimitive(
     writer,
     qPositions,
@@ -63,6 +78,7 @@ export const compileQuantizedGltfPrimitive = (
     matIdx,
     indices,
     colors,
+    tangents,
   );
 };
 

@@ -158,6 +158,8 @@ const bakeCustomModelMesh = (
         uvTx && g.texMeta
           ? getMaterialIndex(ctx.matReg, g.texMeta.tex, 'model', g.texMeta.masked, uvTx)
           : g.material,
+      undefined,
+      (matIdx) => matIdx !== undefined && ctx.matReg.materials[matIdx]?.normalTexture !== undefined,
     ),
   );
   return { mesh: { name: assetKey, primitives }, bounds };

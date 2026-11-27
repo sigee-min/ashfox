@@ -4,6 +4,7 @@ import { compileGltfCubePrimitiveData } from './cube';
 import { compileGltfPlanePrimitiveData } from './plane';
 import { compileGltfCustomPrimitiveData } from './primMesh';
 import { compileGltfPrimitive } from './primitive';
+import { computeOrthogonalTangents } from './tangent';
 import type { GltfPrimitiveData } from './data';
 import type { GltfSceneCompileOptions } from './graph';
 import type { GltfMesh, GltfNode, GltfSkin } from './contract';
@@ -307,6 +308,14 @@ const compileQuantizedGroups = (
     const positions = quantize
       ? normalizePositionsWithBounds(group.positions, bounds)
       : group.positions;
+    const needsTangents =
+      group.material !== undefined &&
+      options.normalMaterialIndices?.has(group.material) &&
+      group.uvs !== undefined &&
+      group.indices.length >= 3;
+    const tangents = needsTangents
+      ? computeOrthogonalTangents(group.positions, group.normals, group.uvs!, group.indices)
+      : undefined;
     return compileGltfPrimitive(
       options.writer,
       positions,
@@ -315,6 +324,8 @@ const compileQuantizedGroups = (
       group.joints,
       group.material,
       group.indices,
+      undefined,
+      tangents,
     );
   });
   return { primitives, bounds };

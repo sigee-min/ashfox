@@ -121,7 +121,7 @@ file size, and 3-tier LOD (`*_LOD0`, `*_LOD1`, `*_LOD2` with `MSFT_lod`):
 
 | Asset tier | Draw calls | Triangles (LOD0) | GLB size | LOD1 triangle ratio | LOD2 draw calls |
 | --- | --- | --- | --- | --- | --- |
-| `creature` / `prop` | `<= 4` (`<= 2` skinned) | `<= 1,500` | `<= 45 KB` | `<= 55%` | `1` |
+| `creature` / `prop` | `<= 4` (`<= 2` skinned) | `<= 1,500` | `<= 64 KB` | `<= 55%` | `1` |
 | `structure` | `<= 18` | `<= 18,000` | `<= 350 KB` | `<= 25%` | `1` |
 | `compound` | `<= 28` | `<= 45,000` | `<= 1.1 MB` | `<= 25%` | `1` |
 

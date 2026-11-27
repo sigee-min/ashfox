@@ -112,7 +112,8 @@ const retiredAuthoredStatementSyntax = [
   /(^|\n)[ \t]*grain\s+clustered\s*\{[^}]*\b(?:scale|density|phase)\s*=(?!=)/isu,
   /(^|\n)[ \t]*amount\s*=(?!=)/iu,
   /(^|\n)[ \t]*colors\s*=/iu,
-  /(^|\n)[ \t]*roughness\s*=(?!=)/iu,
+  // PBR `material`/`chart` blocks own numeric roughness; reject only non-numeric legacy forms.
+  /(^|\n)[ \t]*roughness\s*=(?!=)(?![ \t]*[0-9.])/iu,
   /(^|\n)[ \t]*continuity\s*=(?!=)/iu,
   /(^|\n)[ \t]*(?:pixel|rect)\s*\(/u,
   /\b(?:direction|cluster)\s*=(?!=)/iu,

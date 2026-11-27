@@ -48,6 +48,10 @@ export interface TexturePbrMaterial {
   readonly metallic: number;
   /** Synthesized MetallicRoughness + baked AO PNG (R=AO, G=roughness, B=metallic). */
   readonly metallicRoughnessPngBase64?: string;
+  /** Synthesized OpenGL/glTF tangent-space normal map PNG (RGB around 128,128,255). */
+  readonly normalPngBase64?: string;
+  /** Optional glTF normalTexture.scale multiplier (defaults to 1 when omitted). */
+  readonly normalScale?: number;
 }
 
 export interface TextureAsset {

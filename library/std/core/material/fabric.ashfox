@@ -12,6 +12,8 @@ module fabric {
     leather_light: color = #9c6649;
     roughness: ratio = 0.90;
     weave_contrast: ratio = 0.22;
+    normal_strength: ratio = 0.28;
+    edge_wear: ratio = 0.08;
   }
 
   export surface contract FabricSurface {
@@ -21,7 +23,13 @@ module fabric {
   }
 
   export surface woven_cloth: FabricSurface {
-    material = opaque;
+    material opaque {
+      roughness = 0.90;
+      metallic = 0.0;
+      roughness_variation = 0.06;
+      normal_strength = 0.28;
+      edge_wear = 0.08;
+    }
     texture atlas {
       density = 2;
       background = void; background_alpha = 255;

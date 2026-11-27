@@ -105,6 +105,7 @@ export const computeUvTransform = (
 export interface VertexLayout {
   positionOffset: number;
   normalOffset: number;
+  tangentOffset?: number;
   uvOffset?: number;
   colorOffset?: number;
   colorComponentCount: 3 | 4;
@@ -113,6 +114,7 @@ export interface VertexLayout {
   stride: number;
   quantizedPosition: boolean;
   quantizedNormal: boolean;
+  quantizedTangent: boolean;
   quantizedUv: boolean;
   jointComponentType: 5121 | 5123;
 }
@@ -138,20 +140,24 @@ export const computeVertexLayout = (
   joints: readonly number[] | undefined,
   colors: readonly number[] | undefined,
   quantize: boolean,
+  tangents?: readonly number[],
 ): VertexLayout => {
   const count = positions.length / 3;
   const colorComponentCount: 3 | 4 = colors?.length === count * 4 ? 4 : 3;
   const quantizedPosition = quantize && fitsNormalizedSigned(positions);
   const quantizedNormal = quantize && fitsNormalizedSigned(normals);
+  const quantizedTangent = quantize && tangents !== undefined && fitsNormalizedSigned(tangents);
   const quantizedUv = quantize && uvs !== undefined && fitsNormalizedUnsigned(uvs);
   const normalOffset = align4(quantizedPosition ? 6 : 12);
   const normalEnd = normalOffset + (quantizedNormal ? 4 : 12);
-  const uvSlot = optionalOffset(uvs !== undefined, normalEnd, quantizedUv ? 4 : 8);
+  const tangentSlot = optionalOffset(tangents !== undefined, normalEnd, quantizedTangent ? 4 : 16);
+  const uvSlot = optionalOffset(uvs !== undefined, tangentSlot.end, quantizedUv ? 4 : 8);
   const colorSlot = optionalOffset(colors !== undefined, uvSlot.end, 4);
   const skin = jointSkinLayout(joints, colorSlot.end);
   return {
     positionOffset: 0,
     normalOffset,
+    ...(tangentSlot.offset === undefined ? {} : { tangentOffset: tangentSlot.offset }),
     ...(uvSlot.offset === undefined ? {} : { uvOffset: uvSlot.offset }),
     ...(colorSlot.offset === undefined ? {} : { colorOffset: colorSlot.offset }),
     colorComponentCount,
@@ -160,6 +166,7 @@ export const computeVertexLayout = (
     stride: align4(skin.end),
     quantizedPosition,
     quantizedNormal,
+    quantizedTangent,
     quantizedUv,
     jointComponentType: skin.jointComponentType,
   };
@@ -171,11 +178,15 @@ export const assertValidInterleavedInputs = (
   uvs: readonly number[] | undefined,
   joints: readonly number[] | undefined,
   colors: readonly number[] | undefined,
+  tangents?: readonly number[],
 ): number => {
   if (positions.length % 3 !== 0 || normals.length !== positions.length) {
     throw new Error('glTF vertex positions and normals must be VEC3 pairs.');
   }
   const count = positions.length / 3;
+  if (tangents && tangents.length !== count * 4) {
+    throw new Error('glTF vertex tangents must be VEC4 matching position count.');
+  }
   if (uvs && uvs.length !== count * 2) {
     throw new Error('glTF vertex UVs must match the position count.');
   }

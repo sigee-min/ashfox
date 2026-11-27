@@ -3,7 +3,12 @@ import type {
   TextureCanvasDetail,
   TexturePbrMaterial,
 } from '../../../../model/texture';
-import type { TextureSceneContext } from './ao';
+import {
+  applyCurvatureOklch,
+  bakeChartCurvatureMask,
+  type ChartCurvatureMask,
+} from '../../../../textures/curvature';
+import { computeBentAoForChart, type TextureSceneContext } from './ao';
 import type { PreparedChart } from './chart';
 import type { AssetTextureChartPlan } from './contract';
 import { readInteger, type TextureExpressionContext } from './expressions';
@@ -74,13 +79,13 @@ const applyToneAndGrain = (
   modeFor: (region: TextureRegion) => GrainMode,
   compose: ComposeContext,
   owner: string,
-): boolean => {
+): number | null => {
   if (compose.prepared.tone === 'voxel') applyVoxelTone(grid, chart.regions);
   else if (compose.prepared.tone === 'painterly') applyPainterlyTone(grid, chart.regions);
   applyAoToGrid(grid);
   const seed = readGrainSeed(compose.prepared, compose.context, compose.report);
-  if (seed === null) return false;
-  return applyGrainModes(
+  if (seed === null) return null;
+  const ok = applyGrainModes(
     grid,
     chart.regions,
     modeFor,
@@ -90,9 +95,164 @@ const applyToneAndGrain = (
     compose.prepared.grain.span,
     propertyIssue(compose.report),
   );
+  return ok ? seed : null;
 };
 
-/** Apply coverage, pre-grain telemetry snapshot, tone/grain passes, details, mask, and PBR grid. */
+const RELIEF_PATTERNS: ReadonlySet<string> = new Set(['stripe', 'edge']);
+
+const hasReliefStatement = (
+  statements: readonly PreparedChart['chart']['statements'][number][],
+): boolean =>
+  statements.some(
+    (stmt) =>
+      stmt.kind === 'stamp' ||
+      (stmt.kind === 'pattern' && RELIEF_PATTERNS.has(stmt.algorithm)) ||
+      (stmt.kind === 'face' && hasReliefStatement(stmt.statements)),
+  );
+
+const hasChartReliefSignal = (chart: PreparedChart, grid: PaintGrid): boolean => {
+  if (hasReliefStatement(chart.chart.statements)) return true;
+  for (let i = 0; i < grid.fixed.length; i += 1) {
+    if (grid.fixed[i]! > 0) return true;
+  }
+  return false;
+};
+
+const splitDetailWithCurvature = (
+  detail: TextureCanvasDetail,
+  origin: readonly [number, number],
+  chartWidth: number,
+  grid: PaintGrid,
+  curvature: ChartCurvatureMask,
+  edgeWear: number,
+  out: TextureCanvasDetail[],
+): void => {
+  const lx0 = detail.x - origin[0];
+  const ly = detail.y - origin[1];
+  let runStart = 0;
+  let runColor = '';
+  for (let dx = 0; dx < detail.width; dx += 1) {
+    const idx = ly * chartWidth + lx0 + dx;
+    const color =
+      grid.fixed[idx] !== 0
+        ? detail.color
+        : applyCurvatureOklch(
+            detail.color,
+            curvature.convex[idx]!,
+            curvature.concave[idx]!,
+            edgeWear,
+          );
+    if (dx === 0) {
+      runColor = color;
+    } else if (color !== runColor) {
+      out.push(
+        Object.freeze({
+          ...detail,
+          id: `${detail.id}:${runStart}`,
+          color: runColor,
+          x: detail.x + runStart,
+          width: dx - runStart,
+        }),
+      );
+      runStart = dx;
+      runColor = color;
+    }
+  }
+  out.push(
+    Object.freeze({
+      ...detail,
+      id: runStart === 0 ? detail.id : `${detail.id}:${runStart}`,
+      color: runColor,
+      x: detail.x + runStart,
+      width: detail.width - runStart,
+    }),
+  );
+};
+
+const applyCurvatureToDetails = (
+  details: readonly TextureCanvasDetail[],
+  origin: readonly [number, number],
+  chartWidth: number,
+  grid: PaintGrid,
+  curvature: ChartCurvatureMask | undefined,
+  edgeWear: number,
+): readonly TextureCanvasDetail[] => {
+  if (edgeWear <= 0 || curvature === undefined) return details;
+  const out: TextureCanvasDetail[] = [];
+  for (const detail of details) {
+    splitDetailWithCurvature(detail, origin, chartWidth, grid, curvature, edgeWear, out);
+  }
+  return Object.freeze(out);
+};
+
+const buildChartCurvature = (
+  chartKey: string,
+  chart: PreparedChart,
+  grid: PaintGrid,
+  scene: TextureSceneContext | undefined,
+): ChartCurvatureMask | undefined => {
+  if (chart.pbr.edgeWear <= 0) return undefined;
+  const bentAo = computeBentAoForChart(
+    chartKey,
+    chart.abiWidth,
+    chart.abiHeight,
+    chart.regions,
+    scene,
+  );
+  return bakeChartCurvatureMask(
+    chart.abiWidth,
+    chart.abiHeight,
+    chart.regions.map((r) => ({
+      x: r.x,
+      y: r.y,
+      width: r.width,
+      height: r.height,
+      isBoxFace: chart.chart.layout === 'box',
+      density: r.density,
+    })),
+    grid.ao,
+    bentAo,
+  );
+};
+
+const composeChartDetailsAndMask = (
+  chart: PreparedChart,
+  grid: PaintGrid,
+  compose: ComposeContext,
+  owner: string,
+): Readonly<{
+  readonly details: readonly TextureCanvasDetail[];
+  readonly mask: TextureAlphaMask | null;
+  readonly curvature: ChartCurvatureMask | undefined;
+}> | null => {
+  const rawDetails = gridDetails(
+    grid,
+    owner,
+    chart.origin[0],
+    chart.origin[1],
+    compose.report.path,
+    chart.chart.span,
+    propertyIssue(compose.report),
+  );
+  if (rawDetails === null) return null;
+  const chartKey = `${compose.surfaceKey}\u0000${chart.chart.id}`;
+  const curvature = buildChartCurvature(chartKey, chart, grid, compose.scene);
+  const details = applyCurvatureToDetails(
+    rawDetails,
+    chart.origin,
+    chart.abiWidth,
+    grid,
+    curvature,
+    chart.pbr.edgeWear,
+  );
+  const mask =
+    chart.coverage === null
+      ? null
+      : maskFor(`${owner}:coverage`, chart.origin, chart.abiWidth, chart.abiHeight, chart.coverage);
+  return { details, mask, curvature };
+};
+
+/** Apply coverage, pre-grain telemetry snapshot, tone/grain passes, curvature, details, mask, and PBR grid. */
 export const finalizeChartResult = (
   chart: PreparedChart,
   grid: PaintGrid,
@@ -118,24 +278,14 @@ export const finalizeChartResult = (
     baseRoleId,
     modeFor,
   );
-  if (!applyToneAndGrain(grid, chart, modeFor, compose, owner)) return null;
-  const details = gridDetails(
-    grid,
-    owner,
-    chart.origin[0],
-    chart.origin[1],
-    compose.report.path,
-    chart.chart.span,
-    propertyIssue(compose.report),
-  );
-  if (details === null) return null;
-  const mask =
-    chart.coverage === null
-      ? null
-      : maskFor(`${owner}:coverage`, chart.origin, chart.abiWidth, chart.abiHeight, chart.coverage);
+  const hasRelief = hasChartReliefSignal(chart, grid);
+  const seed = applyToneAndGrain(grid, chart, modeFor, compose, owner);
+  if (seed === null) return null;
+  const composed = composeChartDetailsAndMask(chart, grid, compose, owner);
+  if (composed === null) return null;
   return Object.freeze({
-    details,
-    mask,
+    details: composed.details,
+    mask: composed.mask,
     telemetry,
     pbrGrid: {
       origin: chart.origin,
@@ -143,6 +293,12 @@ export const finalizeChartResult = (
       height: chart.abiHeight,
       pbr: chart.pbr,
       grid,
+      regions: chart.regions,
+      regionGrainModes: chart.regions.map(modeFor),
+      baseRoleId,
+      seed,
+      hasRelief,
+      ...(composed.curvature ? { curvature: composed.curvature } : {}),
     },
   });
 };
@@ -165,7 +321,13 @@ export const finalizeAtlasOutput = (
 }> | null => {
   if (!detailBudgetAllows(details, masks, report.path, report.owner, propertyIssue(report)))
     return null;
-  const pbr = synthesizeAtlasPbr(prepared.width, prepared.height, pbrGrids, prepared.defaultPbr);
+  const pbr = synthesizeAtlasPbr(
+    prepared.width,
+    prepared.height,
+    pbrGrids,
+    prepared.defaultPbr,
+    prepared.renderMode,
+  );
   return Object.freeze({
     details: Object.freeze(details),
     masks: Object.freeze(masks),

@@ -12,6 +12,8 @@ module metal {
     copper_light: color = #de8864;
     metallic: ratio = 0.88;
     roughness: ratio = 0.34;
+    normal_strength: ratio = 0.35;
+    edge_wear: ratio = 0.35;
   }
 
   export surface contract MetalSurface {
@@ -21,7 +23,13 @@ module metal {
   }
 
   export surface forged_iron: MetalSurface {
-    material = double;
+    material double {
+      roughness = 0.34;
+      metallic = 0.88;
+      roughness_variation = 0.10;
+      normal_strength = 0.35;
+      edge_wear = 0.35;
+    }
     texture atlas {
       density = 2;
       background = void; background_alpha = 255;
@@ -38,6 +46,8 @@ module metal {
       }
       chart rivet box {
         fill = rivet;
+        normal_strength = 0.45;
+        edge_wear = 0.40;
         pattern border { paint = iron; width = 1px; }
       }
     }

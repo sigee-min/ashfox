@@ -52,6 +52,7 @@ const compileBakedVoxelMesh = (
       bounds,
       (uvTx) => (tex ? getMaterialIndex(ctx.matReg, tex, batch.layer, false, uvTx) : undefined),
       batch.colors.length > 0 ? batch.colors : undefined,
+      (matIdx) => matIdx !== undefined && ctx.matReg.materials[matIdx]?.normalTexture !== undefined,
     );
   });
   return { mesh: { name: `${product.id}_voxels`, primitives }, bounds };
@@ -116,10 +117,11 @@ const createGltfBuildCtx = (
   textures: Readonly<Record<string, TextureAsset>>,
   texIndexById: ReadonlyMap<string, number>,
   mrTexIndexById: ReadonlyMap<string, number>,
+  normalTexIndexById: ReadonlyMap<string, number>,
   writer: GltfBinaryWriter,
 ): GltfBuildCtx => ({
   textures,
-  matReg: createMaterialRegistry(texIndexById, mrTexIndexById),
+  matReg: createMaterialRegistry(texIndexById, mrTexIndexById, normalTexIndexById),
   writer,
   usesGpuInstancing: false,
 });
@@ -170,11 +172,15 @@ export const buildStructureGltf = (
   const writer = new GltfBinaryWriter(options.quantize ?? true);
   const { textures, modelTexRemap } = collectUsedTextures(product);
   const ordered = Object.values(textures).sort((a, b) => compareText(a.id, b.id));
-  const { images, samplers, gltfTextures, texIndexById, mrTexIndexById } = encodeGltfTextures(
-    ordered,
+  const { images, samplers, gltfTextures, texIndexById, mrTexIndexById, normalTexIndexById } =
+    encodeGltfTextures(ordered, writer);
+  const ctx = createGltfBuildCtx(
+    textures,
+    texIndexById,
+    mrTexIndexById,
+    normalTexIndexById,
     writer,
   );
-  const ctx = createGltfBuildCtx(textures, texIndexById, mrTexIndexById, writer);
   const meshes: GltfMesh[] = [];
   const nodes: GltfNode[] = [{ name: product.id }];
   const children: number[] = [];

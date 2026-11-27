@@ -51,6 +51,8 @@ const textureProperties = (
       'roughness',
       'metallic',
       'roughness_variation',
+      'normal_strength',
+      'edge_wear',
     ],
     payload.span,
     report.path,
