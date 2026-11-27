@@ -81,12 +81,20 @@ const xformPropAst = (
   };
 };
 
+const OPPOSITE_WALL: Readonly<Record<CardinalFacing, CardinalFacing>> = {
+  north: 'south',
+  south: 'north',
+  east: 'west',
+  west: 'east',
+};
+
 const xformAlcoveAst = (
   v: Extract<InteriorVolumeAst, { kind: 'alcove' }>,
   f: FrameTransform,
   room: StructureRoomMeta,
+  fallbackWall?: CardinalFacing,
 ): Extract<InteriorVolumeAst, { kind: 'alcove' }> => {
-  const wall = v.wall ?? 'north';
+  const wall = v.wall ?? fallbackWall ?? 'north';
   const nextWall = transformFacing(wall, f);
   const localAx = wall === 'north' || wall === 'south' ? 'x' : 'z';
   const span =
@@ -97,7 +105,7 @@ const xformAlcoveAst = (
   const nextAtU = flipped ? Math.max(0, span - v.at_u! - (v.width_b ?? 2)) : v.at_u;
   return {
     ...v,
-    ...(v.wall ? { wall: nextWall } : {}),
+    ...(v.wall !== undefined || fallbackWall !== undefined ? { wall: nextWall } : {}),
     ...(nextAtU !== undefined ? { at_u: nextAtU } : {}),
   };
 };
@@ -137,9 +145,12 @@ const xformSubItem = (
   s: InteriorSubItemAst,
   f: FrameTransform,
   room: StructureRoomMeta,
-  fallbackOn: InteriorAnchor = 'center',
+  fallbackOn: InteriorAnchor | undefined = 'center',
 ): InteriorSubItemAst => {
-  if (s.item === 'alcove') return { item: 'alcove', spec: xformAlcoveAst(s.spec, f, room) };
+  if (s.item === 'alcove') {
+    const fbWall = fallbackOn ? OPPOSITE_WALL[ANCHOR_FACING[fallbackOn]] : undefined;
+    return { item: 'alcove', spec: xformAlcoveAst(s.spec, f, room, fbWall) };
+  }
   if (s.item === 'prop') return { item: 'prop', spec: xformPropAst(s.spec, f, fallbackOn) };
   return s.spec.facing
     ? { item: 'story', spec: { ...s.spec, facing: transformFacing(s.spec.facing, f) } }
@@ -177,7 +188,7 @@ const xformVolumeAst = (
 ): InteriorVolumeAst => {
   if (v.kind === 'partition') return xformPartitionAst(v, f);
   if (v.kind === 'open_truss') return { ...v, axis: xformAxis(v.axis, f) };
-  if (v.kind === 'alcove') return xformAlcoveAst(v, f, room);
+  if (v.kind === 'alcove') return xformAlcoveAst(v, f, room, 'north');
   if (v.kind === 'mezzanine') {
     const st = v.stair_at ? applyFrame([v.stair_at[0], 0, v.stair_at[1]], f) : undefined;
     return {
@@ -216,7 +227,7 @@ const xformGroupAst = (
   f: FrameTransform,
   room: StructureRoomMeta,
 ): InteriorGroupAst => {
-  const fallbackOn = g.on.length === 1 ? (g.on[0] ?? 'center') : 'north';
+  const fallbackOn = g.on.length === 1 ? (g.on[0] ?? 'center') : undefined;
   return {
     ...g,
     on: g.on.map((a) => transformAnchor(a, f)),

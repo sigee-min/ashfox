@@ -409,6 +409,7 @@ structure placed_host {
           dna { arch = rustic; organic = 0; }
           platform dais { from = (2, 2); size = (3, 2); height = 0.25; }
           platform dais_def { height = 0.25; }
+          alcove alc_def { kind = display; }
           partition p_mid { style = screen; axis = x; }
           mezzanine loft { on = north; depth = 2; y_offset = 4; railing = timber; }
           low_table lt_def { at = (2, 1, 2); facing = east; }
@@ -429,7 +430,12 @@ structure placed_host {
   const gp = (id: string) => placedRoom.input.props?.find((p) => p.id === id);
   const gv = (k: string, id?: string) =>
     placedRoom.input.volumes.find((v) => v.kind === k && (!id || v.id === id));
-  const [loftV, daisV, midV] = [gv('mezzanine'), gv('platform', 'dais_def'), gv('partition')];
+  const [loftV, daisV, midV, alcV] = [
+    gv('mezzanine'),
+    gv('platform', 'dais_def'),
+    gv('partition'),
+    gv('alcove'),
+  ];
   const diagD = placedRoom.input.draperies?.[0];
   assert.deepEqual(
     [gp('lt_def')?.at, gp('c_ctr')?.facing, loftV?.kind === 'mezzanine' ? loftV.on : undefined],
@@ -439,10 +445,11 @@ structure placed_host {
     [
       daisV?.kind === 'platform' ? [daisV.on, daisV.size] : undefined,
       midV?.kind === 'partition' ? midV.at_pos : undefined,
+      alcV?.kind === 'alcove' ? alcV.wall : undefined,
       diagD?.from_16,
       diagD?.to_16,
     ],
-    [['east', [2, 3]], 10, [208, 64, 80], [144, 80, 144]],
+    [['east', [2, 3]], 10, 'east', [208, 64, 80], [144, 80, 144]],
   );
 
   const yawCollisionSrc = `ashfox 1
@@ -473,11 +480,8 @@ structure yaw_col {
     [c0.position, c0.kind === 'sit' ? c0.facing : '', cRot.kind === 'sit' ? cRot.facing : ''],
     [[6.5, 1, 3.5], 'west', 'east'],
   );
-  assert.deepEqual(yawRoom.custom_mounts[0]?.at_16, [24, 16, 120]);
-  assert.equal(
-    yawRoom.ir.clear_path_cells.some((c) => (c[0] === 5 || c[0] === 6) && c[2] === 3),
-    false,
-  );
+  const clrHit = yawRoom.ir.clear_path_cells.some((c) => (c[0] === 5 || c[0] === 6) && c[2] === 3);
+  assert.deepEqual([yawRoom.custom_mounts[0]?.at_16, clrHit], [[24, 16, 120], false]);
   assert.throws(() =>
     parseStructureSource(
       'ashfox 1 structure d { size = (9b, 6b, 9b); floor f { y = 0b; height = 5b; room r { from = (0b, 0b); size = (9b, 9b); kind = living; interior { drapery noren { split_panels = 1000000000; } } } } }',
