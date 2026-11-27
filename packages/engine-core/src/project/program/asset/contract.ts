@@ -129,6 +129,7 @@ export interface AssetComponentParamDecl {
   readonly kind: 'component-param';
   readonly id: string;
   readonly type: AssetValueType;
+  readonly defaultValue?: ProgramExpr | null;
   readonly span: SourceSpan;
 }
 
@@ -283,6 +284,13 @@ export interface AssetSettingsDecl {
   readonly span: SourceSpan;
 }
 
+export interface AssetVariantDecl {
+  readonly kind: 'variant';
+  readonly id: string;
+  readonly properties: readonly AssetPropertyDecl[];
+  readonly span: SourceSpan;
+}
+
 export interface AssetAssemblyDecl {
   readonly kind: 'asset';
   readonly exported: boolean;
@@ -293,6 +301,7 @@ export interface AssetAssemblyDecl {
   readonly motions: readonly AssetQualifiedName[];
   readonly uses: readonly AssetAssemblyUse[];
   readonly connections: readonly AssetAssemblyConnect[];
+  readonly variants?: readonly AssetVariantDecl[];
   readonly span: SourceSpan;
 }
 

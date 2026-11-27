@@ -152,8 +152,10 @@ structure modern_gallery {
     hang { block = sea_lamp; at = ceiling_center; drop = 1b; }
   }
 
-  box { from = (1b, 0b, 14b); to = (2b, 0b, 16b); block = plinth_stone; }
-  place arch.ConcretePillar { at = (1b, 1b, 14b); rotate = 0; }
+  for i in 0..2 {
+    box { from = ((1 + i * 14)b, 0b, 14b); to = ((2 + i * 14)b, 0b, 16b); block = plinth_stone; }
+    place arch.ConcretePillar { at = ((1 + i * 14)b, 1b, 14b); rotate = 0; }
+  }
   place arch.SteelCanopy { at = (8b, 1b, 13b); rotate = 0; }
 
   anchor gallery_entry : std.entry { at = (5b, 1b, 16b); facing = south; pool = "ashfox:streets"; target = "road_join"; }

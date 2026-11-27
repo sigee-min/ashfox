@@ -8,15 +8,12 @@ or start from the [complete model](model.md#complete-source) for rig contracts (
 
 ## Parameters
 
-Declare `param name: type;` inside a component. Parameters have no default value;
-every instance supplies each declared parameter and required port directly as `name = value;`.
-Use a [closed value type](values.md#closed-value-types), not a stringly typed record.
+Declare parameters either inside a component body (`param name: type;` or `param name: type = default;`) or in its parenthesized header (`component Name(param height_scale: number = 1.0, ...) { ... }`). `number` is accepted as an alias for `ratio` and scales dimensional `unit` values and vectors cleanly. Every `use` supplies required (default-free) parameters and required ports via `use alias.Name(p = val) as inst { ... };` or property assignments inside `{ ... }`; omitted parameters with defaults use their declared fallback. Unknown parameter names fail closed with `Did you mean` hints, as do missing required parameters, duplicates, and type mismatches. Use a [closed value type](values.md#closed-value-types), not a stringly typed record.
 
 Fragment replacing the complete model's `Body` component:
 
 ```text
-export component Body {
-  param size: vec3<unit>;
+export component Body(param size: vec3<unit> = (4u, 4u, 4u), param height_scale: number = 1.0) {
   requires rig skeleton: SampleRig;
   requires surface skin: Skin;
   bind bone root to skeleton.root;
@@ -24,7 +21,7 @@ export component Body {
     bone root {
       cube body {
         origin = (-2u, 0u, -2u);
-        size = size;
+        size = size * height_scale;
         surface = skin.body;
       }
     }
@@ -35,8 +32,7 @@ export component Body {
 Its instance in `model sample`:
 
 ```text
-use Body as body {
-  size = (4u, 4u, 4u);
+use Body(height_scale = 1.5) as body {
   skeleton = SampleRig;
   skin = red;
 };

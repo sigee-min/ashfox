@@ -13,9 +13,9 @@
   "packageName": "models",
   "entryName": "goblin_raider",
   "entryPath": "assets/models/goblin_raider.ashfox",
-  "workspaceHash": "sha256:fabb5c692e25ff6e19fef217aa6c73265da0968af0810dc44ef2e885c1b75313",
-  "closureHash": "sha256:31b57aee017b2f04b6b5846c45b46b67bc1facb685c401c0dabc249f86402de9",
-  "buildKey": "sha256:20a2ab0fa8aba1cf42d81f7376a203363e83b8dc41b5facc4cc83b3b615f9cbb",
+  "workspaceHash": "sha256:30f4f90b2817c84d7ef66785d17af38aa906b00ec516ad22d371dd5776d1ee07",
+  "closureHash": "sha256:430946a1a4dbb40bd8750e4e33ec31928867ac8e1226375e9ba4457449071ae7",
+  "buildKey": "sha256:768b645735b8cb1424bd55c66196ccc4513587424908de4a1f2891dfb18e4fb5",
   "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+parent-space-rig+typed-hir+instantiation+canonical:v1",
   "productHash": "sha256:a95fd2abcafb22eceec4bc0ed51dcdd11c531df11390a5f64a56c038896de9dc",
   "textures": [

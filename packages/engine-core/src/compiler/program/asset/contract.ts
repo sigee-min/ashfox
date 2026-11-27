@@ -254,6 +254,7 @@ export interface TypedGeometryPayload {
 export interface TypedComponent {
   readonly symbol: AssetSymbolId;
   readonly parameters: Readonly<Record<string, AssetValueType>>;
+  readonly parameterDefaults?: Readonly<Record<string, AssetValue>>;
   readonly ports: readonly TypedPort[];
   readonly jointBindings: readonly TypedJointBinding[];
   readonly socketBindings: readonly TypedSocketBinding[];

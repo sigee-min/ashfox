@@ -3,7 +3,12 @@ import { compareText } from '@ashfox/internal-contracts';
 import { BuildFailure, type Snapshot } from '../bundle/contract';
 import { writeCachedBuildEntry, type ResolvedBuildEntry } from './bundleCache';
 import { writeCacheJson, type DiskCacheContext } from './diskCache';
-import { entrySelectorKey, type PlannedEntry, type WorkspaceExecutionPlan } from './entryPlan';
+import {
+  joinPackagePath,
+  entrySelectorKey,
+  type PlannedEntry,
+  type WorkspaceExecutionPlan,
+} from './entryPlan';
 import { collectExactModelPackageInterfaces, computeModelWorkspaceHash } from './modelHash';
 import type { WorkerPoolHandle } from './workerPool';
 import {
@@ -167,29 +172,98 @@ export const resolveUncachedOtherBuilds = async (
   });
 };
 
+const variantHashFileFor = (entry: PlannedEntry) =>
+  entry.files.find(
+    (f) =>
+      f.path.endsWith(`/__variant_${entry.entry.entryName}.ashfox`) ||
+      f.path === `__variant_${entry.entry.entryName}.ashfox`,
+  );
+
+interface VariantFileEntry {
+  readonly entry: PlannedEntry;
+  readonly file: Snapshot['files'][number];
+}
+
+const collectVariantsByOrigin = (modelEntries: readonly PlannedEntry[]) => {
+  const byOrigin = new Map<string, VariantFileEntry[]>();
+  for (const e of modelEntries) {
+    const vf = variantHashFileFor(e);
+    if (!vf) continue;
+    const list = byOrigin.get(e.sourcePath) ?? [];
+    list.push({ entry: e, file: vf });
+    byOrigin.set(e.sourcePath, list);
+  }
+  return byOrigin;
+};
+
+const mapPkgVariantEntries = (
+  pkg: WorkspaceExecutionPlan['config']['packages'][number],
+  variantByOrigin: ReadonlyMap<string, readonly VariantFileEntry[]>,
+) => {
+  const prefix = pkg.root ? `${pkg.root}/` : '';
+  return pkg.manifest.entries.flatMap((decl) => {
+    const variants = variantByOrigin.get(joinPackagePath(pkg.root, decl.path));
+    if (!variants) return [decl];
+    return variants.map((v) => ({
+      name: v.entry.entry.entryName,
+      path:
+        prefix && v.file.path.startsWith(prefix) ? v.file.path.slice(prefix.length) : v.file.path,
+    }));
+  });
+};
+
+const expandVariantHashInputs = (
+  plan: WorkspaceExecutionPlan,
+  snapshotFiles: Snapshot['files'],
+  modelEntries: readonly PlannedEntry[],
+) => {
+  const variantByOrigin = collectVariantsByOrigin(modelEntries);
+  if (variantByOrigin.size === 0) {
+    return { config: plan.config, files: snapshotFiles, entries: modelEntries };
+  }
+  const filesMap = new Map(snapshotFiles.map((f) => [f.path, f]));
+  for (const [origin, list] of variantByOrigin) {
+    filesMap.delete(origin);
+    for (const item of list) filesMap.set(item.file.path, item.file);
+  }
+  const entries = modelEntries.map((e) => {
+    const vf = variantHashFileFor(e);
+    return vf ? { ...e, sourcePath: vf.path, closurePaths: e.files.map((f) => f.path) } : e;
+  });
+  const config: WorkspaceExecutionPlan['config'] = {
+    ...plan.config,
+    packages: plan.config.packages.map((p) => ({
+      ...p,
+      manifest: { ...p.manifest, entries: mapPkgVariantEntries(p, variantByOrigin) },
+    })),
+  };
+  return { config, files: [...filesMap.values()], entries };
+};
+
 export const resolveModelWorkspaceHashIfNeeded = (
   plan: WorkspaceExecutionPlan,
   snapshotFiles: Snapshot['files'],
   resolved: ReadonlyMap<string, ResolvedBuildEntry>,
   cache: DiskCacheContext,
 ): string => {
-  const modelEntries = plan.entries.filter((e) => e.kind === 'model');
+  const rawModelEntries = plan.entries.filter((e) => e.kind === 'model');
   const hasExportedModel = plan.config.exports.some((e) =>
-    modelEntries.some((m) => entrySelectorKey(m.entry) === entrySelectorKey(e.entry)),
+    rawModelEntries.some((m) => entrySelectorKey(m.entry) === entrySelectorKey(e.entry)),
   );
-  if (modelEntries.length === 0 || !hasExportedModel) return '';
-  const filesByPath = new Map(snapshotFiles.map((f) => [f.path, f]));
+  if (rawModelEntries.length === 0 || !hasExportedModel) return '';
+  const { config, files, entries } = expandVariantHashInputs(plan, snapshotFiles, rawModelEntries);
+  const filesByPath = new Map(files.map((f) => [f.path, f]));
   const pkgInterfacesByEntry = new Map(
     [...resolved.entries()]
       .filter(([, item]) => Boolean(item.pkgInterfaces))
       .map(([k, item]) => [k, item.pkgInterfaces!] as const),
   );
   const known = collectExactModelPackageInterfaces(
-    modelEntries,
-    plan.config,
+    entries,
+    config,
     pkgInterfacesByEntry,
     cache,
     filesByPath,
   );
-  return computeModelWorkspaceHash(plan.config, snapshotFiles, modelEntries, known, cache);
+  return computeModelWorkspaceHash(config, files, entries, known, cache);
 };

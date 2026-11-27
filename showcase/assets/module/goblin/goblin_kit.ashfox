@@ -49,7 +49,7 @@ module goblin_kit {
     material = opaque;
   }
 
-  export component GoblinBody {
+  export component GoblinBody(param shoulder_scale : number = 1.0) {
     requires rig skeleton: biped.BipedRig;
     requires surface skin: GoblinSkin;
     provides socket gear_hand: biped.HandGrip capacity = one;
@@ -78,7 +78,7 @@ module goblin_kit {
           plane loincloth_front { origin = (3u, 8u, -3.25u); size = (6u, 5u); u_axis = (-1u, 0u, 0u); v_axis = (0u, 1u, 0u); surface = skin.loincloth; }
           plane loincloth_back { origin = (-3u, 8u, 3.15u); size = (6u, 5u); u_axis = (1u, 0u, 0u); v_axis = (0u, 1u, 0u); surface = skin.loincloth; }
           bone torso {
-            cube chest { origin = (-5u, 14.5u, -3u); size = (10u, 9u, 6u); pivot = (0u, 19u, 0u); rotation = (4deg, 0deg, 0deg); surface = skin.torso; }
+            cube chest { origin = (-5u * shoulder_scale, 14.5u, -3u); size = (10u * shoulder_scale, 9u, 6u); pivot = (0u, 19u, 0u); rotation = (4deg, 0deg, 0deg); surface = skin.torso; }
             bone head {
               cube skull { origin = (-4u, 23u, -4u); size = (8u, 7u, 8u); pivot = (0u, 26.5u, 0u); rotation = (4deg, 0deg, 0deg); surface = skin.head; }
               expression_slot face {

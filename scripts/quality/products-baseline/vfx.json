@@ -7,7 +7,7 @@
     {
       "input": "showcase/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:073593d3bcdffca732ab0fb48ec836ed3334d0ca58d6b1f474c2e8913432e98c",
+      "sourceHash": "sha256:a2635777071ad635ad4c021142a145df13b074d19f9665fcb93b94ba28546780",
       "products": [
         {
           "entry": "vfx/arcane_shockwave",

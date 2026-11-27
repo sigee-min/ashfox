@@ -189,27 +189,59 @@ const collectParamsBlock = (
   }
 };
 
+const findHeaderParamStart = (tokens: readonly ProgramToken[], openIdx: number): number => {
+  if (tokens[openIdx - 1]?.value !== ')') return openIdx + 1;
+  let parenStart = openIdx - 1;
+  let pDepth = 0;
+  while (parenStart >= 0) {
+    const val = tokens[parenStart]!.value;
+    if (val === ')') pDepth += 1;
+    else if (val === '(') {
+      pDepth -= 1;
+      if (pDepth === 0) return parenStart + 1;
+    }
+    parenStart -= 1;
+  }
+  return openIdx + 1;
+};
+
 const collectComponentParams = (
   tokens: readonly ProgramToken[],
   openIdx: number,
   closeIdx: number,
   params: VirtualModuleParam[],
 ): void => {
-  let i = openIdx + 1;
+  let i = findHeaderParamStart(tokens, openIdx);
   while (i < closeIdx) {
     if (tokens[i]!.value === 'param' && tokens[i + 1]?.kind === 'identifier') {
       const name = tokens[i + 1]!.value;
-      const semi = readStmtEnd(tokens, i, closeIdx);
-      const type =
-        tokens[i + 2]?.value === ':' ? formatExprSlice(tokens.slice(i + 3, semi)) : undefined;
-      params.push(Object.freeze({ name, ...(type ? { type } : {}) }));
-      i = semi + 1;
-    } else if (tokens[i]!.value === '{') {
-      i = matchBrace(tokens, i) + 1;
-    } else {
-      i += 1;
+      const stop = findParamEnd(tokens, i, closeIdx);
+      const colonType =
+        tokens[i + 2]?.value === ':' ? formatParamType(tokens, i + 3, stop) : undefined;
+      params.push(Object.freeze({ name, ...(colonType ? { type: colonType } : {}) }));
+      i = stop + 1;
+      continue;
     }
+    i = tokens[i]!.value === '{' ? matchBrace(tokens, i) + 1 : i + 1;
   }
+};
+
+const findParamEnd = (tokens: readonly ProgramToken[], start: number, limit: number): number => {
+  for (let i = start; i < limit; i += 1) {
+    const val = tokens[i]!.value;
+    if (val === ';' || val === ',' || val === ')' || val === '}') return i;
+  }
+  return limit;
+};
+
+const formatParamType = (
+  tokens: readonly ProgramToken[],
+  start: number,
+  limit: number,
+): string | undefined => {
+  let end = start;
+  while (end < limit && tokens[end]!.value !== '=') end += 1;
+  return formatExprSlice(tokens.slice(start, end)) || undefined;
 };
 
 const readQualifiedName = (

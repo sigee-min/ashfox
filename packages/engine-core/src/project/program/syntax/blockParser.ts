@@ -42,6 +42,7 @@ import {
 } from './blockCursor';
 import { parseBlockExpr, parseOptionalEasing } from './blockExpr';
 import { lexProgramSource, type ProgramToken } from './lex';
+import { expandStaticForTokens } from './staticFor';
 
 const TOP_KIND_SET: ReadonlySet<string> = new Set(ASHFOX_TOP_KINDS);
 const CONTRACT_BLOCK_KINDS: ReadonlySet<string> = new Set(['rig', 'surface', 'socket']);
@@ -88,31 +89,48 @@ const hasTrailingBlockBrace = (s: BlockParserState, startPos: number): boolean =
   return false;
 };
 
-const isNamedBlockHeader = (s: BlockParserState): boolean => {
-  let pos = s.index + 1;
-  if (
-    CONTRACT_BLOCK_KINDS.has(currentTok(s).value) &&
-    s.tokens[pos]?.kind === 'identifier' &&
-    s.tokens[pos]!.value === 'contract'
-  ) {
-    pos += 1;
+const skipBalancedParenPos = (tokens: readonly ProgramToken[], pos: number): number | null => {
+  if (tokens[pos]?.kind !== 'symbol' || tokens[pos]!.value !== '(') return pos;
+  let depth = 0;
+  for (let i = pos; i < tokens.length; i += 1) {
+    const tok = tokens[i]!;
+    if (tok.kind === 'symbol' && tok.value === '(') depth += 1;
+    else if (tok.kind === 'symbol' && tok.value === ')') {
+      depth -= 1;
+      if (depth === 0) return i + 1;
+    }
   }
-  if (s.tokens[pos]?.kind === 'symbol' && s.tokens[pos]!.value === '{') return true;
-  if (s.tokens[pos]?.kind !== 'identifier') return false;
-  pos += 1;
+  return null;
+};
+
+const advanceHeaderPath = (tokens: readonly ProgramToken[], start: number): number => {
+  let pos = start + 1;
   while (
-    s.tokens[pos]?.kind === 'symbol' &&
-    s.tokens[pos]!.value === '.' &&
-    s.tokens[pos + 1]?.kind === 'identifier'
+    tokens[pos]?.kind === 'symbol' &&
+    tokens[pos]!.value === '.' &&
+    tokens[pos + 1]?.kind === 'identifier'
   ) {
     pos += 2;
   }
+  return pos;
+};
+
+const isNamedBlockHeader = (s: BlockParserState): boolean => {
+  const head = currentTok(s).value;
+  let pos = s.index + 1;
+  if (CONTRACT_BLOCK_KINDS.has(head) && s.tokens[pos]?.value === 'contract') pos += 1;
+  if (s.tokens[pos]?.value === '{') return true;
+  if (s.tokens[pos]?.kind !== 'identifier') return false;
+  pos = advanceHeaderPath(s.tokens, pos);
+  if (head === 'component' && s.tokens[pos]?.value === '(') {
+    const afterParen = skipBalancedParenPos(s.tokens, pos);
+    if (afterParen === null) return false;
+    pos = afterParen;
+  }
   const next = s.tokens[pos];
   if (!next) return false;
-  if (next.kind === 'symbol' && next.value === '{') return true;
-  const hasClause =
-    (next.kind === 'symbol' && next.value === ':') ||
-    (next.kind === 'identifier' && (next.value === 'implements' || next.value === 'for'));
+  if (next.value === '{') return true;
+  const hasClause = next.value === ':' || next.value === 'implements' || next.value === 'for';
   return hasClause ? hasTrailingBlockBrace(s, pos) : false;
 };
 
@@ -167,6 +185,10 @@ const parseNamedBlock = (s: BlockParserState): AshfoxNamedBlock => {
   const hasName =
     !checkSym(s, '{') && !checkSym(s, ':') && !checkWord(s, 'implements') && !checkWord(s, 'for');
   const name = hasName ? readDottedPath(s, false, 'Expected a block name.').value : null;
+  if (kindTok.value === 'component' && checkSym(s, '(')) {
+    const afterParen = skipBalancedParenPos(s.tokens, s.index);
+    while (afterParen !== null && s.index < afterParen) takeTok(s);
+  }
   const typeRef = matchSym(s, ':')
     ? readDottedPath(s, false, 'Expected a type reference.').value
     : null;
@@ -199,21 +221,32 @@ const parseExportDecl = (s: BlockParserState): AshfoxExportDecl => {
   return freeze({ kind: 'export', declaration, span: joinSpan(start.span, declaration.span) });
 };
 
+const readBareItem = (s: BlockParserState, kind: string, items: AshfoxBareItem[]): void => {
+  if (checkSym(s, '=') || checkSym(s, ':')) {
+    const sym = takeTok(s);
+    items.push(freeze({ kind: 'symbol', value: sym.value as '=' | ':', span: sym.span }));
+    return;
+  }
+  if (kind === 'use' && items.length === 0) {
+    const path = readDottedPath(s, false, 'Expected component name.');
+    items.push(freeze({ kind: 'expr', value: freeze({ kind: 'path', ...path }) }));
+    const afterParen = checkSym(s, '(') ? skipBalancedParenPos(s.tokens, s.index) : null;
+    while (afterParen !== null && s.index < afterParen) takeTok(s);
+    return;
+  }
+  const expr = parseBlockExpr(s);
+  if (expr.kind === 'path' && checkSym(s, '=')) {
+    validateSnakeKey(s, { kind: 'identifier', value: expr.segments[0]!, span: expr.span });
+  }
+  items.push(freeze({ kind: 'expr', value: expr }));
+};
+
 const parseBareStmt = (s: BlockParserState): AshfoxBareStmt => {
   const kindTok = expectIdent(s, 'Expected a statement keyword.');
   validateSnakeKey(s, kindTok);
   const items: AshfoxBareItem[] = [];
   while (!checkSym(s, '{') && !checkSym(s, ';') && !checkSym(s, '}') && !atEnd(s)) {
-    if (checkSym(s, '=') || checkSym(s, ':')) {
-      const sym = takeTok(s);
-      items.push(freeze({ kind: 'symbol', value: sym.value as '=' | ':', span: sym.span }));
-      continue;
-    }
-    const expr = parseBlockExpr(s);
-    if (expr.kind === 'path' && checkSym(s, '=')) {
-      validateSnakeKey(s, { kind: 'identifier', value: expr.segments[0]!, span: expr.span });
-    }
-    items.push(freeze({ kind: 'expr', value: expr }));
+    readBareItem(s, kindTok.value, items);
   }
   if (checkSym(s, '{')) {
     const block = parseBlock(s, false);
@@ -359,8 +392,18 @@ export const parseAshfoxTokens = (
   source: string,
   path = 'main.ashfox',
 ): AshfoxParseResult => {
+  const expanded = expandStaticForTokens(tokens);
+  if (expanded.diagnostics.length > 0) {
+    return freeze({
+      path,
+      source,
+      grammar: ASHFOX_GRAMMAR,
+      file: null,
+      diagnostics: freeze(expanded.diagnostics.map((entry) => freeze({ ...entry, path }))),
+    });
+  }
   const state: BlockParserState = {
-    tokens,
+    tokens: expanded.tokens,
     path,
     diagnostics: [],
     index: 0,

@@ -15,6 +15,8 @@ import type { AssemblyContext, AssemblyEntry, AssemblyState } from './assembly';
 import { validateGeometryHierarchy } from './assembly';
 import { buildTypedFrame } from './hirFrames';
 import { compileGeometryPayload } from './hirGeometry';
+import { compileAndEvaluateHirExpression } from './hirValues';
+import type { AssetValue } from './value/contract';
 
 const portKind = (domain: TypedPort['domain']): AssetSymbolKind =>
   domain === 'rig' ? 'rig-contract' : domain === 'surface' ? 'surface-contract' : 'socket-contract';
@@ -23,8 +25,12 @@ const buildParameters = (
   context: AssemblyContext,
   state: AssemblyState,
   declaration: AssetComponentDecl,
-): Readonly<Record<string, TypedComponent['parameters'][string]>> => {
+): {
+  readonly parameters: Readonly<Record<string, TypedComponent['parameters'][string]>>;
+  readonly parameterDefaults: Readonly<Record<string, AssetValue>>;
+} => {
   const parameters = nullRecord<TypedComponent['parameters'][string]>();
+  const parameterDefaults = nullRecord<AssetValue>();
   for (const parameter of declaration.parameters) {
     if (parameters[parameter.id] !== undefined) {
       context.issue(
@@ -35,8 +41,19 @@ const buildParameters = (
       );
     }
     parameters[parameter.id] = parameter.type;
+    if (parameter.defaultValue) {
+      const evaluated = compileAndEvaluateHirExpression(
+        parameter.defaultValue,
+        parameter.type,
+        new Map(),
+        new Map(),
+        state.path,
+        context.issue,
+      );
+      if (evaluated !== null) parameterDefaults[parameter.id] = evaluated;
+    }
   }
-  return freeze(parameters);
+  return { parameters: freeze(parameters), parameterDefaults: freeze(parameterDefaults) };
 };
 
 const buildPorts = (
@@ -413,7 +430,7 @@ export const buildComponent = (
   surfaceContracts: Readonly<Record<string, TypedSurfaceContract>>,
 ): TypedComponent => {
   const declaration = entry.declaration as AssetComponentDecl;
-  const parameters = buildParameters(context, state, declaration);
+  const { parameters, parameterDefaults } = buildParameters(context, state, declaration);
   const { ports, portsById } = buildPorts(context, state, declaration);
   const { jointBindings, socketBindings, boundBones, anchorBone } = buildComponentBindings(
     context,
@@ -439,6 +456,7 @@ export const buildComponent = (
   return freeze({
     symbol: entry.symbol,
     parameters,
+    parameterDefaults,
     ports,
     jointBindings,
     socketBindings,

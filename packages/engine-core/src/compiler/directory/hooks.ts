@@ -118,7 +118,10 @@ export const directoryCompilationExportsCheck = (
   entryKey: (e: WorkspaceEntrySelector) => string,
 ): void => {
   for (const target of config.exports) {
-    const p = productsByEntry.get(entryKey(target.entry))!;
+    const p = productsByEntry.get(entryKey(target.entry));
+    if (!p) {
+      throw new Error('Missing compiled product for export "' + target.name + '".');
+    }
     if (!EXPORT_FORMATS[p.kind].some((format) => format === target.format)) {
       throw new Error('Export format does not match entry kind: ' + target.name);
     }
