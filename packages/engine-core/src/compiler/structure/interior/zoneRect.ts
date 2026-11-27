@@ -416,3 +416,21 @@ export const collectWindowZones = (openings: readonly InteriorOpeningSpan[]): Oc
   }
   return zones;
 };
+
+export const boxYawCosSin = (deg?: number): readonly [number, number] => {
+  const rad = ((deg ?? 0) * Math.PI) / 180;
+  return Math.abs(rad) > 1e-4 ? [Math.cos(rad), Math.sin(rad)] : [1, 0];
+};
+
+export const rotateBoxCorner = (
+  x: number,
+  y: number,
+  z: number,
+  pivot: readonly [number, number, number] | undefined,
+  cos: number,
+  sin: number,
+): readonly [number, number, number] => {
+  if (!pivot || (cos === 1 && sin === 0)) return [x, y, z];
+  const [dx, dz] = [x - pivot[0], z - pivot[2]];
+  return [pivot[0] + dx * cos - dz * sin, y, pivot[2] + dx * sin + dz * cos];
+};

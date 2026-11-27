@@ -9,23 +9,10 @@ import { SUBVOXEL_UNITS_PER_BLOCK, type SubVoxelBoxIR } from './contract';
 import type { CompiledInteriorRoom } from './types';
 import { bakeSubVoxelColors0, parseHexRgb, sampleRadiosityAt16 } from './radiosity';
 import { buildSunShaftMeshPrimitives } from './sunShaft';
+import { boxYawCosSin, rotateBoxCorner } from './zoneRect';
 
 const DIRS6: readonly CubeFaceDirection[] = ['north', 'south', 'east', 'west', 'up', 'down'];
 const U = SUBVOXEL_UNITS_PER_BLOCK;
-
-const rotateCorner = (
-  x: number,
-  y: number,
-  z: number,
-  pivot: readonly [number, number, number] | undefined,
-  cos: number,
-  sin: number,
-): readonly [number, number, number] => {
-  if (!pivot || (cos === 1 && sin === 0)) return [x, y, z];
-  const dx = x - pivot[0];
-  const dz = z - pivot[2];
-  return [pivot[0] + dx * cos - dz * sin, y, pivot[2] + dx * sin + dz * cos];
-};
 
 const emitFaceQuad = (
   batch: BatchDraft,
@@ -42,7 +29,7 @@ const emitFaceQuad = (
   const dir = DIRS6[f]!;
   const tbl = FACE_CORNER_TABLE[dir];
   const nrm = FACE_BASIS[dir].normal;
-  const [rnx, rny, rnz] = rotateCorner(nrm[0], nrm[1], nrm[2], [0, 0, 0], cos, sin);
+  const [rnx, rny, rnz] = rotateBoxCorner(nrm[0], nrm[1], nrm[2], [0, 0, 0], cos, sin);
   const base = batch.positions.length / 3;
   const [tr, tg, tb] = tint ?? [1, 1, 1];
   for (let c = 0; c < 4; c += 1) {
@@ -50,7 +37,7 @@ const emitFaceQuad = (
     const cx16 = tbl[k]! ? box.to_16[0] : box.from_16[0];
     const cy16 = tbl[k + 1]! ? clampedToY : box.from_16[1];
     const cz16 = tbl[k + 2]! ? box.to_16[2] : box.from_16[2];
-    const [rx, ry, rz] = rotateCorner(cx16, cy16, cz16, box.pivot_16, cos, sin);
+    const [rx, ry, rz] = rotateBoxCorner(cx16, cy16, cz16, box.pivot_16, cos, sin);
     batch.positions.push(rx / U - hw, ry / U, rz / U - hd);
     batch.normals.push(rnx, rny, rnz);
     const colOff = f * 12 + k;
@@ -73,10 +60,7 @@ const emitBoxQuads = (
   maxY: number,
 ): void => {
   if (box.from_16[1] / U >= maxY) return;
-  const rad = ((box.rotation_y_deg ?? 0) * Math.PI) / 180;
-  const rot = Math.abs(rad) > 1e-4;
-  const cos = rot ? Math.cos(rad) : 1;
-  const sin = rot ? Math.sin(rad) : 0;
+  const [cos, sin] = boxYawCosSin(box.rotation_y_deg);
   const tint = parseHexRgb(box.color_tint);
   const clampedToY = Math.min(box.to_16[1], maxY * U);
   for (let f = 0; f < 6; f += 1) {

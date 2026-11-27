@@ -14,6 +14,7 @@ import {
   type StyleDnaMood,
   type SubVoxelBoxIR,
 } from './contract';
+import { boxYawCosSin, rotateBoxCorner } from './zoneRect';
 
 const FACING_INWARD: Readonly<Record<InteriorOpeningSpan['wall'], IntVec3>> = {
   north: [0, 0, 1],
@@ -90,13 +91,7 @@ const inferBoxAlbedo = (box: SubVoxelBoxIR): Vec3 => {
   const hit = ALBEDO_CACHE.get(cacheKey);
   if (hit) return hit;
   const k = cacheKey.toLowerCase();
-  let found: Vec3 = [0.58, 0.56, 0.54];
-  for (const [tok, rgb] of ALBEDO_TOKENS) {
-    if (k.includes(tok)) {
-      found = rgb;
-      break;
-    }
-  }
+  const found: Vec3 = ALBEDO_TOKENS.find(([tok]) => k.includes(tok))?.[1] ?? [0.58, 0.56, 0.54];
   ALBEDO_CACHE.set(cacheKey, found);
   return found;
 };
@@ -445,6 +440,7 @@ const bakeBoxColors0 = (
 ): Float32Array => {
   const colors = new Float32Array(72);
   if (isEmissiveBox(box)) return colors.fill(1);
+  const [cos, sin] = boxYawCosSin(box.rotation_y_deg);
   for (let f = 0; f < 6; f += 1) {
     const dir = CUBE_DIRS[f]!;
     const shade = FACE_BASIS[dir].shade;
@@ -454,8 +450,9 @@ const bakeBoxColors0 = (
       const vx = tbl[k]! ? box.to_16[0] : box.from_16[0];
       const vy = tbl[k + 1]! ? box.to_16[1] : box.from_16[1];
       const vz = tbl[k + 2]! ? box.to_16[2] : box.from_16[2];
-      const rgb = sampleRadiosityAt16(field, origin, vx, vy, vz);
-      const ao = sampleContactAo(casters, aoStrength, [vx, vy, vz], box.id);
+      const pt = rotateBoxCorner(vx, vy, vz, box.pivot_16, cos, sin);
+      const rgb = sampleRadiosityAt16(field, origin, pt[0], pt[1], pt[2]);
+      const ao = sampleContactAo(casters, aoStrength, pt, box.id);
       const off = f * 12 + k;
       const m = shade * ao;
       colors[off] = linearToSrgb(rgb[0] * m);

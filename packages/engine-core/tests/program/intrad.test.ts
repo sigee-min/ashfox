@@ -139,64 +139,30 @@ const makeTavernIr = (): InteriorSubVoxelIR => {
       );
     }
   }
+  const wb = (id: string, x: number, y: number, z: number) =>
+    box(id, [x, y * 16, z], [x + 16, y * 16 + 16, z + 16], 'plaster_white', 'opaque', {
+      semantic_tag: 'wall',
+    });
   for (let y = 1; y <= 4; y += 1) {
     for (let i = 0; i <= 9; i += 1) {
-      if (i < 3 || i > 5 || y < 2 || y > 3) {
-        boxes.push(
-          box(
-            `wall_n_${i}_${y}`,
-            [i * 16, y * 16, 0],
-            [i * 16 + 16, y * 16 + 16, 16],
-            'plaster_white',
-            'opaque',
-            { semantic_tag: 'wall' },
-          ),
-        );
-      }
-      boxes.push(
-        box(
-          `wall_e_${i}_${y}`,
-          [144, y * 16, i * 16],
-          [160, y * 16 + 16, i * 16 + 16],
-          'plaster_white',
-          'opaque',
-          { semantic_tag: 'wall' },
-        ),
-      );
-      boxes.push(
-        box(
-          `wall_w_${i}_${y}`,
-          [0, y * 16, i * 16],
-          [16, y * 16 + 16, i * 16 + 16],
-          'plaster_white',
-          'opaque',
-          { semantic_tag: 'wall' },
-        ),
-      );
+      if (i < 3 || i > 5 || y < 2 || y > 3) boxes.push(wb(`wall_n_${i}_${y}`, i * 16, y, 0));
+      boxes.push(wb(`wall_e_${i}_${y}`, 144, y, i * 16), wb(`wall_w_${i}_${y}`, 0, y, i * 16));
     }
   }
   boxes.push(
     box('crimson_rug', [48, 16, 32], [96, 17, 64], 'carpet_red', 'opaque', { semantic_tag: 'rug' }),
-  );
-  boxes.push(
     box('table_leg_1', [66, 16, 66], [68, 29, 68], 'dark_oak_planks', 'opaque', {
       semantic_tag: 'furniture_leg',
       contact_ao: 0.7,
     }),
-  );
-  boxes.push(
     box('baseboard_n', [16, 16, 16], [144, 20, 18], 'stone_bricks', 'opaque', {
       semantic_tag: 'baseboard',
       contact_ao: 0.55,
     }),
-  );
-  boxes.push(
     box('beam_joint_1', [16, 72, 16], [144, 80, 22], 'dark_oak_planks', 'opaque', {
       semantic_tag: 'beam_joint',
       contact_ao: 0.6,
     }),
-  );
-  boxes.push(
     box('hearth_fire', [128, 16, 64], [144, 32, 80], 'hearth_ember', 'emissive', {
       semantic_tag: 'hearth',
       color_tint: '#ff822e',
@@ -249,6 +215,22 @@ const testTwoBounceRadiosityAndPerformance = (): void => {
   assert.ok(neonWall[2] > neonWall[0]);
   const colors0 = bakeSubVoxelColors0(room, ir, b2);
   assert.ok(colors0.size === ir.boxes.length && colors0.get('floor_4_2')!.length === 72);
+  const yawIr: InteriorSubVoxelIR = {
+    ...neonIr,
+    boxes: [
+      ...neonIr.boxes,
+      box('r_0', [24, 24, 88], [72, 32, 104], 'oak_planks', 'opaque', {
+        rotation_y_deg: 0,
+        pivot_16: [48, 24, 96],
+      }),
+      box('r_90', [24, 24, 88], [72, 32, 104], 'oak_planks', 'opaque', {
+        rotation_y_deg: 90,
+        pivot_16: [48, 24, 96],
+      }),
+    ],
+  };
+  const yawCols = bakeSubVoxelColors0(room, yawIr, neonField);
+  assert.notDeepEqual(yawCols.get('r_0'), yawCols.get('r_90'));
 };
 
 const testStainedGlassAndSubVoxelContactAo = (): void => {
@@ -346,8 +328,10 @@ const testSunShaftsPanesAndPlayableHooks = (): void => {
     ],
   };
   const ryokanMeta = emitPlayableInteriorMeta(ryokan, ir);
-  assert.ok(ryokanMeta.hooks.some((h) => h.kind === 'slide'));
-  assert.ok(ryokanMeta.hooks.some((h) => h.kind === 'audio_emitter' && h.cue_kind === 'chime'));
+  assert.ok(
+    ryokanMeta.hooks.some((h) => h.kind === 'slide') &&
+      ryokanMeta.hooks.some((h) => h.kind === 'audio_emitter' && h.cue_kind === 'chime'),
+  );
 };
 
 const testInteriorAuditPassAndFailureGates = (): void => {
