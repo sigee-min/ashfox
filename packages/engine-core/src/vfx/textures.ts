@@ -1,9 +1,8 @@
-import { lerpOklchHex } from '../textures/oklch';
+import { clamp01, hexToRgb01, lerpOklchHex } from '../textures/oklch';
 import type { VfxPalette, VfxTextureBuffer, VfxTextureSpec } from './contract';
 import { fbm2D, noise2D } from './noise';
-import { hexToRgb01, writeVfxRgbaPixel } from './oklch';
+import { writeVfxRgbaPixel } from './oklch';
 
-const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 const smoothstep = (edge0: number, edge1: number, x: number): number => {
   const t = clamp01((x - edge0) / (edge1 - edge0 || 1e-6));
   return t * t * (3 - 2 * t);

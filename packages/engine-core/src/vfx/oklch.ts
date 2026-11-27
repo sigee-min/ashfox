@@ -1,15 +1,7 @@
-import { hexToOklch, lerpOklchHex } from '../textures/oklch';
+import { clamp01, hexToOklch, lerpOklchHex } from '../textures/oklch';
 import type { VfxBlendMode, VfxPalette, VfxPaletteRole } from './contract';
 
-const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 const toByte = (v: number): number => Math.max(0, Math.min(255, Math.round(clamp01(v) * 255)));
-
-/** Parse a #rrggbb hex string to normalized [0..1] RGB triple. */
-export const hexToRgb01 = (hex: string): readonly [number, number, number] => [
-  Number.parseInt(hex.slice(1, 3), 16) / 255,
-  Number.parseInt(hex.slice(3, 5), 16) / 255,
-  Number.parseInt(hex.slice(5, 7), 16) / 255,
-];
 
 /** Resolve a 4-role VFX palette color hex string. */
 export const resolvePaletteHex = (palette: VfxPalette, role: VfxPaletteRole): string =>

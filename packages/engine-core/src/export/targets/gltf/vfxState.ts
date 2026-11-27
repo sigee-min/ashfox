@@ -1,4 +1,8 @@
-import { GltfBinaryWriter } from '../export/targets/gltf/binary';
+import { encodeCanonicalPng } from '../../../textures/textureRecipe/png';
+import { createCanonicalTextureRaster } from '../../../textures/textureRecipe/raster';
+import type { VfxBlendMode } from '../../../vfx/contract';
+import { clampUnit } from '../../../vfx/particleGeo';
+import { GltfBinaryWriter } from './binary';
 import type {
   GltfAnimation,
   GltfImage,
@@ -6,11 +10,8 @@ import type {
   GltfMesh,
   GltfNode,
   GltfSampler,
-} from '../export/targets/gltf/contract';
-import { encodeCanonicalPng } from '../textures/textureRecipe/png';
-import { createCanonicalTextureRaster } from '../textures/textureRecipe/raster';
-import type { VfxBlendMode } from './contract';
-import { clampUnit } from './particleGeo';
+} from './contract';
+import { createUnlitMaterial } from './material';
 
 export const UNIT_SCALE = 1 / 16;
 
@@ -81,28 +82,17 @@ export const addUnlitMaterial = (
 ): number => {
   const matIndex = state.materials.length;
   const hasTint = colorFactor.some((v, idx) => Math.abs(v - 1) > 1e-4 || (idx === 3 && v < 0.9999));
-  state.materials.push({
-    name,
-    pbrMetallicRoughness: {
-      ...(imageIndex !== undefined ? { baseColorTexture: { index: imageIndex } } : {}),
-      ...(hasTint
-        ? {
-            baseColorFactor: [
-              Number(colorFactor[0].toFixed(4)),
-              Number(colorFactor[1].toFixed(4)),
-              Number(colorFactor[2].toFixed(4)),
-              Number(clampUnit(colorFactor[3]).toFixed(4)),
-            ],
-          }
-        : {}),
-      metallicFactor: 0,
-      roughnessFactor: 1,
-    },
-    alphaMode: 'BLEND',
-    ...(doubleSided ? { doubleSided: true } : {}),
-    extensions: { KHR_materials_unlit: {} },
-    extras: { ashfoxBlendMode: blendMode },
-  });
+  const baseColorFactor: readonly [number, number, number, number] | undefined = hasTint
+    ? [
+        Number(colorFactor[0].toFixed(4)),
+        Number(colorFactor[1].toFixed(4)),
+        Number(colorFactor[2].toFixed(4)),
+        Number(clampUnit(colorFactor[3]).toFixed(4)),
+      ]
+    : undefined;
+  state.materials.push(
+    createUnlitMaterial(name, imageIndex, blendMode, doubleSided, baseColorFactor),
+  );
   return matIndex;
 };
 

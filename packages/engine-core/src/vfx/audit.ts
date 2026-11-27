@@ -1,3 +1,4 @@
+import { clamp01 } from '../textures/oklch';
 import {
   DEFAULT_VFX_BUDGET,
   type CompiledVfx,
@@ -30,7 +31,6 @@ export interface VfxAuditReport {
   readonly hardGateFailures: readonly string[];
 }
 
-const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 const round2 = (v: number): number => Math.round(v * 100) / 100;
 
 const sampleElementEnergy = (el: CompiledVfxElement, t: number): number => {

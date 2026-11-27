@@ -20,7 +20,7 @@ export interface OklchColor {
   readonly h: number;
 }
 
-const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
+export const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 
 const srgbToLinear = (c: number): number =>
   c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
@@ -36,7 +36,8 @@ const hexNibble = (code: number): number => {
   return code >= 65 && code <= 70 ? code - 55 : 0;
 };
 
-const parseHexChannels = (hex: string): readonly [number, number, number] => [
+/** Parse a #rrggbb hex string to normalized [0..1] RGB triple. */
+export const hexToRgb01 = (hex: string): readonly [number, number, number] => [
   ((hexNibble(hex.charCodeAt(1)) << 4) | hexNibble(hex.charCodeAt(2))) / 255,
   ((hexNibble(hex.charCodeAt(3)) << 4) | hexNibble(hex.charCodeAt(4))) / 255,
   ((hexNibble(hex.charCodeAt(5)) << 4) | hexNibble(hex.charCodeAt(6))) / 255,
@@ -48,12 +49,12 @@ const formatHexChannel = (v: number): string => {
 };
 
 export const relativeLuminance = (hex: string): number => {
-  const [r, g, b] = parseHexChannels(hex);
+  const [r, g, b] = hexToRgb01(hex);
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 };
 
 export const hexToOklch = (hex: string): OklchColor => {
-  const [sr, sg, sb] = parseHexChannels(hex);
+  const [sr, sg, sb] = hexToRgb01(hex);
   const r = srgbToLinear(sr),
     g = srgbToLinear(sg),
     b = srgbToLinear(sb);
