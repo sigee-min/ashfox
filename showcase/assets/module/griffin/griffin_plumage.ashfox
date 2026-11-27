@@ -1,7 +1,5 @@
 ashfox 1
 module griffin_plumage {
-  import "std/core/palette/medieval" as med;
-
   export surface contract GriffinPlumage {
     chart haunch box { coverage = opaque; }
     chart chest box { coverage = opaque; }
@@ -44,7 +42,7 @@ module griffin_plumage {
       palette {
         void = #000000;
         gold = (#8a5b26, #c99142, #f0c475);
-        gold_deep = (med.GuildTimber.walnut_shadow, med.GuildTimber.walnut_base, #c99142);
+        gold_deep = (#6e481e, #9c682d, #c99142);
         ivory = (#969184, #cfc9b6, #eae3d2);
         ivory_mid = (#747066, #a8a395, #d1cbb9);
         beak = (#945c22, #e0a43a, #ffd66e);

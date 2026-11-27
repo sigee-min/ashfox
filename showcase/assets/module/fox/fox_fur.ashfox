@@ -1,7 +1,5 @@
 ashfox 1
 module fox_fur {
-  import "std/core/palette/nature" as nat;
-
   export surface contract FoxFur {
     chart torso box { coverage = opaque; }
     chart pelvis box { coverage = opaque; }
@@ -43,7 +41,7 @@ module fox_fur {
         coat = (#9b3b1e, #d9642c, #f49b56);
         coat_deep = (#6d2718, #a94322, #d46b37);
         cream = (#b68d65, #dfbe94, #f0dfc0);
-        sock = (nat.TerrainSoil.loam_shadow, nat.TerrainSoil.loam_base, nat.TerrainSoil.loam_light);
+        sock = (#3d2420, #5c3831, #845549);
         paw = (#2e1c1a, #492d28, #6b453e);
         ear_pink = (#8c4842, #c9786e, #eba89d);
         nose_tone = (#261918, #3d2725, #5e3e3a);
