@@ -1,3 +1,6 @@
+import type { SoundVoice } from './contract';
+import { evaluate } from './curve';
+
 export type SvfKind = 'lowpass' | 'highpass' | 'bandpass' | 'notch';
 
 /** Cytomic ZDF State-Variable Filter with 16-sample control-rate coefficient updates. */
@@ -113,4 +116,59 @@ export const createStereoSvf = (kind: SvfKind, rate: number): StereoSvfNode => {
     },
     process: (lr: Float64Array): void => stepSvfPair(st, kind, lr),
   };
+};
+
+export interface StereoFilterBank {
+  readonly hp: StereoSvfNode | null;
+  readonly svf: StereoSvfNode | null;
+  readonly lp: StereoSvfNode | null;
+  readonly anyDynamic: boolean;
+}
+
+const isCurve = (c: unknown): boolean => typeof c === 'object' && c !== null;
+
+const initStereoFilter = (
+  kind: SvfKind,
+  rate: number,
+  cutoff: SoundVoice['highpass'],
+  q: SoundVoice['highpass'] = 0.7071,
+): StereoSvfNode | null => {
+  if (cutoff === undefined) return null;
+  const node = createStereoSvf(kind, rate);
+  if (typeof cutoff === 'number' && typeof q === 'number') node.setCoeffs(cutoff, q);
+  return node;
+};
+
+/** Create the per-voice stereo highpass, SVF, and lowpass filter bank. */
+export const createStereoFilterBank = (voice: SoundVoice, rate: number): StereoFilterBank => ({
+  hp: initStereoFilter('highpass', rate, voice.highpass),
+  svf: voice.filter
+    ? initStereoFilter(voice.filter.kind, rate, voice.filter.cutoff, voice.filter.q)
+    : null,
+  lp: initStereoFilter('lowpass', rate, voice.lowpass),
+  anyDynamic:
+    voice.drift?.target === 'cutoff' ||
+    isCurve(voice.highpass) ||
+    isCurve(voice.lowpass) ||
+    isCurve(voice.filter?.cutoff) ||
+    isCurve(voice.filter?.q),
+});
+
+/** Update coefficients for active filters in a stereo filter bank at normalized time `u`. */
+export const updateFilterCoeffs = (
+  voice: SoundVoice,
+  u: number,
+  cutoffScale: number,
+  bank: StereoFilterBank,
+): void => {
+  if (bank.hp && voice.highpass !== undefined) {
+    bank.hp.setCoeffs(evaluate(voice.highpass, u) * cutoffScale, 0.7071);
+  }
+  if (bank.svf && voice.filter) {
+    const q = voice.filter.q !== undefined ? evaluate(voice.filter.q, u) : 0.7071;
+    bank.svf.setCoeffs(evaluate(voice.filter.cutoff, u) * cutoffScale, q);
+  }
+  if (bank.lp && voice.lowpass !== undefined) {
+    bank.lp.setCoeffs(evaluate(voice.lowpass, u) * cutoffScale, 0.7071);
+  }
 };

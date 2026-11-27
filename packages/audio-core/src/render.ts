@@ -1,31 +1,20 @@
 import type { MasterSpec, SoundRecipe, SoundVariant, SoundVoice } from './contract';
-import { createChirp } from './chirp';
 import { evaluate, frame } from './curve';
 import { evaluateGain } from './envelope';
-import { createStereoSvf, type StereoSvfNode } from './filter';
-import { createFm } from './fm';
+import { createStereoFilterBank, updateFilterCoeffs, type StereoFilterBank } from './filter';
 import { createVoiceFxRack } from './fx';
-import { createGranular } from './granular';
 import { applyMasterBus } from './master';
-import { createMaterial } from './material';
 import {
   applyDuckEnvelope,
   computeDuckEnvelope,
   createPitchDrift,
   sampleCircularDrift,
 } from './mod';
-import { createNoise } from './noise';
-import { createOsc } from './osc';
-import { random } from './random';
 import { readRecipe } from './read';
 import { schedule, type Event } from './schedule';
+import { createSourceSampler } from './sourceFactory';
 import { applySpace } from './space';
 import { fail } from './validate';
-import { createVoice } from './voice';
-import { createWaveguide } from './waveguide';
-import { createWhoosh } from './whoosh';
-
-type StereoSampler = (i: number, outLR: Float64Array) => void;
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.max(min, Math.min(max, value));
@@ -60,127 +49,6 @@ export const measure = (pcm: Float64Array, channels: 1 | 2 = 1) => {
     seamDelta,
     maxAdjacentDelta,
   };
-};
-
-const createChirpForEvent = (
-  event: Event,
-  rate: number,
-  bipolar: (d: 'noise' | 'breath' | 'jitter' | 'trill-phase') => () => number,
-) => {
-  if (event.voice.source.kind !== 'chirp') throw new Error('expected chirp');
-  return createChirp(
-    event.voice.source,
-    rate,
-    event.pitch,
-    bipolar('jitter'),
-    bipolar('breath'),
-    bipolar('trill-phase'),
-  );
-};
-
-const createSourceSampler = (event: Event, rate: number, channels: 1 | 2): StereoSampler => {
-  const { voice, frames: length } = event;
-  const source = voice.source;
-  const invLen = 1 / Math.max(1, length - 1);
-  const bipolar = (domain: 'noise' | 'breath' | 'jitter' | 'trill-phase') => {
-    const r = event.stream(domain);
-    return () => r() * 2 - 1;
-  };
-  if (source.kind === 'osc') {
-    const osc = createOsc(source, rate, event.pitch);
-    return (i, outLR) => osc(i * invLen, outLR);
-  }
-  if (source.kind === 'fm') {
-    const fm = createFm(source, length, event.pitch);
-    return (i, outLR) => fm(i, outLR);
-  }
-  if (source.kind === 'vocal') {
-    const vocal = createVoice(source, rate, event.pitch, bipolar('jitter'), bipolar('breath'));
-    return (i, outLR) => vocal(i * invLen, outLR);
-  }
-  if (source.kind === 'chirp') {
-    const chirp = createChirpForEvent(event, rate, bipolar);
-    return (i, outLR) => chirp(i / rate, i * invLen, outLR);
-  }
-  if (source.kind === 'material') {
-    return createMaterial(source, length, event.pitch, event.stream('excitation'));
-  }
-  if (source.kind === 'granular') {
-    return createGranular(
-      source,
-      rate,
-      length,
-      event.pitch,
-      event.stream('grain'),
-      event.stream('turbulence'),
-    );
-  }
-  if (source.kind === 'whoosh') {
-    return createWhoosh(source, rate, length, event.pitch, event.stream('vortex'));
-  }
-  if (source.kind === 'waveguide') {
-    return createWaveguide(source, rate, length, event.pitch, event.stream('excitation'));
-  }
-  const noiseL = event.stream('noise');
-  const noiseR =
-    channels === 2
-      ? random((Math.floor(noiseL() * 0xffffffff) ^ 0x9e3779b9) >>> 0 || 1)
-      : undefined;
-  const noise = createNoise(source, noiseL, noiseR);
-  return (_i, outLR) => noise(outLR);
-};
-
-interface StereoFilterBank {
-  readonly hp: StereoSvfNode | null;
-  readonly svf: StereoSvfNode | null;
-  readonly lp: StereoSvfNode | null;
-  readonly anyDynamic: boolean;
-}
-
-const isCurve = (c: unknown): boolean => typeof c === 'object' && c !== null;
-
-const initStereoFilter = (
-  kind: 'lowpass' | 'highpass' | 'bandpass' | 'notch',
-  rate: number,
-  cutoff: SoundVoice['highpass'],
-  q: SoundVoice['highpass'] = 0.7071,
-): StereoSvfNode | null => {
-  if (cutoff === undefined) return null;
-  const node = createStereoSvf(kind, rate);
-  if (typeof cutoff === 'number' && typeof q === 'number') node.setCoeffs(cutoff, q);
-  return node;
-};
-
-const createStereoFilterBank = (voice: SoundVoice, rate: number): StereoFilterBank => ({
-  hp: initStereoFilter('highpass', rate, voice.highpass),
-  svf: voice.filter
-    ? initStereoFilter(voice.filter.kind, rate, voice.filter.cutoff, voice.filter.q)
-    : null,
-  lp: initStereoFilter('lowpass', rate, voice.lowpass),
-  anyDynamic:
-    voice.drift?.target === 'cutoff' ||
-    isCurve(voice.highpass) ||
-    isCurve(voice.lowpass) ||
-    isCurve(voice.filter?.cutoff) ||
-    isCurve(voice.filter?.q),
-});
-
-const updateFilterCoeffs = (
-  voice: SoundVoice,
-  u: number,
-  cutoffScale: number,
-  bank: StereoFilterBank,
-): void => {
-  if (bank.hp && voice.highpass !== undefined) {
-    bank.hp.setCoeffs(evaluate(voice.highpass, u) * cutoffScale, 0.7071);
-  }
-  if (bank.svf && voice.filter) {
-    const q = voice.filter.q !== undefined ? evaluate(voice.filter.q, u) : 0.7071;
-    bank.svf.setCoeffs(evaluate(voice.filter.cutoff, u) * cutoffScale, q);
-  }
-  if (bank.lp && voice.lowpass !== undefined) {
-    bank.lp.setCoeffs(evaluate(voice.lowpass, u) * cutoffScale, 0.7071);
-  }
 };
 
 const panGains = (pan: number, out: Float64Array): void => {

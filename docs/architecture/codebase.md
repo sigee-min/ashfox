@@ -130,10 +130,10 @@ source branches are not part of Ashfox.
 | --- | --- |
 | workspace records, paths, locks, changes, hashes, and graph closure | `packages/engine-core/src/project/workspace/` |
 | virtual `std/*` library resolution and catalog descriptors | `packages/engine-core/src/project/stdlib/` (`library/std/*`) |
-| shared `ashfox 1` tokens, block parser, and exact expression grammar | `packages/engine-core/src/project/program/syntax/` |
+| shared `ashfox 1` tokens, block parser, block-AST lowering (`blockLowering.ts`), and exact expression grammar | `packages/engine-core/src/project/program/syntax/` |
 | deterministic fuzzy suggestions and domain docs hints | `packages/engine-core/src/project/source/suggest.ts` |
 | package-aware asset AST and parser | `packages/engine-core/src/project/program/asset/` |
-| nominal resolution, Typed HIR, instantiation, and concrete lowering | `packages/engine-core/src/compiler/program/asset/` |
+| nominal resolution, Typed HIR, hygiene walk (`hygieneWalk.ts`), instantiation, and concrete lowering | `packages/engine-core/src/compiler/program/asset/` |
 | animation curves, quaternions, wave/gait/IK/spring/combat/layer solvers, and clip bake | `packages/engine-core/src/animation/` |
 | concrete scene, primitives (`taper`/`wedge`/`cylinder`), colliders, expressions, and PBR textures | `packages/engine-core/src/model/` |
 | texture raster, single-source OKLCH color math, PBR maps, and PNG encoding | `packages/engine-core/src/textures/` |
@@ -155,7 +155,7 @@ under `architecture.forbiddenDependencies`:
 
 - `vfx/` and `animation/` cannot import `export/` (pure domain/simulation cores emit
   intermediate data; `export/targets/gltf/` owns GLB serialization across Model,
-  Structure, and VFX via `exporter.ts`, `structureGltf.ts`, and `vfxGltf.ts`).
+  Structure, and VFX via `exporter.ts`, `structureGltf.ts`, and `vfxGltf.ts`; shared `compiledModelToProjectDocument` lives in `project/create.ts`).
 - `hooks/` cannot import `compiler/` or `export/`; target language emission uses
   the closed `BINDING_EMITTERS` Strategy table in `hooks/bindings/{shared,ts,cs,gd,index}.ts`.
 - `project/` and `compiler/` cannot import `commands/` or `validation/`.
@@ -233,7 +233,7 @@ through the template pipeline and `DOMAIN_ENTRY_COMPILERS` registry in
   `compiler/sprite/`, evaluated via pure-CPU `audit/sprite/` quality gates, and
   rendered as 512×512 4-panel `--sheet inspect` previews via `spriteInspectSheetPng`.
 - **Sound**: parsed in `project/sound/`, synthesized through pure true-stereo DSP in
-  `packages/audio-core`, and checked against profile budgets (`impact | foley | creature | magic | ui | ambient`).
+  `packages/audio-core` (`sourceFactory.ts` source registry), and checked against profile budgets (`impact | foley | creature | magic | ui | ambient`).
 - **Structure**: parsed in `project/structure/`, evaluated via `StructureOpContext`
   (`opContext.ts`) and the closed `STRUCTURE_OP_HANDLERS` lookup table across
   `opsVoxel.ts`, `opsArch.ts`, and `opsTransform.ts` with modular `interior/` passes
