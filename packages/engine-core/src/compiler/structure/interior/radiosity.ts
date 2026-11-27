@@ -14,7 +14,7 @@ import {
   type StyleDnaMood,
   type SubVoxelBoxIR,
 } from './contract';
-import { boxYawCosSin, rotateBoxCorner } from './zoneRect';
+import { boxYawCosSin, rotateBoxCorner, rotatedBoxBounds16 } from './zoneRect';
 
 const FACING_INWARD: Readonly<Record<InteriorOpeningSpan['wall'], IntVec3>> = {
   north: [0, 0, 1],
@@ -141,12 +141,13 @@ const depositMax = (t: RgbTriplet, idx: number, rgb: Vec3): void => {
 
 const rasterizeBox = (box: SubVoxelBoxIR, buf: RadiosityBuffers): void => {
   const u = SUBVOXEL_UNITS_PER_BLOCK;
-  const x0 = clAxis(Math.floor(box.from_16[0] / u) - buf.origin[0], buf.w);
+  const [rx0, rz0, rx1, rz1] = rotatedBoxBounds16(box);
+  const x0 = clAxis(Math.floor(rx0 / u) - buf.origin[0], buf.w);
   const y0 = clAxis(Math.floor(box.from_16[1] / u) - buf.origin[1], buf.h);
-  const z0 = clAxis(Math.floor(box.from_16[2] / u) - buf.origin[2], buf.d);
-  const x1 = Math.max(x0, clAxis(Math.ceil(box.to_16[0] / u) - 1 - buf.origin[0], buf.w));
+  const z0 = clAxis(Math.floor(rz0 / u) - buf.origin[2], buf.d);
+  const x1 = Math.max(x0, clAxis(Math.ceil(rx1 / u) - 1 - buf.origin[0], buf.w));
   const y1 = Math.max(y0, clAxis(Math.ceil(box.to_16[1] / u) - 1 - buf.origin[1], buf.h));
-  const z1 = Math.max(z0, clAxis(Math.ceil(box.to_16[2] / u) - 1 - buf.origin[2], buf.d));
+  const z1 = Math.max(z0, clAxis(Math.ceil(rz1 / u) - 1 - buf.origin[2], buf.d));
   const rgb = inferBoxAlbedo(box);
   const emissive = isEmissiveBox(box);
   const occ = isStructuralOccluder(box);

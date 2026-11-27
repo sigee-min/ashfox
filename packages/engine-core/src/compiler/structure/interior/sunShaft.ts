@@ -365,7 +365,10 @@ const emitLightToggleHooks = (
   lights: readonly PlayableLight[],
   hooks: PlayableInteriorHook[],
 ): void => {
-  for (const light of lights)
+  const seen = new Set(hooks.filter((h) => h.kind === 'toggle_light').map((h) => h.light_id));
+  for (const light of lights) {
+    if (seen.has(light.id)) continue;
+    seen.add(light.id);
     hooks.push({
       kind: 'toggle_light',
       id: `toggle_${light.id}`,
@@ -374,10 +377,12 @@ const emitLightToggleHooks = (
       default_on: true,
       light_id: light.id,
     });
+  }
   if (lights.length > 0) return;
   const u = SUBVOXEL_UNITS_PER_BLOCK;
   for (const box of ir.boxes) {
-    if (box.layer !== 'emissive') continue;
+    if (box.layer !== 'emissive' || seen.has(box.id)) continue;
+    seen.add(box.id);
     const pos: Vec3 = [
       (box.from_16[0] + box.to_16[0]) / (2 * u),
       (box.from_16[1] + box.to_16[1]) / (2 * u),

@@ -380,6 +380,34 @@ const collectInteriorColliders = (grid: StructureGrid): readonly PlayableCollide
   return out;
 };
 
+export const collectInteriorLights = (
+  grid: StructureGrid,
+  existing: readonly PlayableLight[],
+): readonly PlayableLight[] => {
+  const [w, , d] = grid.size;
+  const [hw, hd] = [w / 2, d / 2];
+  const seen = new Set(existing.map((l) => l.id));
+  const out: PlayableLight[] = [...existing];
+  for (const room of grid.interiors ?? []) {
+    for (const hook of room.playable_meta.hooks) {
+      if (hook.kind !== 'toggle_light' || seen.has(hook.light_id)) continue;
+      seen.add(hook.light_id);
+      out.push({
+        id: hook.light_id,
+        position: [hook.position[0] - hw, hook.position[1], hook.position[2] - hd],
+        color: hook.color,
+        intensity: 1.5,
+        radius: 6,
+        kind:
+          hook.light_id.includes('hearth') || hook.light_id.includes('flame')
+            ? 'hearth'
+            : 'emissive_prop',
+      });
+    }
+  }
+  return out;
+};
+
 export const buildPlayableStructureMeta = (
   grid: StructureGrid,
   lights: readonly PlayableLight[],
@@ -393,7 +421,7 @@ export const buildPlayableStructureMeta = (
     bounds: { min: [-w / 2, 0, -d / 2], max: [w / 2, h, d / 2] },
     colliders: [...mergeColliders(grid, descriptors), ...collectInteriorColliders(grid)],
     zones: buildZones(grid),
-    lights,
+    lights: collectInteriorLights(grid, lights),
     interactables: buildInteractables(grid),
     sockets: transformSockets(grid),
     navigation: buildNavigation(grid, descriptors),

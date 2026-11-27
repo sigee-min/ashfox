@@ -464,6 +464,32 @@ const testContactAoPropagationAndOversizedPropRejection = (): void => {
   const fpHooks = compileStructureUnits('f.ashfox', fpUnit, {}, (_o, s) => s).grid.interiors![0]!
     .playable_meta.hooks;
   assert.equal(fpHooks.filter((h) => h.kind === 'audio_emitter').length, 1);
+  const mkHolo = (deg: number) => {
+    const src = makeAoSrc(0.4).replace(
+      'table tbl { at = (4, 1, 4); size = (2, 1); facing = north; }',
+      `holo_screen scr { at = (4, 1, 4); size = (3, 1); facing = north; rotation_deg = ${deg}; }`,
+    );
+    return compileStructureUnits(
+      'h.ashfox',
+      new Map([['h.ashfox', parseStructureSource(src, 'h.ashfox')]]),
+      {},
+      (_o, s) => s,
+    );
+  };
+  const [h0, h90] = [mkHolo(0), mkHolo(90)];
+  assert.notDeepEqual(
+    h0.grid.interiors![0]!.radiosity.bounce_b,
+    h90.grid.interiors![0]!.radiosity.bounce_b,
+  );
+  const lightIds = new Set(h0.playableMeta.lights.map((l) => l.id));
+  const toggleIds = h0.grid
+    .interiors![0]!.playable_meta.hooks.filter((h) => h.kind === 'toggle_light')
+    .map((h) => h.light_id);
+  assert.ok(
+    toggleIds.length >= 3 &&
+      toggleIds.every((id) => lightIds.has(id)) &&
+      new Set(toggleIds).size === toggleIds.length,
+  );
 };
 
 testTwoBounceRadiosityAndPerformance();
