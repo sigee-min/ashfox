@@ -250,7 +250,12 @@ export type {
 export { readSpriteDocument } from './project/sprite/read';
 export { compileSpriteDocument, spritePreviewPng } from './compiler/sprite/compile';
 export { SPRITE_POLICY, SPRITE_PROFILES, SpriteInputError } from './project/sprite/contract';
-export type { SpriteDiagnostic, SpriteDocument, SpriteProfile } from './project/sprite/contract';
+export type {
+  SpriteDiagnostic,
+  SpriteDocument,
+  SpriteNineSlice,
+  SpriteProfile,
+} from './project/sprite/contract';
 export type {
   SpriteAuthoringTelemetry,
   SpriteBuild,

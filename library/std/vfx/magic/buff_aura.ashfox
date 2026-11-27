@@ -1,0 +1,85 @@
+ashfox 1
+module buff_aura {
+  params {
+    radius = 12u;
+    duration = 1.0s;
+    seed = 307;
+  }
+
+  export palette ValorGold {
+    core = #fffbe6;
+    mid = #f2c44d;
+    edge = #9e651c;
+    smoke = #382e24;
+  }
+
+  export palette ArcaneWard {
+    core = #ebffff;
+    mid = #52dede;
+    edge = #236399;
+    smoke = #1f2e42;
+  }
+
+  export element aura_ring : ring {
+    at = 0s..duration;
+    blend = additive;
+    radius = (radius * 0.55)..radius;
+    segments = 20;
+    bevel = 0.3;
+    color = mid;
+    spin = 180deg;
+    texture magic_circle { runes = 8; rings = 2; seed = seed; }
+    scale = 0.95 -> 1.05 -> 0.95;
+    alpha = 0.65 -> 0.92 -> 0.65;
+  }
+
+  export emitter orbit_sparks : voxel_burst {
+    at = 0s..(duration * 0.75);
+    seed = seed;
+    count = 18;
+    shape = ring(radius * 0.8);
+    particle = cross_card;
+    speed = 6u..11u;
+    life = 0.25s..0.42s;
+    gravity = 12u;
+    drag = 2.0;
+    vortex { axis = (0, 1, 0); center = (0u, 6u, 0u); strength = 7; }
+    size_over_life = 0.85u -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = additive;
+  }
+
+  export recipe BuffAura {
+    duration = duration;
+    fps = 24;
+    loop = loop;
+    palette = ValorGold;
+    element aura_ring : ring {
+      at = 0s..duration;
+      blend = additive;
+      radius = (radius * 0.55)..radius;
+      segments = 20;
+      bevel = 0.3;
+      color = mid;
+      spin = 180deg;
+      texture magic_circle { runes = 8; rings = 2; seed = seed; }
+      scale = 0.95 -> 1.05 -> 0.95;
+      alpha = 0.65 -> 0.92 -> 0.65;
+    }
+    emitter orbit_sparks : voxel_burst {
+      at = 0s..(duration * 0.75);
+      seed = seed;
+      count = 18;
+      shape = ring(radius * 0.8);
+      particle = cross_card;
+      speed = 6u..11u;
+      life = 0.25s..0.42s;
+      gravity = 12u;
+      drag = 2.0;
+      vortex { axis = (0, 1, 0); center = (0u, 6u, 0u); strength = 7; }
+      size_over_life = 0.85u -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = additive;
+    }
+  }
+}

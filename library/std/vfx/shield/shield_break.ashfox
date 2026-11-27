@@ -1,0 +1,111 @@
+ashfox 1
+module shield_break {
+  params {
+    radius = 14u;
+    shard_count = 36;
+    duration = 0.7s;
+    seed = 127;
+  }
+
+  export palette ShatterCyan {
+    core = #f0ffff;
+    mid = #5cd4f5;
+    edge = #255ca8;
+    smoke = #1f2e42;
+  }
+
+  export palette ShatterViolet {
+    core = #faeaff;
+    mid = #c76ef5;
+    edge = #6728a3;
+    smoke = #2b1d40;
+  }
+
+  export element crack_shell : dome {
+    at = 0s..(duration * 0.45);
+    blend = additive;
+    shape = sphere;
+    radius = radius;
+    subdiv = 1;
+    color = core;
+    texture starburst { spikes = 8; seed = seed; posterize = 4; }
+    dissolve voronoi { frames = 8; edge_glow = core; seed = seed; }
+    scale = 0.95 -> 1.25 ease_out -> 0;
+    alpha = 0.9 -> 1.0 snap -> 0;
+  }
+
+  export element collapse_ring : ring {
+    at = 0.04s..(duration * 0.72);
+    blend = additive;
+    radius = (radius * 0.4)..(radius * 1.15);
+    segments = 18;
+    bevel = 0.5;
+    color = mid;
+    texture ring_wave { rings = 2; seed = seed + 9; }
+    scale = 0.5 -> 1.3 ease_out -> 0;
+    alpha = 1.0 -> 0.35 -> 0;
+  }
+
+  export emitter hex_shards : voxel_burst {
+    at = 0.02s..(duration * 0.52);
+    seed = seed;
+    count = shard_count;
+    shape = sphere(radius * 0.7);
+    particle = shard;
+    speed = 16u..32u;
+    life = 0.22s..0.44s;
+    gravity = -24u;
+    drag = 1.2;
+    spin_speed = 420deg;
+    ground { y = 0u; bounce = 35%; friction = 75%; }
+    size_over_life = 1.4u -> 0.8u -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = additive;
+  }
+
+  export recipe ShieldBreak {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = ShatterCyan;
+    element crack_shell : dome {
+      at = 0s..(duration * 0.45);
+      blend = additive;
+      shape = sphere;
+      radius = radius;
+      subdiv = 1;
+      color = core;
+      texture starburst { spikes = 8; seed = seed; posterize = 4; }
+      dissolve voronoi { frames = 8; edge_glow = core; seed = seed; }
+      scale = 0.95 -> 1.25 ease_out -> 0;
+      alpha = 0.9 -> 1.0 snap -> 0;
+    }
+    element collapse_ring : ring {
+      at = 0.04s..(duration * 0.72);
+      blend = additive;
+      radius = (radius * 0.4)..(radius * 1.15);
+      segments = 18;
+      bevel = 0.5;
+      color = mid;
+      texture ring_wave { rings = 2; seed = seed + 9; }
+      scale = 0.5 -> 1.3 ease_out -> 0;
+      alpha = 1.0 -> 0.35 -> 0;
+    }
+    emitter hex_shards : voxel_burst {
+      at = 0.02s..(duration * 0.52);
+      seed = seed;
+      count = shard_count;
+      shape = sphere(radius * 0.7);
+      particle = shard;
+      speed = 16u..32u;
+      life = 0.22s..0.44s;
+      gravity = -24u;
+      drag = 1.2;
+      spin_speed = 420deg;
+      ground { y = 0u; bounce = 35%; friction = 75%; }
+      size_over_life = 1.4u -> 0.8u -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = additive;
+    }
+  }
+}

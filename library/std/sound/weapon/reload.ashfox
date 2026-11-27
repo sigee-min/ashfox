@@ -1,0 +1,67 @@
+ashfox 1
+module reload {
+  params {
+    latch_pitch = 980hz;
+    slide_pitch = 640hz;
+    shell_pitch = 1850hz;
+  }
+
+  export voice mag_eject : modal_plate {
+    material = steel;
+    pitch = latch_pitch;
+    size = 0.62;
+    hardness = 0.9;
+    damping = 0.38;
+    brightness = 0.82;
+    modes = 14;
+    strike = mallet;
+    twin_beat = 0.32;
+    stereo_spread = 0.35;
+    highpass = 160hz;
+    gain { env = ad; attack = 2ms; peak = 0.86; curve = exp; }
+  }
+
+  export voice mag_insert : modal_plate {
+    material = iron;
+    pitch = 320hz;
+    size = 0.88;
+    hardness = 0.86;
+    damping = 0.56;
+    brightness = 0.72;
+    modes = 12;
+    strike = mallet;
+    splash = 0.28;
+    stereo_spread = 0.32;
+    highpass = 75hz;
+    eq { low = (180hz, 2db); }
+    gain { env = ad; attack = 2ms; peak = 0.92; curve = exp; }
+  }
+
+  export voice bolt_rack : waveguide {
+    model = blade;
+    pitch = log(0: slide_pitch -> 0.45: 940hz -> 1: 720hz);
+    damping = 0.3;
+    stiffness = 0.72;
+    brightness = 0.84;
+    highpass = 140hz;
+    drive : grit { amount = 1.4; }
+    pan = -0.25 -> 0.25;
+    gain { env = ad; attack = 4ms; peak = 0.84; curve = exp; }
+  }
+
+  export voice casing_tink : modal_plate {
+    material = bronze;
+    pitch = shell_pitch;
+    size = 0.42;
+    hardness = 0.95;
+    damping = 0.2;
+    brightness = 0.9;
+    modes = 14;
+    strike = bounce;
+    bounces = 3;
+    twin_beat = 0.44;
+    stereo_spread = 0.52;
+    highpass = 320hz;
+    gain { env = ad; attack = 2ms; peak = 0.78; curve = exp; }
+  }
+}

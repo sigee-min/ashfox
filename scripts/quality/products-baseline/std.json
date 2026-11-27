@@ -7,7 +7,7 @@
     {
       "input": "library/std",
       "ok": true,
-      "sourceHash": "6fea6284a720c5a7fa263ea80cf7a2f25d1d747ad90d53d877a5a1c85cc13481",
+      "sourceHash": "ad9150b8647a72f94973d2acdfd7cc35e81a9372b9bd33fdc748d8729a0750fa",
       "modules": [
         {
           "path": "library/std/core/hook/combat.ashfox",
@@ -666,6 +666,23 @@
           ]
         },
         {
+          "path": "library/std/sound/creature/zombie.ashfox",
+          "specifier": "std/sound/creature/zombie",
+          "sha256": "8bcb8c431a92ebe4048cc4ea7b0c84401b79b5327077764097cf6565b779de6d",
+          "exports": [
+            "horde_ambience",
+            "zombie_bite",
+            "zombie_groan",
+            "zombie_roar"
+          ],
+          "imports": [],
+          "params": [
+            "growl_pitch",
+            "horde_density",
+            "snarl_pitch"
+          ]
+        },
+        {
           "path": "library/std/sound/foley/cloth.ashfox",
           "specifier": "std/sound/foley/cloth",
           "sha256": "3a029c0a37b487365d4beea65ada77cc97789a9a2004988224dd19f6231b103d",
@@ -712,6 +729,23 @@
           ]
         },
         {
+          "path": "library/std/sound/mech/servo.ashfox",
+          "specifier": "std/sound/mech/servo",
+          "sha256": "e7b95c292a583187683ec5ce41bb4ff82a0a33e1b3488118d76cb3c876333f3e",
+          "exports": [
+            "rotor_chop",
+            "servo_whir",
+            "shield_hum",
+            "shield_shatter"
+          ],
+          "imports": [],
+          "params": [
+            "motor_pitch",
+            "rotor_cutoff",
+            "shield_pitch"
+          ]
+        },
+        {
           "path": "library/std/sound/ui/chime.ashfox",
           "specifier": "std/sound/ui/chime",
           "sha256": "6601c2bcdfa0556f41fa7ffc2201983724b0272bcc4f5c9a9232871522c8d8a4",
@@ -738,6 +772,109 @@
             "damping",
             "pitch"
           ]
+        },
+        {
+          "path": "library/std/sound/weapon/energy.ashfox",
+          "specifier": "std/sound/weapon/energy",
+          "sha256": "8bcd01272be511a4dbfd3a5e1d1d9f5fd956396833f5d33e004c3abd2fe7e776",
+          "exports": [
+            "capacitor_charge",
+            "laser_zap",
+            "plasma_blast",
+            "railgun_crack"
+          ],
+          "imports": [],
+          "params": [
+            "charge_pitch",
+            "rail_pitch",
+            "zap_pitch"
+          ]
+        },
+        {
+          "path": "library/std/sound/weapon/gunshot.ashfox",
+          "specifier": "std/sound/weapon/gunshot",
+          "sha256": "4aedf2e529ef842290db824a4865c5a96b2900bf899bb9e26055368f868ade63",
+          "exports": [
+            "blast_punch",
+            "bolt_snap",
+            "muzzle_crack",
+            "outdoor_tail"
+          ],
+          "imports": [],
+          "params": [
+            "body_pitch",
+            "crack_cutoff",
+            "tail_cutoff"
+          ]
+        },
+        {
+          "path": "library/std/sound/weapon/reload.ashfox",
+          "specifier": "std/sound/weapon/reload",
+          "sha256": "7965fcd286c9d48be592093737d39bae4f030bacf3f438a77ff378dac4c02a8d",
+          "exports": [
+            "bolt_rack",
+            "casing_tink",
+            "mag_eject",
+            "mag_insert"
+          ],
+          "imports": [],
+          "params": [
+            "latch_pitch",
+            "shell_pitch",
+            "slide_pitch"
+          ]
+        },
+        {
+          "path": "library/std/sound/weather/storm.ashfox",
+          "specifier": "std/sound/weather/storm",
+          "sha256": "e0a50cc2115937475766ea6301a5051fc0273166cd1cab6c6401e06f1ba73fad",
+          "exports": [
+            "distant_thunder",
+            "heavy_rain",
+            "storm_gale",
+            "tense_heartbeat"
+          ],
+          "imports": [],
+          "params": [
+            "rain_density",
+            "thunder_pitch",
+            "wind_pitch"
+          ]
+        },
+        {
+          "path": "library/std/sprite/decal/impact.ashfox",
+          "specifier": "std/sprite/decal/impact",
+          "sha256": "15dded4316683a85b09f03e3a87c0d70c4a90fe9a0b86273437860600d3f876f",
+          "exports": [
+            "acid_ichor",
+            "blast_ring",
+            "crater_ash",
+            "ember_crust",
+            "ichor_crimson",
+            "plasma_burn",
+            "radial_scorch",
+            "scorch_soot",
+            "splatter_core"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/sprite/decal/weather.ashfox",
+          "specifier": "std/sprite/decal/weather",
+          "sha256": "be48aa670602da4c742436aad13e43ba0058bc56f0e115cd6e32238aa4203071",
+          "exports": [
+            "frost_rime",
+            "frost_shard",
+            "lichen_stain",
+            "mud_smudge",
+            "puddle_blob",
+            "rain_puddle",
+            "sheen_ripple",
+            "soot_drift"
+          ],
+          "imports": [],
+          "params": []
         },
         {
           "path": "library/std/sprite/item/potion.ashfox",
@@ -831,6 +968,78 @@
             "oak_timber",
             "plank_seam",
             "spruce_timber"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/sprite/ui/bar.ashfox",
+          "specifier": "std/sprite/ui/bar",
+          "sha256": "6a66578951032b17aa61eb16d0566f7ad1ade88c25c65d64b22dc2a031d49d24",
+          "exports": [
+            "bar_endcap",
+            "frame_steel",
+            "hazard_lime",
+            "health_ruby",
+            "mana_azure",
+            "shield_cyan",
+            "stamina_amber",
+            "tick_notch",
+            "trough_dark"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/sprite/ui/crosshair.ashfox",
+          "specifier": "std/sprite/ui/crosshair",
+          "sha256": "7a19c1a797d6386ddb91719e0c72a7441f99b6d633fed88ec28da4a30eb5c377",
+          "exports": [
+            "backing_slate",
+            "bracket_arc",
+            "center_pip",
+            "chevron_tick",
+            "reticle_amber",
+            "reticle_crimson",
+            "reticle_cyan",
+            "reticle_white"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/sprite/ui/marker.ashfox",
+          "specifier": "std/sprite/ui/marker",
+          "sha256": "787e6ffc5f8e7b53db651c8a49b68800d6f1ba3d255028c0f3aab0b9d672b6fb",
+          "exports": [
+            "ally_emerald",
+            "chevron_down",
+            "danger_crimson",
+            "diamond_pin",
+            "glint_cross",
+            "iron_bezel",
+            "quest_gold",
+            "waypoint_cyan"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/sprite/ui/panel.ashfox",
+          "specifier": "std/sprite/ui/panel",
+          "sha256": "27b6ef7b34806927762a6b7ea3892fc6fce8c562fff91d035a86fc1ff3d93087",
+          "exports": [
+            "brass_trim",
+            "center_plaque",
+            "corner_bracket",
+            "corner_rivet",
+            "hud_cyan",
+            "oak_frame",
+            "parchment_field",
+            "rust_border",
+            "scifi_bezel",
+            "scifi_slate",
+            "survival_plate"
           ],
           "imports": [],
           "params": []
@@ -963,110 +1172,522 @@
         {
           "path": "library/std/vfx/ambient/aura.ashfox",
           "specifier": "std/vfx/ambient/aura",
-          "sha256": "bc9ea0b0d78dad763a0ba16b789cf9acfda24f5b838c142a12d8928be4c86700",
+          "sha256": "accdb041dba7032414a4783b7d66e3b05c0f8d530e8fb9a72aff9951d9fdff13",
           "exports": [
             "FrostHalo",
+            "HealingAura",
             "HealingMist",
-            "WardGold"
+            "WardGold",
+            "aura_halo",
+            "rising_wisps"
           ],
           "imports": [],
-          "params": []
+          "params": [
+            "duration",
+            "radius",
+            "seed"
+          ]
         },
         {
           "path": "library/std/vfx/ambient/embers.ashfox",
           "specifier": "std/vfx/ambient/embers",
-          "sha256": "b35392831ce5689f45267ed7d2ec2bacccd05e7321bcb9eebf13fa60cb9331a9",
+          "sha256": "fe86b16f60e0d567aa595e2efa21aa694f888ee6f08c3f1ac71063b1abf6f087",
           "exports": [
             "AshCinder",
             "HearthEmbers",
-            "SoulSpark"
+            "HearthEmbersLoop",
+            "SoulSpark",
+            "embers",
+            "hearth_glow"
           ],
           "imports": [],
-          "params": []
+          "params": [
+            "count",
+            "duration",
+            "radius",
+            "seed"
+          ]
         },
         {
           "path": "library/std/vfx/element/arcane.ashfox",
           "specifier": "std/vfx/element/arcane",
-          "sha256": "dd8f12a2e2cf22cc3ac2891ee65f9c61bd895c59fff339c41063e0470f5b6c51",
+          "sha256": "f9c408928a7a04659fb97862f24fd8c76e296b326e7a74aeb1f0a39db03e5bb3",
           "exports": [
+            "ArcanePulse",
             "ArcaneViolet",
             "RuneCyan",
-            "StarlightGold"
+            "StarlightGold",
+            "arcane_wisps",
+            "magic_ring"
           ],
           "imports": [],
-          "params": []
+          "params": [
+            "duration",
+            "radius",
+            "seed"
+          ]
         },
         {
           "path": "library/std/vfx/element/fire.ashfox",
           "specifier": "std/vfx/element/fire",
-          "sha256": "b71a2a96388934793ec4eba3270caa00483a90f6f693bf9ea8e4d880e9450f33",
+          "sha256": "10850165449735ea19b2bde271a28ee4796ec33491d3f39b030e6dfa503f7b12",
           "exports": [
             "BlueFlame",
             "EmberSolar",
-            "HearthGlow"
+            "FlameBurst",
+            "HearthGlow",
+            "flame_dome",
+            "flame_sparks"
           ],
           "imports": [],
-          "params": []
+          "params": [
+            "duration",
+            "radius",
+            "seed"
+          ]
         },
         {
           "path": "library/std/vfx/element/lightning.ashfox",
           "specifier": "std/vfx/element/lightning",
-          "sha256": "a41595ecb9ae8e92981b24dff473f5147c00fb9b4c3d309afad5f8606bae1358",
+          "sha256": "df9f38effcd85091d675215caf7cfab092680ad39fe1dd7dc9cab9227cd1dcf1",
           "exports": [
             "GoldenBolt",
+            "LightningBolt",
             "StormArc",
-            "VoltSurge"
+            "VoltSurge",
+            "arc_sparks",
+            "bolt_beam"
           ],
           "imports": [],
-          "params": []
+          "params": [
+            "duration",
+            "height",
+            "seed",
+            "width"
+          ]
         },
         {
           "path": "library/std/vfx/impact/burst.ashfox",
           "specifier": "std/vfx/impact/burst",
-          "sha256": "e30c0a48c85d6c3f83c33c625a68394fbdcc429a6805cb52fe30cfc1e2e39af1",
+          "sha256": "1f64094f6024231e9745404cb82dcc07e041e557dd901d2ae4cec1b08dbc3676",
           "exports": [
+            "ImpactBurst",
             "ShatterBurst",
             "SparkBurst",
-            "ToxicBurst"
+            "ToxicBurst",
+            "burst_star",
+            "sparks"
           ],
           "imports": [],
-          "params": []
+          "params": [
+            "count",
+            "duration",
+            "radius",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/impact/dust.ashfox",
+          "specifier": "std/vfx/impact/dust",
+          "sha256": "15f32347f1b273d27c4d6481833938c2b65a921936a3ad9a5546e33831efab20",
+          "exports": [
+            "AshPlume",
+            "DesertDust",
+            "DustBillow",
+            "dust_puffs",
+            "dust_ring"
+          ],
+          "imports": [],
+          "params": [
+            "count",
+            "duration",
+            "radius",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/impact/ichor.ashfox",
+          "specifier": "std/vfx/impact/ichor",
+          "sha256": "15353ff677f18e2852aaf24b9bb7eb65100ea0b005df7b46fc7df50ede7a0283",
+          "exports": [
+            "CrimsonBlood",
+            "IchorSplash",
+            "ZombieIchor",
+            "droplets",
+            "splash_arc"
+          ],
+          "imports": [],
+          "params": [
+            "count",
+            "duration",
+            "scale",
+            "seed"
+          ]
         },
         {
           "path": "library/std/vfx/impact/shockwave.ashfox",
           "specifier": "std/vfx/impact/shockwave",
-          "sha256": "57a8fe44db306a8ec6eac265c696614806e9f2243221e2c3d07fdc05f8284b85",
+          "sha256": "882a2cf3981924caed10aac376165a6490daa6e2fb4ad5729d45dc83a29a5836",
           "exports": [
             "EarthquakeRing",
             "KineticWave",
-            "SonicPulse"
+            "ShockwaveRing",
+            "SonicPulse",
+            "debris",
+            "wave_ring"
           ],
           "imports": [],
-          "params": []
+          "params": [
+            "duration",
+            "radius",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/impact/splinter.ashfox",
+          "specifier": "std/vfx/impact/splinter",
+          "sha256": "62f038f920395efcdc08c47a47f43e889c4af80df6e43732e14d8585660d26af",
+          "exports": [
+            "StoneChips",
+            "TimberChips",
+            "WoodSplinter",
+            "impact_flash",
+            "wood_shards"
+          ],
+          "imports": [],
+          "params": [
+            "count",
+            "duration",
+            "scale",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/magic/buff_aura.ashfox",
+          "specifier": "std/vfx/magic/buff_aura",
+          "sha256": "225eaddac1ed9dcc81c782ba0faf3c344b7a009af97f60a7a152819709dde60a",
+          "exports": [
+            "ArcaneWard",
+            "BuffAura",
+            "ValorGold",
+            "aura_ring",
+            "orbit_sparks"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "radius",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/magic/heal_beam.ashfox",
+          "specifier": "std/vfx/magic/heal_beam",
+          "sha256": "9c469cac83bd3095529cf2c685340266fbb4db58c61fa5c2d4f3ef48a5603975",
+          "exports": [
+            "HealBeam",
+            "SolarGrace",
+            "VitalGreen",
+            "beam_core",
+            "halo_ring",
+            "motes"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "length",
+            "seed",
+            "width"
+          ]
+        },
+        {
+          "path": "library/std/vfx/magic/poison_cloud.ashfox",
+          "specifier": "std/vfx/magic/poison_cloud",
+          "sha256": "9cee25ca5600630a848701b2a334e66409e0a58c8b1e169036170f4d7f921bcf",
+          "exports": [
+            "BlightPurple",
+            "PoisonCloud",
+            "VenomMist",
+            "spores",
+            "toxic_pool"
+          ],
+          "imports": [],
+          "params": [
+            "count",
+            "duration",
+            "radius",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/magic/portal_gate.ashfox",
+          "specifier": "std/vfx/magic/portal_gate",
+          "sha256": "e21476d8d41db0519940b0214bd28282a478194a63770cf27cda762b815a3079",
+          "exports": [
+            "NetherRift",
+            "PortalGate",
+            "VoidGate",
+            "event_horizon",
+            "gate_torus",
+            "rift_wisps"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "radius",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/magic/summon_circle.ashfox",
+          "specifier": "std/vfx/magic/summon_circle",
+          "sha256": "c91e42760eb5e69d877110322305f19411e1697bab9259807cbeb56e58c5bfba",
+          "exports": [
+            "CelestialGold",
+            "EldritchViolet",
+            "SummonCircle",
+            "pillar_glow",
+            "rising_runes",
+            "sigil_ring"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "radius",
+            "runes",
+            "seed"
+          ]
         },
         {
           "path": "library/std/vfx/melee/slash.ashfox",
           "specifier": "std/vfx/melee/slash",
-          "sha256": "84ef65630d756990226163afd2165ef28273d609ff27c1add53b54b9d9c360a6",
+          "sha256": "43d8c4cf11dd5ae83f65ea0f95f99b857dc710e3d9653a97d990a89a37b96903",
           "exports": [
             "CrimsonSlash",
+            "MeleeSlash",
             "PhantomSlash",
-            "SteelArc"
+            "SteelArc",
+            "slash_arc",
+            "sparks"
           ],
           "imports": [],
-          "params": []
+          "params": [
+            "duration",
+            "radius",
+            "seed"
+          ]
         },
         {
           "path": "library/std/vfx/melee/thrust.ashfox",
           "specifier": "std/vfx/melee/thrust",
-          "sha256": "271d2938beaab451ee02871cdea2eceb4e9b913ebe8049720a7fef40937ea8b3",
+          "sha256": "1f22039caf2c6f99beb5bb8f7b8354ad29d1e45055ac4aa5304192eeee4f72dd",
           "exports": [
             "AmberGlaive",
             "FrostThrust",
-            "PiercingLance"
+            "MeleeThrust",
+            "PiercingLance",
+            "lance_beam",
+            "lance_sparks"
           ],
           "imports": [],
-          "params": []
+          "params": [
+            "duration",
+            "length",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/shield/hex_ripple.ashfox",
+          "specifier": "std/vfx/shield/hex_ripple",
+          "sha256": "a4a7a4639792e46b7c47ed7132a4b2c98b3cfb744360dfc644489d2fd65fdb7f",
+          "exports": [
+            "AegisCyan",
+            "BarrierGold",
+            "HexRipple",
+            "grid_sparks",
+            "hex_dome",
+            "impact_ripple"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "radius",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/shield/shield_break.ashfox",
+          "specifier": "std/vfx/shield/shield_break",
+          "sha256": "ae401519f5ba1285d50d3d29ea55a31e39935cbebb83392bae13a1bf3f364d16",
+          "exports": [
+            "ShatterCyan",
+            "ShatterViolet",
+            "ShieldBreak",
+            "collapse_ring",
+            "crack_shell",
+            "hex_shards"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "radius",
+            "seed",
+            "shard_count"
+          ]
+        },
+        {
+          "path": "library/std/vfx/weapon/muzzle_flash.ashfox",
+          "specifier": "std/vfx/weapon/muzzle_flash",
+          "sha256": "d2b5f29509a0413e366d602b239e843c825d62ccac368e7f4cb2111fde233be2",
+          "exports": [
+            "MuzzleAmber",
+            "MuzzleFlash",
+            "MuzzlePlasma",
+            "flash_cone",
+            "muzzle_star",
+            "sparks"
+          ],
+          "imports": [],
+          "params": [
+            "burst_count",
+            "duration",
+            "scale",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/weapon/plasma_bolt.ashfox",
+          "specifier": "std/vfx/weapon/plasma_bolt",
+          "sha256": "6468bd4d1b578e92ebdae7f6652a4250bdd3f50971748a48bb289066d6c690aa",
+          "exports": [
+            "PlasmaBolt",
+            "PlasmaCyan",
+            "PlasmaGreen",
+            "bolt_core",
+            "containment_ring",
+            "ion_tail"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "scale",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/weapon/shell_eject.ashfox",
+          "specifier": "std/vfx/weapon/shell_eject",
+          "sha256": "a2ef24c4e5fe2216133f0d7b7e531ed4ee08ed40f4b7953d1264e02e04b7f306",
+          "exports": [
+            "BrassCasing",
+            "ShellEject",
+            "SteelShell",
+            "breech_puff",
+            "casings"
+          ],
+          "imports": [],
+          "params": [
+            "count",
+            "duration",
+            "scale",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/weapon/tracer.ashfox",
+          "specifier": "std/vfx/weapon/tracer",
+          "sha256": "d33c71da22b2ac1da63a239a02a3ce98d197a392299b21b93d58a5a23102e3f2",
+          "exports": [
+            "BulletTracer",
+            "TracerCrimson",
+            "TracerGold",
+            "tracer_streak",
+            "wake_sparks"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "length",
+            "seed",
+            "width"
+          ]
+        },
+        {
+          "path": "library/std/vfx/weather/flashlight_cone.ashfox",
+          "specifier": "std/vfx/weather/flashlight_cone",
+          "sha256": "d4a65f0ce71bee1ec221b4cbc5f0552771579ba8e77048404804632904b522df",
+          "exports": [
+            "FlashlightCone",
+            "HazardBeacon",
+            "TacticalBeam",
+            "dust_motes",
+            "light_cone"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "length",
+            "radius",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/weather/fog_wisp.ashfox",
+          "specifier": "std/vfx/weather/fog_wisp",
+          "sha256": "f31581eef7bbd4768d709dd55656f1975b174b25ef265f97aa0a77a76ff494de",
+          "exports": [
+            "CryptMist",
+            "FogWisp",
+            "MarshFog",
+            "mist_band",
+            "vapor_puffs"
+          ],
+          "imports": [],
+          "params": [
+            "count",
+            "duration",
+            "radius",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/weather/rain_sheet.ashfox",
+          "specifier": "std/vfx/weather/rain_sheet",
+          "sha256": "8442bbc474eb25e8ca5169c165087a3bfef5101b829a16658bb05ad71c4f58ad",
+          "exports": [
+            "AcidRain",
+            "RainSheet",
+            "StormRain",
+            "rain_veil",
+            "raindrops"
+          ],
+          "imports": [],
+          "params": [
+            "count",
+            "duration",
+            "height",
+            "seed",
+            "width"
+          ]
+        },
+        {
+          "path": "library/std/vfx/weather/snow_gust.ashfox",
+          "specifier": "std/vfx/weather/snow_gust",
+          "sha256": "7d1bbcf9a767e73a2a6f3e744966f828b7d5445b701c617f78d430cbbe35d100",
+          "exports": [
+            "AshFlurry",
+            "FrostSnow",
+            "SnowGust",
+            "drift_ribbon",
+            "flakes"
+          ],
+          "imports": [],
+          "params": [
+            "count",
+            "duration",
+            "radius",
+            "seed"
+          ]
         }
       ]
     }

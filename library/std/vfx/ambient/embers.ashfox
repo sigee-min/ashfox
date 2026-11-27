@@ -1,5 +1,12 @@
 ashfox 1
 module embers {
+  params {
+    radius = 10u;
+    count = 24;
+    duration = 1.0s;
+    seed = 421;
+  }
+
   export palette HearthEmbers {
     core = #fff0b8;
     mid = #eb7a28;
@@ -19,5 +26,66 @@ module embers {
     mid = #4fd9c4;
     edge = #236e7a;
     smoke = #213038;
+  }
+
+  export element hearth_glow : dome {
+    at = 0s..duration;
+    blend = additive;
+    shape = hemisphere;
+    radius = radius * 0.6;
+    subdiv = 1;
+    color = mid;
+    texture radial_flare { spikes = 4; seed = seed; }
+    scale = 0.95 -> 1.05 -> 0.95;
+    alpha = 0.55 -> 0.85 -> 0.55;
+  }
+
+  export emitter embers : voxel_burst {
+    at = 0s..(duration * 0.75);
+    seed = seed;
+    count = count;
+    shape = ring(radius * 0.6);
+    particle = cross_card;
+    speed = 6u..14u;
+    life = 0.25s..0.48s;
+    gravity = 14u;
+    drag = 1.8;
+    turbulence = curl(1.6, 5u);
+    size_over_life = 0.8u -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = additive;
+  }
+
+  export recipe HearthEmbersLoop {
+    duration = duration;
+    fps = 24;
+    loop = loop;
+    palette = HearthEmbers;
+    element hearth_glow : dome {
+      at = 0s..duration;
+      blend = additive;
+      shape = hemisphere;
+      radius = radius * 0.6;
+      subdiv = 1;
+      color = mid;
+      texture radial_flare { spikes = 4; seed = seed; }
+      scale = 0.95 -> 1.05 -> 0.95;
+      alpha = 0.55 -> 0.85 -> 0.55;
+    }
+    emitter embers : voxel_burst {
+      at = 0s..(duration * 0.75);
+      seed = seed;
+      count = count;
+      shape = ring(radius * 0.6);
+      particle = cross_card;
+      speed = 6u..14u;
+      life = 0.25s..0.48s;
+      gravity = 14u;
+      drag = 1.8;
+      turbulence = curl(1.6, 5u);
+      size_over_life = 0.8u -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = additive;
+    }
   }
 }

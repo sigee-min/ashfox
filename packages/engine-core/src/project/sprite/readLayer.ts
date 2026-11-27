@@ -2,6 +2,7 @@ import { RAMP_PRESETS, type RampPreset } from '../../textures/oklch';
 import { docsHint, formatDidYouMean } from '../source/suggest';
 import {
   LIGHTS,
+  SPRITE_SIZES,
   SpriteInputError,
   type LightDirection,
   type MirrorMode,
@@ -9,6 +10,8 @@ import {
   type ShapeSpec,
   type SpriteGrain,
   type SpriteMaterial,
+  type SpriteNineSlice,
+  type SpriteProfile,
   type SpriteShade,
 } from './contract';
 
@@ -293,6 +296,22 @@ export const readColor = (file: string, value: unknown, pointer: string): string
   return (value as string).toLowerCase();
 };
 
+export const readRgbaColor = (file: string, value: unknown, pointer: string): string => {
+  if (typeof value !== 'string' || !/^#(?:[0-9a-f]{6}|[0-9a-f]{8})$/iu.test(value)) {
+    failSprite(file, pointer, '#RRGGBB or #RRGGBBAA', value);
+  }
+  return (value as string).toLowerCase();
+};
+
+export const readAlphaOpt = (file: string, value: unknown, pointer: string): number | undefined =>
+  value === undefined ? undefined : readNum(file, value, pointer, 0, 1);
+
+export const readFeatherOpt = (
+  file: string,
+  value: unknown,
+  pointer: string,
+): number | undefined => (value === undefined ? undefined : readNum(file, value, pointer, 0, 16));
+
 const hexLuminance = (hex: string): number =>
   [2126, 7152, 722].reduce(
     (sum, weight, index) => sum + weight * parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16),
@@ -345,4 +364,71 @@ export const readMaterials = (file: string, raw: unknown): readonly SpriteMateri
     seen.add(id);
     return { id, ramp: readMaterialRamp(file, r.ramp, `${pointer}/ramp`) };
   });
+};
+
+export const freezeSpriteDoc = <T>(value: T): T => {
+  if (value && typeof value === 'object') {
+    Object.values(value).forEach(freezeSpriteDoc);
+    Object.freeze(value);
+  }
+  return value;
+};
+
+export const readCanvasDims = (file: string, raw: unknown): readonly [number, number] => {
+  const list = readList(file, raw, '/item/canvas', 2);
+  if (
+    list.length !== 2 ||
+    !SPRITE_SIZES.has(list[0] as number) ||
+    !SPRITE_SIZES.has(list[1] as number) ||
+    list[0] !== list[1]
+  ) {
+    failSprite(file, '/item/canvas', 'square [16,16] | [32,32] | [64,64]', raw);
+  }
+  return [list[0] as number, list[1] as number];
+};
+
+export const readNineSlice = (
+  file: string,
+  raw: unknown,
+  profile: SpriteProfile,
+  width: number,
+  height: number,
+): SpriteNineSlice | undefined => {
+  if (raw === undefined) return undefined;
+  if (profile !== 'ui_9slice') {
+    failSprite(file, '/item/slice', 'slice only allowed when profile = ui_9slice', profile);
+  }
+  const [lRaw, rRaw, tRaw, bRaw] = Array.isArray(raw)
+    ? raw.length === 4
+      ? raw
+      : failSprite(file, '/item/slice', '(left, right, top, bottom)', raw)
+    : (() => {
+        const rec = readRecord(file, raw, '/item/slice', ['left', 'right', 'top', 'bottom']);
+        return [rec.left, rec.right, rec.top, rec.bottom];
+      })();
+  const left = readInt(file, lRaw, '/item/slice/left', 0, width - 1);
+  const right = readInt(file, rRaw, '/item/slice/right', 0, width - 1);
+  const top = readInt(file, tRaw, '/item/slice/top', 0, height - 1);
+  const bottom = readInt(file, bRaw, '/item/slice/bottom', 0, height - 1);
+  if (left + right >= width || top + bottom >= height) {
+    failSprite(file, '/item/slice', 'non-empty center stretch region', [left, right, top, bottom]);
+  }
+  return { left, right, top, bottom };
+};
+
+export const readPaletteMap = (
+  file: string,
+  raw: unknown,
+): { readonly map: Map<string, string>; readonly out: Record<string, string> } => {
+  const rec = readRecord(file, raw, '/item/palette');
+  if (Object.keys(rec).length > 32) failSprite(file, '/item/palette', '<= 32 colors', 'too many');
+  const map = new Map<string, string>();
+  const out: Record<string, string> = {};
+  for (const [key, color] of Object.entries(rec)) {
+    readId(file, key, `/item/palette/${key}`);
+    const normalized = readRgbaColor(file, color, `/item/palette/${key}`);
+    map.set(key, normalized);
+    out[key] = normalized;
+  }
+  return { map, out };
 };

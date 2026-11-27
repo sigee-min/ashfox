@@ -57,7 +57,13 @@ const blitScaled = (
         const v = Math.round(Math.sqrt(relativeLuminance(hex)) * 255);
         color = [v, v, v, 255];
       } else {
-        color = [src[i]!, src[i + 1]!, src[i + 2]!, 255];
+        const a = src[i + 3]! / 255;
+        color = [
+          Math.round(src[i]! * a + 26 * (1 - a)),
+          Math.round(src[i + 1]! * a + 30 * (1 - a)),
+          Math.round(src[i + 2]! * a + 38 * (1 - a)),
+          255,
+        ];
       }
       fillRectRgba(
         buf,

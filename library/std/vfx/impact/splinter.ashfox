@@ -1,0 +1,84 @@
+ashfox 1
+module splinter {
+  params {
+    scale = 1;
+    count = 24;
+    duration = 0.65s;
+    seed = 151;
+  }
+
+  export palette TimberChips {
+    core = #fff2d6;
+    mid = #c98649;
+    edge = #6e411d;
+    smoke = #382c26;
+  }
+
+  export palette StoneChips {
+    core = #f2f4f7;
+    mid = #8c96a3;
+    edge = #4b525c;
+    smoke = #2d3138;
+  }
+
+  export element impact_flash : ring {
+    at = 0s..(duration * 0.38);
+    blend = additive;
+    radius = (2u * scale)..(8u * scale);
+    segments = 14;
+    color = core;
+    texture radial_flare { spikes = 5; seed = seed; }
+    scale = 0.4 -> 1.15 ease_out -> 0;
+    alpha = 0.9 -> 0.4 -> 0;
+  }
+
+  export emitter wood_shards : voxel_burst {
+    at = 0s..(duration * 0.35);
+    seed = seed;
+    count = count;
+    shape = cone(52deg, 2u);
+    particle = shard;
+    speed = 14u..28u;
+    life = 0.22s..0.42s;
+    gravity = -34u;
+    drag = 1.1;
+    spin_speed = 480deg;
+    ground { y = 0u; bounce = 42%; friction = 75%; }
+    size_over_life = (1.1u * scale) -> (0.75u * scale) -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = premul;
+  }
+
+  export recipe WoodSplinter {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = TimberChips;
+    element impact_flash : ring {
+      at = 0s..(duration * 0.38);
+      blend = additive;
+      radius = (2u * scale)..(8u * scale);
+      segments = 14;
+      color = core;
+      texture radial_flare { spikes = 5; seed = seed; }
+      scale = 0.4 -> 1.15 ease_out -> 0;
+      alpha = 0.9 -> 0.4 -> 0;
+    }
+    emitter wood_shards : voxel_burst {
+      at = 0s..(duration * 0.35);
+      seed = seed;
+      count = count;
+      shape = cone(52deg, 2u);
+      particle = shard;
+      speed = 14u..28u;
+      life = 0.22s..0.42s;
+      gravity = -34u;
+      drag = 1.1;
+      spin_speed = 480deg;
+      ground { y = 0u; bounce = 42%; friction = 75%; }
+      size_over_life = (1.1u * scale) -> (0.75u * scale) -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = premul;
+    }
+  }
+}

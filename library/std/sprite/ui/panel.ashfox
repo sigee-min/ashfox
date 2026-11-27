@@ -1,0 +1,60 @@
+ashfox 1
+module panel {
+  export material parchment_field {
+    ramp { mode = auto; base = #b99b6b; preset = warm; }
+  }
+  export material oak_frame {
+    ramp { mode = auto; base = #7c5134; preset = wood; }
+  }
+  export material brass_trim {
+    ramp { mode = auto; base = #d4a13c; preset = metal; }
+  }
+  export material scifi_slate {
+    ramp { mode = auto; base = #3d4d63; preset = cool; }
+  }
+  export material scifi_bezel {
+    ramp { mode = auto; base = #667c99; preset = metal; }
+  }
+  export material hud_cyan {
+    ramp { mode = auto; base = #4ed3e8; preset = emissive; }
+  }
+  export material survival_plate {
+    ramp { mode = auto; base = #4f544c; preset = stone; }
+  }
+  export material rust_border {
+    ramp { mode = auto; base = #8c533c; preset = warm; }
+  }
+
+  export mask corner_bracket {
+    rows = [
+      "11111.",
+      "111...",
+      "11....",
+      "1.....",
+      "1.....",
+      "......"
+    ];
+  }
+
+  export mask center_plaque {
+    rows = [
+      "11111111",
+      "11111111",
+      "11111111",
+      "11111111",
+      "11111111",
+      "11111111",
+      "11111111",
+      "11111111"
+    ];
+  }
+
+  export stamp corner_rivet {
+    rows = [
+      ".h.",
+      "hbh",
+      ".s."
+    ];
+    slots = [h, b, s];
+  }
+}
