@@ -29,11 +29,11 @@ module fox_fur {
     chart face_neutral flat { coverage = opaque; }
     chart face_blink flat { coverage = opaque; }
     chart face_alert flat { coverage = opaque; }
-    material = cutout;
+    material = double;
   }
 
   export surface fox_coat: FoxFur {
-    material = cutout;
+    material = double;
     texture atlas {
       density = 2;
       background = void;

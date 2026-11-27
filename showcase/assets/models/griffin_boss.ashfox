@@ -50,38 +50,30 @@ model griffin_boss {
           }
           bone wing_l {
             cube shoulder_l { origin = (-13u, 19u, -5u); size = (7u, 5u, 7u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.shoulder; }
-            cube feather_l0 { origin = (-12u, 20u, 3u); size = (3u, 2u, 14u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_a; }
-            cube tip_l0 { origin = (-12u, 20u, 17u); size = (3u, 2u, 4u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_tip; }
-            cube feather_l1 { origin = (-15u, 20u, 3u); size = (3u, 2u, 14u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_a; }
-            cube tip_l1 { origin = (-15u, 20u, 17u); size = (3u, 2u, 4u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_tip; }
+            cube feather_l0 { origin = (-13u, 20u, 3u); size = (4u, 2u, 14u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_a; }
+            cube tip_l0 { origin = (-13u, 20u, 17u); size = (4u, 2u, 4u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_tip; }
             bone wing_tip_l {
               cube wing_arm_l { origin = (-23u, 19u, -3u); size = (10u, 4u, 6u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.wing_arm; }
-              cube feather_l2 { origin = (-18u, 20u, 3u); size = (3u, 2u, 13u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_b; }
-              cube tip_l2 { origin = (-18u, 20u, 16u); size = (3u, 2u, 4u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_tip; }
-              cube feather_l3 { origin = (-21u, 20u, 3u); size = (3u, 2u, 13u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_b; }
-              cube tip_l3 { origin = (-21u, 20u, 16u); size = (3u, 2u, 4u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_tip; }
-              cube feather_l4 { origin = (-24u, 20u, 3u); size = (3u, 2u, 12u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_c; }
-              cube tip_l4 { origin = (-24u, 20u, 15u); size = (3u, 2u, 4u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_tip; }
-              cube feather_l5 { origin = (-27u, 20u, 3u); size = (3u, 2u, 12u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_c; }
-              cube tip_l5 { origin = (-27u, 20u, 15u); size = (3u, 2u, 4u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_tip; }
+              cube feather_l1 { origin = (-17u, 20u, 3u); size = (4u, 2u, 14u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_a; }
+              cube tip_l1 { origin = (-17u, 20u, 17u); size = (4u, 2u, 4u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_tip; }
+              cube feather_l2 { origin = (-21u, 20u, 3u); size = (4u, 2u, 13u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_b; }
+              cube tip_l2 { origin = (-21u, 20u, 16u); size = (4u, 2u, 4u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_tip; }
+              cube feather_l3 { origin = (-25u, 20u, 3u); size = (4u, 2u, 12u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_c; }
+              cube tip_l3 { origin = (-25u, 20u, 15u); size = (4u, 2u, 4u); pivot = (-5u, 20u, -2u); rotation = (-20deg, 0deg, -30deg); surface = skin.feather_tip; }
             }
           }
           bone wing_r {
             cube shoulder_r { origin = (6u, 19u, -5u); size = (7u, 5u, 7u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.shoulder; }
-            cube feather_r0 { origin = (9u, 20u, 3u); size = (3u, 2u, 14u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_a; }
-            cube tip_r0 { origin = (9u, 20u, 17u); size = (3u, 2u, 4u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_tip; }
-            cube feather_r1 { origin = (12u, 20u, 3u); size = (3u, 2u, 14u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_a; }
-            cube tip_r1 { origin = (12u, 20u, 17u); size = (3u, 2u, 4u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_tip; }
+            cube feather_r0 { origin = (9u, 20u, 3u); size = (4u, 2u, 14u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_a; }
+            cube tip_r0 { origin = (9u, 20u, 17u); size = (4u, 2u, 4u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_tip; }
             bone wing_tip_r {
               cube wing_arm_r { origin = (13u, 19u, -3u); size = (10u, 4u, 6u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.wing_arm; }
-              cube feather_r2 { origin = (15u, 20u, 3u); size = (3u, 2u, 13u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_b; }
-              cube tip_r2 { origin = (15u, 20u, 16u); size = (3u, 2u, 4u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_tip; }
-              cube feather_r3 { origin = (18u, 20u, 3u); size = (3u, 2u, 13u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_b; }
-              cube tip_r3 { origin = (18u, 20u, 16u); size = (3u, 2u, 4u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_tip; }
-              cube feather_r4 { origin = (21u, 20u, 3u); size = (3u, 2u, 12u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_c; }
-              cube tip_r4 { origin = (21u, 20u, 15u); size = (3u, 2u, 4u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_tip; }
-              cube feather_r5 { origin = (24u, 20u, 3u); size = (3u, 2u, 12u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_c; }
-              cube tip_r5 { origin = (24u, 20u, 15u); size = (3u, 2u, 4u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_tip; }
+              cube feather_r1 { origin = (13u, 20u, 3u); size = (4u, 2u, 14u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_a; }
+              cube tip_r1 { origin = (13u, 20u, 17u); size = (4u, 2u, 4u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_tip; }
+              cube feather_r2 { origin = (17u, 20u, 3u); size = (4u, 2u, 13u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_b; }
+              cube tip_r2 { origin = (17u, 20u, 16u); size = (4u, 2u, 4u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_tip; }
+              cube feather_r3 { origin = (21u, 20u, 3u); size = (4u, 2u, 12u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_c; }
+              cube tip_r3 { origin = (21u, 20u, 15u); size = (4u, 2u, 4u); pivot = (5u, 20u, -2u); rotation = (-20deg, 0deg, 30deg); surface = skin.feather_tip; }
             }
           }
           bone foreleg_l {
@@ -123,7 +115,7 @@ model griffin_boss {
   }
 
   motion idle for wq.WingedQuadrupedRig {
-    duration = 3s; fps = 24; loop = loop; rest_relative = true;
+    duration = 3s; fps = 18; loop = loop; rest_relative = true;
     track torso.position { key 0s = (0u, 0u, 0u) smooth; key 1.3s = (0u, -0.45u, 0u) ease_in_out; key 3s = (0u, 0u, 0u) ease_out; }
     track torso.rotation { key 0s = (0deg, 0deg, 0deg) smooth; key 1.4s = (3deg, 0deg, 0deg) ease_in_out; key 3s = (0deg, 0deg, 0deg) ease_out; }
     track head.rotation { key 0s = (0deg, 0deg, 0deg) smooth; key 1.4s = (-3deg, 7deg, 0deg) ease_in_out; key 3s = (0deg, 0deg, 0deg) ease_out; }
@@ -136,7 +128,7 @@ model griffin_boss {
   }
 
   motion wing_display for wq.WingedQuadrupedRig {
-    duration = 3.2s; fps = 24; loop = loop; rest_relative = true;
+    duration = 3.2s; fps = 18; loop = loop; rest_relative = true;
     track torso.position { key 0s = (0u, 0u, 0u) smooth; key 0.9s = (0u, 0.8u, -0.4u) ease_out; key 2.2s = (0u, 0.8u, -0.4u) smooth; key 3.2s = (0u, 0u, 0u) ease_in_out; }
     track wing_l.rotation { key 0s = (0deg, 0deg, 0deg) smooth; key 0.9s = (0deg, 0deg, -28deg) anticipate(0.2); key 2.2s = (0deg, 0deg, -28deg) smooth; key 3.2s = (0deg, 0deg, 0deg) ease_out; }
     track wing_r.rotation { key 0s = (0deg, 0deg, 0deg) smooth; key 0.9s = (0deg, 0deg, 28deg) anticipate(0.2); key 2.2s = (0deg, 0deg, 28deg) smooth; key 3.2s = (0deg, 0deg, 0deg) ease_out; }
@@ -147,7 +139,7 @@ model griffin_boss {
   }
 
   motion wing_flap for wq.WingedQuadrupedRig {
-    duration = 1.6s; fps = 24; loop = loop; rest_relative = true;
+    duration = 1.6s; fps = 20; loop = loop; rest_relative = true;
     wave wing_l.rotation.z = flap(0.8s, down_ratio = 0.38, com_lift = 1.4u) * -24deg;
     wave wing_r.rotation.z = flap(0.8s, down_ratio = 0.38) * 24deg;
     wave head.rotation.x = breath(0.8s, inhale = 0.38) * -4deg;

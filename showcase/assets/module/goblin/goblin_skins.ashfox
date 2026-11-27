@@ -7,7 +7,7 @@ module goblin_skins {
   import "./goblin_kit.ashfox" as kit;
 
   export surface raider_skin: kit.GoblinSkin {
-    material = cutout;
+    material = double;
     texture atlas {
       density = 2;
       atlas = (128px, 128px);
@@ -100,7 +100,7 @@ module goblin_skins {
   }
 
   export surface pyro_skin: kit.GoblinSkin {
-    material = cutout;
+    material = double;
     texture atlas {
       density = 2;
       atlas = (128px, 128px);

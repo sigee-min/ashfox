@@ -24,7 +24,7 @@ module goblin_kit {
     chart face_neutral flat { coverage = opaque; }
     chart face_blink flat { coverage = opaque; }
     chart face_snarl flat { coverage = opaque; }
-    material = cutout;
+    material = double;
   }
 
   export surface contract RaiderWeaponSkin {
@@ -159,9 +159,9 @@ module goblin_kit {
     bind socket grip to bone root { frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
     geometry {
       bone root {
-        cylinder staff { origin = (0u, -10u, 0u); radius = 0.9u; radius_top = 1.1u; height = 24u; sides = 8; axis = y; surface = skin.staff; }
-        cube cage { origin = (-2u, 14u, -2u); size = (4u, 4u, 4u); surface = skin.cage; }
-        taper flame_crown { origin = (-1.5u, 18u, -1.5u); size = (3u, 4u, 3u); top_scale = (0.2, 0.2); axis = y; surface = skin.flame_crown; }
+        cylinder staff { origin = (0.5u, -10u, -1u); radius = 0.9u; radius_top = 1.1u; height = 24u; sides = 8; axis = y; pivot = (0.5u, 0u, -1u); rotation = (-14deg, 0deg, 0deg); surface = skin.staff; }
+        cube cage { origin = (-1.5u, 13.5u, -3u); size = (4u, 4u, 4u); pivot = (0.5u, 0u, -1u); rotation = (-14deg, 0deg, 0deg); surface = skin.cage; }
+        taper flame_crown { origin = (-1u, 17.5u, -2.5u); size = (3u, 4u, 3u); top_scale = (0.2, 0.2); axis = y; pivot = (0.5u, 0u, -1u); rotation = (-14deg, 0deg, 0deg); surface = skin.flame_crown; }
       }
     }
   }

@@ -32,11 +32,11 @@ module griffin_plumage {
     chart face_neutral flat { coverage = opaque; }
     chart face_blink flat { coverage = opaque; }
     chart face_screech flat { coverage = opaque; }
-    material = cutout;
+    material = double;
   }
 
   export surface boss_plumage: GriffinPlumage {
-    material = cutout;
+    material = double;
     texture atlas {
       density = 2;
       background = void;
