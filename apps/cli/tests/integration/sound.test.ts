@@ -79,14 +79,25 @@ const main = async () => {
   assert.throws(() => readGameAssetManifest(mismatched), /variant/);
   config.packs[0].audio = 'ogg';
   fs.writeFileSync(configPath, JSON.stringify(config));
-  const failed = run('build', configPath, '--json');
-  assert.notEqual(failed.status, 0);
-  assert.match(failed.stdout, /sound.loop.codec/);
-  assert.doesNotMatch(failed.stdout, /ENOENT/);
-  assert.equal(
-    success('check', path.join(temp, config.build.directory), '--json').result.bundleHash,
-    built.bundleHash,
+  const builtOgg = success('build', configPath, '--json').result;
+  const oggManifest = JSON.parse(
+    fs.readFileSync(path.join(builtOgg.bundlePath, 'assets/game/game-assets/assets.json'), 'utf8'),
   );
+  const oggSound = readGameAssetManifest(oggManifest).assets[0];
+  assert.equal(oggSound.kind, 'sound');
+  if (oggSound.kind !== 'sound') throw new Error('Expected sound');
+  assert.equal(oggSound.codec, 'ogg');
+  for (const variant of oggSound.variants) {
+    assert.equal(variant.sampleRate, 48000);
+    assert.equal(variant.loopStartSample, 0);
+    assert.equal(variant.loopEndSample, 96960);
+  }
+  success('check', path.join(temp, config.build.directory), '--json');
+  fs.writeFileSync(
+    configPath,
+    JSON.stringify({ ...config, packs: [{ ...config.packs[0], audio: 'wav' }] }),
+  );
+  assert.equal(success('build', configPath, '--json').result.bundleHash, built.bundleHash);
   fs.writeFileSync(
     configPath,
     JSON.stringify({

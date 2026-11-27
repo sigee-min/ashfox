@@ -1,4 +1,5 @@
 import { freeze } from '../../../immutable';
+import { docsHint, formatDidYouMean } from '../../../project/source/suggest';
 import type {
   AssetGeometryBlock,
   AssetGeometryProperty,
@@ -62,11 +63,13 @@ const compileOptionProperty = (
   const allowed = isAxis ? ['x', 'y', 'z'] : ['north', 'south', 'east', 'west'];
   const val = property.value;
   if (val.kind !== 'name' || !allowed.includes(val.value)) {
+    const suggestion = val.kind === 'name' ? formatDidYouMean(val.value, allowed) : '';
     context.issue(
       context.path,
       val.span,
       'asset.invalid-geometry-property',
-      `Property "${property.name}" must be one of ${allowed.join(', ')}.`,
+      `Property "${property.name}" must be one of ${allowed.join(', ')}.${suggestion}`,
+      docsHint('model'),
     );
     return null;
   }
@@ -152,6 +155,28 @@ const compileExprVariant = (
   });
 };
 
+const reportUnknownGeomProp = (
+  statement: AssetGeometryBlock,
+  property: AssetGeometryProperty,
+  schema: Readonly<Record<string, AssetExpectedType>>,
+  ownsSurface: boolean,
+  context: GeomExtraContext,
+): void => {
+  const allowed = [
+    ...Object.keys(schema),
+    ...(ownsSurface ? ['mirror_x'] : []),
+    ...(statement.keyword === 'taper' || statement.keyword === 'cylinder' ? ['axis'] : []),
+    ...(statement.keyword === 'wedge' ? ['slope'] : []),
+  ];
+  context.issue(
+    context.path,
+    property.span,
+    'asset.invalid-geometry-property',
+    `Property "${property.name}" is not allowed on a ${statement.keyword}.${formatDidYouMean(property.name, allowed)}`,
+    docsHint('model'),
+  );
+};
+
 /** Compile one geometry property statement and record expression variant additions. */
 export const compileGeometryPropertyEntry = (
   statement: AssetGeometryBlock,
@@ -178,12 +203,7 @@ export const compileGeometryPropertyEntry = (
     return variant !== null;
   }
   if (expected === undefined) {
-    context.issue(
-      context.path,
-      property.span,
-      'asset.invalid-geometry-property',
-      `Property "${property.name}" is not allowed on a ${statement.keyword}.`,
-    );
+    reportUnknownGeomProp(statement, property, schema, ownsSurface, context);
     return false;
   }
   const value = compileProperty(property, expected, context);

@@ -124,7 +124,14 @@ const collectElementChildren = (stmt: AshfoxNamedBlock, file: string) => {
     if (child.kind === 'assign') props.set(child.path, child.value);
     else if (child.kind === 'named-block' && child.blockKind === 'texture') textureBlock = child;
     else if (child.kind === 'named-block' && child.blockKind === 'dissolve') dissolveBlock = child;
-    else failVfx(file, child.span, 'element statement', child.kind);
+    else
+      failVfx(
+        file,
+        child.span,
+        'element statement',
+        child.kind === 'named-block' ? child.blockKind : child.kind,
+        ['texture', 'dissolve'],
+      );
   }
   return { props, textureBlock, dissolveBlock };
 };
@@ -177,7 +184,14 @@ const collectNamedVfxStmt = (
     palettes[pal.name] = pal;
   } else if (stmt.blockKind === 'element') elements.push(readElement(stmt, file));
   else if (stmt.blockKind === 'emitter') emitters.push(readVfxEmitter(stmt, file));
-  else failVfx(file, stmt.span, 'vfx statement', stmt.kind);
+  else
+    failVfx(file, stmt.span, 'vfx statement', stmt.blockKind, [
+      'palette',
+      'element',
+      'emitter',
+      'outputs',
+      'preview',
+    ]);
 };
 
 const collectVfxStatements = (statements: readonly AshfoxStatement[], file: string) => {

@@ -1,4 +1,10 @@
 export { projectToThreeScene } from './projection';
+export {
+  mountDevViewer,
+  type DevDiagnostic,
+  type DevInspectRef,
+  type DevViewerState,
+} from './devViewer';
 export { applyAnimationPose } from './animationPose';
 export { applyCameraPreset, applySignedProjectViewPreset } from './cameraPresets';
 export * from './captureSurface';

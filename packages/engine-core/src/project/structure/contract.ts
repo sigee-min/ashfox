@@ -272,11 +272,15 @@ export interface StructureDiagnosticDetail {
   readonly pointer: string;
   readonly expected: string;
   readonly actual: string;
+  readonly hint?: string;
 }
 
 export class StructureInputError extends Error {
   constructor(readonly detail: StructureDiagnosticDetail) {
-    super(`${detail.pointer}: expected ${detail.expected}; got ${detail.actual}`);
+    super(
+      `${detail.pointer}: expected ${detail.expected}; got ${detail.actual}` +
+        (detail.hint ? ` ${detail.hint}` : ''),
+    );
     this.name = 'StructureInputError';
   }
 }

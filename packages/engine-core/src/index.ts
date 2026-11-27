@@ -243,7 +243,7 @@ export type {
 } from './model/measurement/contract';
 export { readSpriteDocument } from './project/sprite/read';
 export { compileSpriteDocument, spritePreviewPng } from './compiler/sprite/compile';
-export { SPRITE_POLICY, SPRITE_PROFILES } from './project/sprite/contract';
+export { SPRITE_POLICY, SPRITE_PROFILES, SpriteInputError } from './project/sprite/contract';
 export type { SpriteDiagnostic, SpriteDocument, SpriteProfile } from './project/sprite/contract';
 export type {
   SpriteAuthoringTelemetry,
@@ -397,3 +397,15 @@ export {
 export { VFX_PALETTES, VFX_SHOWCASE_PRESETS } from './vfx/presets';
 export { VfxInputError, type VfxSourceUnit } from './project/vfx/contract';
 export { parseVfxSource } from './project/vfx/source';
+export type { SourceDiagnostic, SourcePosition, SourceSpan } from './project/source/contract';
+export {
+  ASHFOX_UNITS,
+  damerauLevenshtein,
+  docsHint,
+  formatDidYouMean,
+  suggestClosest,
+  suggestUnit,
+  toSnakeCaseTrap,
+  withSuggestion,
+} from './project/source/suggest';
+export { collectInspectRefs, type SourceInspectRef } from './project/source/inspect';

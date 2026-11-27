@@ -34,6 +34,7 @@ export const addIssue = (
   location: Location,
   code: string,
   message: string,
+  hint?: string,
 ): void => {
   const key =
     `${location.path}\u0000${location.span.start.offset}\u0000` +
@@ -41,7 +42,14 @@ export const addIssue = (
   if (seen.has(key) || diagnostics.length >= MAX_DIAGNOSTICS) return;
   seen.add(key);
   diagnostics.push(
-    freeze({ severity: 'error', path: location.path, span: location.span, code, message }),
+    freeze({
+      severity: 'error',
+      path: location.path,
+      span: location.span,
+      code,
+      message,
+      ...(hint !== undefined ? { hint } : {}),
+    }),
   );
 };
 

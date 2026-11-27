@@ -1,10 +1,17 @@
 import type { ProgramExpr } from '../syntax/contract';
 import type { ProgramToken } from '../syntax/lex';
 import type { SourceSpan } from '../../source/contract';
+import { docsHint, formatDidYouMean, toSnakeCaseTrap } from '../../source/suggest';
 import { compareText } from '../../../stableOrder';
-import type { RawDeclaredOutput } from '../../directory/declarations';
+import {
+  parseOutputsTokens,
+  parsePreviewTokens,
+  type RawDeclaredOutput,
+  type RawDeclaredPreview,
+} from '../../directory/declarations';
 import {
   ASHFOX_ASSET_GRAMMAR,
+  type AssetDeclaration,
   type AssetDiagnostic,
   type AssetFrameDecl,
   type AssetImportDecl,
@@ -27,8 +34,8 @@ export interface AssetReader {
   readonly check: (value: string) => boolean;
   readonly match: (value: string) => boolean;
   readonly checkWord: (value: string) => boolean;
-  readonly fail: (code: string, message: string, token?: Token) => void;
-  readonly failSpan: (code: string, message: string, span: SourceSpan) => void;
+  readonly fail: (code: string, message: string, token?: Token, hint?: string) => void;
+  readonly failSpan: (code: string, message: string, span: SourceSpan, hint?: string) => void;
   readonly expect: (value: string, message: string) => Token;
   readonly expectWord: (value: string, message: string) => Token;
   readonly enter: (token?: Token) => void;
@@ -136,10 +143,13 @@ export const isKebabAssignmentTokens = (tokens: readonly Token[], index: number)
 
 const validatePropertySegment = (reader: AssetReader, token: Token): void => {
   if (isSnakeCase(token.value)) return;
+  const snake = toSnakeCaseTrap(token.value);
+  const didYouMean = snake !== null ? ` Did you mean "${snake}"?` : '';
   reader.failSpan(
     'asset.invalid-key',
-    'Property key "' + token.value + '" must be snake_case in ashfox 1.',
+    `Property key "${token.value}" must be snake_case in ashfox 1.${didYouMean}`,
     token.span,
+    docsHint('model'),
   );
 };
 
@@ -173,19 +183,28 @@ export const readProperties = (reader: AssetReader, scope: string): AssetPropert
   return values;
 };
 
+const scopeDomain = (scope: string): string => {
+  if (scope.includes('rig') || scope.includes('socket') || scope.includes('bind')) return 'rig';
+  if (scope.includes('surface') || scope.includes('chart')) return 'surface';
+  if (scope.includes('motion')) return 'motion';
+  return 'model';
+};
+
 export const checkClosedProperties = (
   reader: AssetReader,
   values: readonly AssetPropertyDecl[],
   allowed: readonly string[],
   scope: string,
+  domain = scopeDomain(scope),
 ): void => {
   const seen = new Set<string>();
   for (const property of values) {
     if (!allowed.includes(property.name)) {
       reader.failSpan(
         'asset.invalid-property',
-        'Property "' + property.name + '" is not allowed in ' + scope + '.',
+        `Property "${property.name}" is not allowed in ${scope}.${formatDidYouMean(property.name, allowed)}`,
         property.span,
+        docsHint(domain),
       );
     } else if (seen.has(property.name)) {
       reader.failSpan(
@@ -292,6 +311,103 @@ export const readUniqueFrame = (
     );
   }
   return readFrame(reader);
+};
+
+export const readKebabKeyName = (tokens: readonly Token[], index: number): string => {
+  let end = index + 1;
+  let raw = tokens[index]!.value;
+  while (
+    tokens[end]?.kind === 'symbol' &&
+    (tokens[end]!.value === '-' || tokens[end]!.value === '.') &&
+    tokens[end + 1]?.kind === 'identifier'
+  ) {
+    raw += tokens[end]!.value + tokens[end + 1]!.value;
+    end += 2;
+  }
+  return raw;
+};
+
+export const applyUnitDeclarationTokens = (
+  tokens: readonly Token[],
+  index: number,
+  path: string,
+  isOutputs: boolean,
+  outputs: RawDeclaredOutput[],
+  previews: RawDeclaredPreview[],
+): number => {
+  const res = isOutputs
+    ? parseOutputsTokens(tokens, index, path)
+    : parsePreviewTokens(tokens, index, path);
+  if ('outputs' in res) outputs.push(...res.outputs);
+  else previews.push(res.preview);
+  return res.nextIndex;
+};
+
+const UNIT_SCOPE_DECLS = [
+  'design',
+  'socket',
+  'rig',
+  'skeleton',
+  'surface',
+  'component',
+  'motion',
+  'anchor',
+  'volume',
+  'cue',
+  'meta',
+  'zone',
+  'schema',
+] as const;
+
+export const unitScopeErrorMessage = (keyword: string): string =>
+  `Statement "${keyword}" is not allowed in module or model unit scope.${formatDidYouMean(keyword, UNIT_SCOPE_DECLS)}`;
+
+export const kebabKeyErrorMessage = (tokens: readonly Token[], index: number): string => {
+  const snake = toSnakeCaseTrap(readKebabKeyName(tokens, index));
+  const didYouMean = snake !== null ? ` Did you mean "${snake}"?` : '';
+  return `kebab-case property keys are forbidden; use snake_case.${didYouMean}`;
+};
+
+export const freezeUnitDecl = (
+  kind: AssetSourceUnit['kind'],
+  id: string,
+  imports: readonly AssetImportDecl[],
+  declarations: readonly AssetDeclaration[],
+  outputs: readonly RawDeclaredOutput[],
+  previews: readonly RawDeclaredPreview[],
+  span: SourceSpan,
+): AssetSourceUnit =>
+  Object.freeze({
+    kind,
+    id,
+    imports: Object.freeze([...imports]),
+    declarations: Object.freeze([...declarations]),
+    ...(kind === 'asset'
+      ? { outputs: Object.freeze([...outputs]), previews: Object.freeze([...previews]) }
+      : {}),
+    span,
+  }) as AssetSourceUnit;
+
+export const consumeAssetHeader = (
+  tokens: readonly Token[],
+  index: number,
+  take: () => Token,
+  fail: (code: string, message: string, token?: Token) => void,
+): boolean => {
+  const header = tokens[index] ?? tokens[tokens.length - 1]!;
+  const version = tokens[index + 1];
+  if (
+    header.kind !== 'identifier' ||
+    header.value !== 'ashfox' ||
+    version?.kind !== 'number' ||
+    version.value !== '1'
+  ) {
+    fail('asset.invalid-header', 'Expected "' + ASHFOX_ASSET_GRAMMAR + '".', header);
+    return false;
+  }
+  take();
+  take();
+  return true;
 };
 
 /** Parses `outputs = [format, ...];` at model unit scope. */

@@ -130,6 +130,35 @@ const validateStructureAsset = (
   }
 };
 
+const BASE_VARIANT_KEYS = [
+  'id',
+  'file',
+  'durationSeconds',
+  'sample_rate',
+  'sampleRate',
+  'channels',
+  'frames',
+  'playback',
+] as const;
+
+const validateLoopFields = (
+  v: Readonly<Record<string, unknown>>,
+  playback: ReturnType<typeof readPlayback>,
+  hasLoopFields: boolean,
+): void => {
+  if (playback.kind === 'loop') {
+    if (
+      !hasLoopFields ||
+      v.loopStartSample !== playback.startFrame ||
+      v.loopEndSample !== playback.endFrame
+    ) {
+      fail('Invalid loop sample metadata');
+    }
+    return;
+  }
+  if (hasLoopFields) fail('Unexpected loop sample metadata on oneshot variant');
+};
+
 const validateSoundVariant = (
   rawVariant: unknown,
   codec: string,
@@ -137,15 +166,14 @@ const validateSoundVariant = (
   reference: (path: unknown, extension: string) => void,
   fileBytes: ReadonlyMap<string, number>,
 ): void => {
-  const v = record(rawVariant, [
-    'id',
-    'file',
-    'durationSeconds',
-    'sample_rate',
-    'channels',
-    'frames',
-    'playback',
-  ]);
+  const hasLoopFields =
+    typeof rawVariant === 'object' &&
+    rawVariant !== null &&
+    ('loopStartSample' in rawVariant || 'loopEndSample' in rawVariant);
+  const v = record(
+    rawVariant,
+    hasLoopFields ? [...BASE_VARIANT_KEYS, 'loopStartSample', 'loopEndSample'] : BASE_VARIANT_KEYS,
+  );
   if (
     typeof v.id !== 'string' ||
     !v.id ||
@@ -156,12 +184,12 @@ const validateSoundVariant = (
     (v.frames as number) > 1440000 ||
     v.durationSeconds !== (v.frames as number) / 48000 ||
     v.sample_rate !== 48000 ||
+    v.sampleRate !== 48000 ||
     (v.channels !== 1 && v.channels !== 2)
   ) {
     fail('Invalid sound variant');
   }
-  const playback = readPlayback(v.playback, v.frames as number);
-  if (codec === 'ogg' && playback.kind === 'loop') fail('Loop delivery requires WAV');
+  validateLoopFields(v, readPlayback(v.playback, v.frames as number), hasLoopFields);
   if (codec === 'wav') {
     const byteLength = typeof v.file === 'string' ? fileBytes.get(v.file) : undefined;
     if (byteLength !== 44 + (v.frames as number) * 2 * (v.channels as number)) {

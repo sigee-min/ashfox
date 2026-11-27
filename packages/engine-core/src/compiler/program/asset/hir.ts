@@ -48,12 +48,21 @@ interface BuildSession {
 
 const issueFor =
   (session: BuildSession): AssemblyContext['issue'] =>
-  (path, span, code, message): void => {
+  (path, span, code, message, hint): void => {
     if (session.diagnostics.length >= ASSET_BUDGET.diagnostics) {
       session.diagnosticLimitReported = true;
       throw new AssetBudgetAbort();
     }
-    session.diagnostics.push(freeze({ severity: 'error', code, message, path, span }));
+    session.diagnostics.push(
+      freeze({
+        severity: 'error',
+        code,
+        message,
+        path,
+        span,
+        ...(hint !== undefined ? { hint } : {}),
+      }),
+    );
   };
 
 const symbolFor = (file: WorkspaceCompilationFile, declaration: AssetDeclaration): AssetSymbolId =>

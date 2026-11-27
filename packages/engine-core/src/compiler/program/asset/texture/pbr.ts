@@ -1,6 +1,7 @@
 import type { TexturePbrMaterial } from '../../../../model/texture';
 import type { ProgramExpr, ProgramProperty } from '../../../../project/program/syntax/contract';
 import type { SourceSpan } from '../../../../project/source/contract';
+import { docsHint } from '../../../../project/source/suggest';
 import { encodeBase64Bytes } from '../../../../textures/textureRecipe/base64';
 import { encodeCanonicalPng } from '../../../../textures/textureRecipe/png';
 import { rasterizeTextureSpec } from '../../../../textures/textureRecipe/raster';
@@ -50,6 +51,7 @@ const evalUnitlessRatio = (
       span,
       'asset.texture.invalid-pbr',
       `Property "${name}" requires a numeric ratio in range.`,
+      docsHint('surface'),
     );
     return null;
   }
@@ -72,6 +74,7 @@ const readBoundedPbrScalar = (
       prop.value.span,
       'asset.texture.invalid-pbr',
       `PBR property "${name}" must be between 0 and ${max}.`,
+      docsHint('surface'),
     );
     return null;
   }

@@ -1,4 +1,5 @@
 import { compareText } from '@ashfox/internal-contracts';
+import { ASHFOX_UNITS, docsHint, formatDidYouMean, suggestUnit } from '../project/source/suggest';
 import type {
   HookAstValue,
   HookCompiledValue,
@@ -35,12 +36,14 @@ export const pushDiag = (
   message: string,
   span: HookSourceSpan,
   token: string,
+  hint = docsHint('hooks'),
 ): void => {
   ctx.diagnostics.push(
     Object.freeze({
       severity: 'error',
       code,
       message,
+      hint,
       file: span.file,
       line: span.start.line,
       column: span.start.column,
@@ -174,13 +177,8 @@ const checkUnionValue = (
     return false;
   }
   if (!values.includes(val.value)) {
-    pushDiag(
-      ctx,
-      'hooks.invalid-union-value',
-      `Property "${field.name}" value "${val.value}" is not in enum(${values.join(', ')}).`,
-      val.span,
-      val.value,
-    );
+    const msg = `Property "${field.name}" value "${val.value}" is not in enum(${values.join(', ')}).${formatDidYouMean(val.value, values)}`;
+    pushDiag(ctx, 'hooks.invalid-union-value', msg, val.span, val.value);
     return false;
   }
   return true;
@@ -221,13 +219,10 @@ export const validateFieldValue = (
     return false;
   }
   if (field.unit && !compatibleUnit(field.unit, val.unit)) {
-    pushDiag(
-      ctx,
-      'hooks.invalid-property-unit',
-      `Property "${field.name}" expects unit ${field.unit}, got ${val.unit}.`,
-      val.span,
-      field.name,
-    );
+    const suggested = suggestUnit(val.unit, [field.unit, ...ASHFOX_UNITS]);
+    const didYouMean = suggested ? ` Did you mean "${suggested}"?` : '';
+    const msg = `Property "${field.name}" expects unit ${field.unit}, got ${val.unit}.${didYouMean}`;
+    pushDiag(ctx, 'hooks.invalid-property-unit', msg, val.span, field.name);
     return false;
   }
   return checkNumberBounds(ctx, val.value, type, val.span, field.name);
@@ -437,13 +432,8 @@ const collectPropAssignments = (
     assigned.add(prop.name);
     const field = fieldMap.get(prop.name);
     if (!field) {
-      pushDiag(
-        ctx,
-        'hooks.unknown-property',
-        `Unknown property "${prop.name}".`,
-        prop.span,
-        prop.name,
-      );
+      const msg = `Unknown property "${prop.name}".${formatDidYouMean(prop.name, [...fieldMap.keys()])}`;
+      pushDiag(ctx, 'hooks.unknown-property', msg, prop.span, prop.name);
       continue;
     }
     if (validateFieldValue(ctx, field, prop.value)) raw[prop.name] = prop.value.value;
@@ -464,7 +454,8 @@ export const compilePropsAgainstSchema = (
 } => {
   const schema = ctx.schemas.get(schemaId);
   if (!schema) {
-    pushDiag(ctx, 'hooks.unknown-schema', `Unknown hook schema "${schemaId}".`, span, schemaId);
+    const msg = `Unknown hook schema "${schemaId}".${formatDidYouMean(schemaId, [...ctx.schemas.keys()])}`;
+    pushDiag(ctx, 'hooks.unknown-schema', msg, span, schemaId);
     return { canonicalSchema: schemaId, props: Object.freeze({}) };
   }
   if (!schema.targets.includes(targetKind)) {

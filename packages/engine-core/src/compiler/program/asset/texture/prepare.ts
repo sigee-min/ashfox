@@ -5,6 +5,7 @@ import type {
   ProgramTexturePalette,
   ProgramTextureStampDecl,
 } from '../../../../project/program/syntax/contract';
+import { docsHint, formatDidYouMean } from '../../../../project/source/suggest';
 import type { TypedSurfaceContract } from '../contract';
 import { prepareCharts, type PreparedChart } from './chart';
 import type { AssetTextureUsage } from './contract';
@@ -93,10 +94,13 @@ const readRenderMode = (
   ) {
     return entry.value.value;
   }
+  const raw = entry.value.kind === 'name' ? entry.value.value : '';
+  const suggestion = raw ? formatDidYouMean(raw, ['default', 'emissive']) : '';
   report.report(
     entry.value.span,
     'asset.texture.invalid-render-mode',
-    'Texture render_mode must be default or emissive.',
+    `Texture render_mode must be default or emissive.${suggestion}`,
+    docsHint('surface'),
   );
   return null;
 };

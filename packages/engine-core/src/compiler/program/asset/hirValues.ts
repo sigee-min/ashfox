@@ -15,7 +15,13 @@ import { compileAssetExpression } from './value/compile';
 import { evaluateAssetExpression } from './value/evaluate';
 import type { AssetExactUnitVector } from './frame';
 
-export type HirIssue = (path: string, span: SourceSpan, code: string, message: string) => void;
+export type HirIssue = (
+  path: string,
+  span: SourceSpan,
+  code: string,
+  message: string,
+  hint?: string,
+) => void;
 
 const report = (
   path: string,

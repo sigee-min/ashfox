@@ -1,4 +1,5 @@
 import { freeze } from '../../../immutable';
+import { docsHint, formatDidYouMean } from '../../../project/source/suggest';
 import type {
   AssetMotionDecl,
   AssetPropertyDecl,
@@ -50,7 +51,8 @@ const properties = (
         state.path,
         property.span,
         'asset.invalid-motion-property',
-        `Unknown motion property "${property.name}".`,
+        `Unknown motion property "${property.name}".${formatDidYouMean(property.name, [...allowed])}`,
+        docsHint('motion'),
       );
     }
     if (result.has(property.name)) {
@@ -276,11 +278,15 @@ const readMotionLoop = (
   if (loopName === 'once' || loopName === 'loop' || loopName === 'hold_on_last_frame') {
     return loopName;
   }
+  const suggestion = loopName
+    ? formatDidYouMean(loopName, ['once', 'loop', 'hold_on_last_frame'])
+    : '';
   context.issue(
     state.path,
     loopExpr?.span ?? declaration.span,
     'asset.invalid-motion-loop',
-    'Motion loop must be once, loop, or hold_on_last_frame.',
+    `Motion loop must be once, loop, or hold_on_last_frame.${suggestion}`,
+    docsHint('motion'),
   );
   return null;
 };

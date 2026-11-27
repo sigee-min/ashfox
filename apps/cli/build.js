@@ -12,6 +12,20 @@ const browser = esbuild.buildSync({
   write: false,
   minify: true,
 });
+const devViewer = esbuild.buildSync({
+  stdin: {
+    contents: "import { mountDevViewer } from '@ashfox/render-core'; mountDevViewer();",
+    resolveDir: path.resolve(__dirname, '../../packages/render-core'),
+    loader: 'ts',
+  },
+  bundle: true,
+  platform: 'browser',
+  target: 'es2020',
+  format: 'iife',
+  globalName: 'AshfoxDevViewer',
+  write: false,
+  minify: true,
+});
 esbuild.buildSync({
   entryPoints: [path.join(__dirname, 'src/main.ts')],
   outfile: path.join(__dirname, 'dist/ashfox.cjs'),
@@ -25,6 +39,7 @@ esbuild.buildSync({
       require('../../scripts/release/project').projectFiles(path.resolve(__dirname, '../..')),
     ),
     ASHFOX_OBSERVER_BUNDLE: JSON.stringify(browser.outputFiles[0].text),
+    ASHFOX_DEV_VIEWER_BUNDLE: JSON.stringify(devViewer.outputFiles[0].text),
   },
   banner: { js: '#!/usr/bin/env node' },
 });

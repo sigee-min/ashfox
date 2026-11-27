@@ -7,6 +7,7 @@ export interface VfxInputDiagnostic {
   readonly pointer: string;
   readonly expected: string;
   readonly actual: string;
+  readonly hint?: string;
 }
 
 export class VfxInputError extends Error {

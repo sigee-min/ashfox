@@ -125,7 +125,11 @@ const parseSubItem = (
     const name = stmt.kind === 'named-block' ? stmt.name : null;
     return { item: 'prop', spec: parsePropFromParts(kind, name, attrs, file, stmt.span, seq) };
   }
-  return failAst(file, stmt.span, 'interior prop, alcove, or story', kind);
+  return failAst(file, stmt.span, 'interior prop, alcove, or story', kind, [
+    'alcove',
+    'story',
+    ...PROP_KINDS,
+  ]);
 };
 
 const parseHeight16 = (
@@ -229,7 +233,8 @@ export const parseOpenTruss = (
     ]),
   );
   const axis = (attrs.axis?.value ?? 'x') as 'x' | 'z';
-  if (axis !== 'x' && axis !== 'z') failAst(file, stmt.span, 'axis = x|z', String(axis));
+  if (axis !== 'x' && axis !== 'z')
+    failAst(file, stmt.span, 'axis = x|z', String(axis), ['x', 'z']);
   const bayEntry = attrs.bay_spacing_b ?? attrs.bay_spacing;
   const ridge16 = readScaled16(
     attrs.ridge_height_16,
@@ -316,7 +321,8 @@ export const parsePartition = (
   );
   const axis = (attrs.axis?.value ??
     (attrs.on?.value === 'east' || attrs.on?.value === 'west' ? 'z' : 'x')) as 'x' | 'z';
-  if (axis !== 'x' && axis !== 'z') failAst(file, stmt.span, 'axis = x|z', String(axis));
+  if (axis !== 'x' && axis !== 'z')
+    failAst(file, stmt.span, 'axis = x|z', String(axis), ['x', 'z']);
   return {
     kind: 'partition',
     id: nextId(seq, 'partition', stmt.name),

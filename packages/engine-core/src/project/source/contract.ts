@@ -14,4 +14,5 @@ export interface SourceDiagnostic {
   readonly code: string;
   readonly message: string;
   readonly span: SourceSpan;
+  readonly hint?: string;
 }

@@ -20,6 +20,7 @@ import type {
   AssetWaveArgDecl,
   AssetWaveBindingDecl,
 } from './contract';
+import { docsHint, formatDidYouMean } from '../../source/suggest';
 import { isOneOf, join, nameOr, readBraced, readProperty, type AssetReader } from './parserSupport';
 import {
   CURVE_NAMES,
@@ -67,6 +68,7 @@ const readOptionalCurve = (
       'asset.missing-interpolation',
       'Every motion key must declare an explicit curve or interpolation.',
       fallbackSpan,
+      docsHint('motion'),
     );
   }
   return Object.freeze({
@@ -152,7 +154,14 @@ const readWaveBinding = (reader: AssetReader): AssetWaveBindingDecl => {
   if (reader.match('.')) {
     const axisTok = reader.id('Expected wave axis x, y, or z.');
     if (isOneOf(['x', 'y', 'z'] as const, axisTok.value)) axis = axisTok.value;
-    else reader.fail('asset.invalid-property', `Unknown axis "${axisTok.value}".`, axisTok);
+    else {
+      reader.fail(
+        'asset.invalid-property',
+        `Unknown axis "${axisTok.value}".${formatDidYouMean(axisTok.value, ['x', 'y', 'z'])}`,
+        axisTok,
+        docsHint('motion'),
+      );
+    }
   }
   reader.expect('=', 'Expected = in wave declaration.');
   const first = reader.current();
@@ -176,6 +185,7 @@ const readWaveBinding = (reader: AssetReader): AssetWaveBindingDecl => {
         'asset.invalid-property',
         `Wave expression "${kindTok.value}" requires (...).`,
         kindTok,
+        docsHint('motion'),
       );
     }
   } else {

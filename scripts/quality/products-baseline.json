@@ -95,7 +95,7 @@
           "sha256": "063395d5749ef3f0bf85e24739d1f31b3f6ee497fb0a17e8df9e359146637c5a"
         }
       ],
-      "catalogHash": "5d0407e9defb426495dfdc12bc1f9975f55179f2cdc98d3af1aa667dc47d59af",
+      "catalogHash": "2797e26a715f33b81aef2d66eb6e77b197db19e882487ad3ceab04f866c74acd",
       "files": [
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
@@ -123,7 +123,7 @@
         },
         {
           "path": "assets/voxel_game/game-assets/assets.json",
-          "sha256": "96532fe4892c9a2eb988ffa43b076c0b73ec9b747ee868db77e50cd277507ee8"
+          "sha256": "62face99fcabe82ffb4e53881ecfba2fcf3ae48423313269e6acce2f579abd2c"
         },
         {
           "path": "assets/voxel_game/game-assets/audio/claw_hit/alternate.wav",
@@ -143,11 +143,11 @@
         },
         {
           "path": "assets/voxel_game/voxel_game.zip",
-          "sha256": "e48f719d0a45e6e44f8e55648a427c4038f06a782f080001ac906f1570e160dc"
+          "sha256": "c21bc51acf7cfe79d3ec80f4116f398c61c2832ae550210b4cfdb0ce3f39f7b1"
         },
         {
           "path": "catalog.json",
-          "sha256": "5d0407e9defb426495dfdc12bc1f9975f55179f2cdc98d3af1aa667dc47d59af"
+          "sha256": "2797e26a715f33b81aef2d66eb6e77b197db19e882487ad3ceab04f866c74acd"
         }
       ]
     },

@@ -1,4 +1,5 @@
 import type { SourceSpan } from '../../source/contract';
+import { docsHint, formatDidYouMean } from '../../source/suggest';
 import type { ProgramExpr } from '../syntax/contract';
 import type {
   AssetAnchorDecl,
@@ -61,8 +62,9 @@ const readJointChannels = (
     else {
       reader.failSpan(
         'asset.invalid-joint-channels',
-        'Joint channels must name position, rotation, and/or scale.',
+        `Joint channels must name position, rotation, and/or scale.${name ? formatDidYouMean(name, ['position', 'rotation', 'scale']) : ''}`,
         value.span,
+        docsHint('rig'),
       );
     }
   }
@@ -171,7 +173,12 @@ const readSocket = (reader: AssetReader): AssetSocketDecl => {
     );
   }
   if (!isOneOf(['one', 'many'] as const, capacityRaw)) {
-    reader.fail('asset.invalid-socket-capacity', 'Socket capacity must be one or many.', id);
+    reader.fail(
+      'asset.invalid-socket-capacity',
+      `Socket capacity must be one or many.${capacityRaw ? formatDidYouMean(capacityRaw, ['one', 'many']) : ''}`,
+      id,
+      docsHint('rig'),
+    );
   }
   return Object.freeze({
     kind: 'socket',
@@ -304,8 +311,9 @@ const readRigHandedness = (reader: AssetReader, state: RigContractState): void =
   else
     reader.failSpan(
       'asset.invalid-handedness',
-      'Rig handedness must be right or left.',
+      `Rig handedness must be right or left.${raw ? formatDidYouMean(raw, ['right', 'left']) : ''}`,
       value.value.span,
+      docsHint('rig'),
     );
 };
 
@@ -375,7 +383,12 @@ export const parseSocketContract = (
   const handednessValue = propertyValue(values, 'handedness');
   const handedness = nameOr(handednessValue, 'right');
   if (!isOneOf(['right', 'left'] as const, handedness)) {
-    reader.fail('asset.invalid-handedness', 'Socket handedness must be right or left.', id);
+    reader.fail(
+      'asset.invalid-handedness',
+      `Socket handedness must be right or left.${handedness ? formatDidYouMean(handedness, ['right', 'left']) : ''}`,
+      id,
+      docsHint('rig'),
+    );
   }
   return Object.freeze({
     kind: 'socket-contract',

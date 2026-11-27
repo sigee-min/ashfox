@@ -32,8 +32,16 @@ import { safeRelative } from '../shared/path';
 
 export const checkSnapshot = (snapshot: Snapshot) => {
   const compiled = compileDirectoryWorkspace(snapshot.configuration, snapshot.files);
-  if (!compiled.ok)
-    throw new BuildFailure('workspace.compile', JSON.stringify(compiled.diagnostics));
+  if (!compiled.ok) {
+    const first = compiled.diagnostics[0];
+    throw new BuildFailure(
+      first?.code ?? 'workspace.compile',
+      first?.message ?? JSON.stringify(compiled.diagnostics),
+      1,
+      compiled.diagnostics.map((d) => ({ severity: 'error' as const, ...d })),
+      first?.hint,
+    );
+  }
   return compiled;
 };
 type CheckedWorkspace = ReturnType<typeof checkSnapshot>;

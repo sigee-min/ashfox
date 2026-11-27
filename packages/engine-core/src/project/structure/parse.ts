@@ -210,7 +210,10 @@ const SCALAR_HANDLERS: Readonly<
 const readScalarAssign = (stmt: AshfoxAssignStmt, draft: StructureDraft): void => {
   const handler = SCALAR_HANDLERS[stmt.path];
   if (!handler)
-    failAst(draft.file, stmt.span, 'size, density, seed, data_version, or outputs', stmt.path);
+    failAst(draft.file, stmt.span, 'size, density, seed, data_version, or outputs', stmt.path, [
+      ...Object.keys(SCALAR_HANDLERS),
+      'outputs',
+    ]);
   handler(stmt, draft);
 };
 
@@ -254,7 +257,14 @@ const readNamedDecl = (stmt: AshfoxNamedBlock, exported: boolean, draft: Structu
     draft.ops.push(parseSingleOp(stmt, draft.file, 0));
     return;
   }
-  failAst(draft.file, stmt.span, 'structure declaration or operation', stmt.blockKind);
+  failAst(draft.file, stmt.span, 'structure declaration or operation', stmt.blockKind, [
+    'prefab',
+    'params',
+    'palette',
+    'outputs',
+    'preview',
+    ...STRUCTURE_OP_KINDS,
+  ]);
 };
 
 const readTopMember = (stmt: AshfoxStatement, draft: StructureDraft): void => {

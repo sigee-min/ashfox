@@ -204,7 +204,7 @@ const collectEmitterChildren = (stmt: AshfoxNamedBlock, file: string) => {
       failVfx(file, child.span, 'emitter statement', child.kind);
     else if (child.blockKind === 'ground') ground = child;
     else if (child.blockKind === 'vortex') vortex = child;
-    else failVfx(file, child.span, 'emitter statement', child.blockKind);
+    else failVfx(file, child.span, 'emitter statement', child.blockKind, ['ground', 'vortex']);
   }
   return { props, ground, vortex };
 };

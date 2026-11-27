@@ -130,6 +130,7 @@ export interface DirectoryFailure {
     readonly code: string;
     readonly file: string;
     readonly message: string;
+    readonly hint?: string;
   }[];
 }
 
@@ -146,6 +147,7 @@ export const checkDirectoryModularity = (
         code: d.code,
         file: d.file,
         message: `${d.line}:${d.column}: ${d.message}`,
+        ...(d.hint !== undefined ? { hint: d.hint } : {}),
       })),
   };
 };
@@ -167,6 +169,7 @@ export const resolveDirectoryHooks = (
           code: d.code,
           file: d.file,
           message: `${d.line}:${d.column}: ${d.message}`,
+          ...(d.hint !== undefined ? { hint: d.hint } : {}),
         })),
       },
     };

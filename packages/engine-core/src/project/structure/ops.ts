@@ -144,7 +144,10 @@ const parseRoomOp = (stmt: AshfoxNamedBlock, file: string, depth: number): Struc
     (schema === 'std.courtyard' ? 'courtyard' : 'room');
   const shape = asOptStr(file, stmt.span, attrs.shape, 'shape');
   if (shape !== undefined && shape !== 'rect' && shape !== 'octagon') {
-    failAst(file, attrs.shape?.span ?? stmt.span, 'shape = rect|octagon', shape);
+    failAst(file, attrs.shape?.span ?? stmt.span, 'shape = rect|octagon', shape, [
+      'rect',
+      'octagon',
+    ]);
   }
   const interior = extractRoomInterior(ops, stmt.name, file, stmt.span);
   return {
@@ -240,7 +243,12 @@ const parseRepeatOrMirror = (stmt: AshfoxNamedBlock, file: string, depth: number
   if (stmt.blockKind === 'repeat') {
     assertAllowedAttrs(file, stmt.span, attrs, new Set(['axis', 'count', 'step']));
     const axis = attrs.axis?.value;
-    if (axis !== 'x' && axis !== 'y' && axis !== 'z') failAst(file, stmt.span, 'axis=x|y|z', '');
+    if (axis !== 'x' && axis !== 'y' && axis !== 'z')
+      failAst(file, attrs.axis?.span ?? stmt.span, 'axis=x|y|z', String(axis ?? ''), [
+        'x',
+        'y',
+        'z',
+      ]);
     const count = asInt(file, stmt.span, attrs.count, 'count');
     const step = attrs.step ? asInt(file, stmt.span, attrs.step, 'step') : 1;
     if (count < 1 || count > 64 || step === 0) {
@@ -250,7 +258,8 @@ const parseRepeatOrMirror = (stmt: AshfoxNamedBlock, file: string, depth: number
   }
   assertAllowedAttrs(file, stmt.span, attrs, new Set(['axis', 'center']));
   const axis = attrs.axis?.value;
-  if (axis !== 'x' && axis !== 'z') failAst(file, stmt.span, 'axis = x|z', String(axis));
+  if (axis !== 'x' && axis !== 'z')
+    failAst(file, attrs.axis?.span ?? stmt.span, 'axis = x|z', String(axis), ['x', 'z']);
   return {
     op: 'mirror',
     axis: axis as MirrorAxis,
@@ -309,7 +318,7 @@ export const parseSingleOp = (stmt: AshfoxNamedBlock, file: string, depth: numbe
   if (kw === 'room') return parseRoomOp(stmt, file, depth);
   if (kw === 'floor') return parseFloorOp(stmt, file, depth);
   if (kw === 'repeat' || kw === 'mirror') return parseRepeatOrMirror(stmt, file, depth);
-  return failAst(file, stmt.span, 'structure operation', kw);
+  return failAst(file, stmt.span, 'structure operation', kw, [...STRUCTURE_OP_KINDS]);
 };
 
 export const parseOpStatements = (

@@ -179,7 +179,7 @@ const parseOpening = (stmt: AshfoxNamedBlock, file: string): FacadeOpeningSpec =
   validateOpeningSize(kind, width, height, file, stmt.span);
   const hinge = asOptStr(file, stmt.span, attrs.hinge, 'hinge');
   if (hinge !== undefined && hinge !== 'left' && hinge !== 'right') {
-    failAst(file, attrs.hinge?.span ?? stmt.span, 'hinge = left|right', hinge);
+    failAst(file, attrs.hinge?.span ?? stmt.span, 'hinge = left|right', hinge, ['left', 'right']);
   }
   return {
     kind,
@@ -212,7 +212,7 @@ const parseWallRef = (
   if (parts.length !== 2) failAst(file, span, 'room.wall target', raw);
   const [room, wall] = parts as [string, string];
   if (wall !== 'north' && wall !== 'south' && wall !== 'east' && wall !== 'west') {
-    failAst(file, span, 'north|south|east|west', wall);
+    failAst(file, span, 'north|south|east|west', wall, ['north', 'south', 'east', 'west']);
   }
   return { room, wall: wall as CardinalFacing };
 };
@@ -234,7 +234,9 @@ export const parseFacadeOp = (stmt: AshfoxNamedBlock, file: string): StructureOp
   if (targets.length === 0) failAst(file, stmt.span, 'facade room.wall or on = [...]', 'missing');
   const openings: FacadeOpeningSpec[] = blocks.map((sub) => {
     if (!OPENING_KINDS.has(sub.blockKind)) {
-      failAst(file, sub.span, 'door, window, arch, bay_window, or arcade', sub.blockKind);
+      failAst(file, sub.span, 'door, window, arch, bay_window, or arcade', sub.blockKind, [
+        ...OPENING_KINDS,
+      ]);
     }
     return parseOpening(sub, file);
   });
@@ -245,7 +247,8 @@ export const parseStaircaseOp = (stmt: AshfoxNamedBlock, file: string): Structur
   const attrs = readBlockAssigns(stmt.block, file);
   assertAllowedAttrs(file, stmt.span, attrs, STAIR_KEYS);
   const style = asStr(file, stmt.span, attrs.style, 'style');
-  if (!STAIR_STYLES.has(style)) failAst(file, stmt.span, 'straight|l_turn|u_turn|spiral', style);
+  if (!STAIR_STYLES.has(style))
+    failAst(file, stmt.span, 'straight|l_turn|u_turn|spiral', style, [...STAIR_STYLES]);
   const width = attrs.width === undefined ? 1 : asInt(file, stmt.span, attrs.width, 'width');
   const headroom =
     attrs.headroom === undefined ? 3 : asInt(file, stmt.span, attrs.headroom, 'headroom');
@@ -347,11 +350,14 @@ const parseRoofHeader = (
   readonly overhang: number;
 } => {
   const style = asStr(file, span, attrs.style, 'style');
-  if (!ROOF_STYLES.has(style)) failAst(file, span, 'roof style', style);
+  if (!ROOF_STYLES.has(style)) failAst(file, span, 'roof style', style, [...ROOF_STYLES]);
   const axis = attrs.axis?.value ?? 'z';
-  if (axis !== 'x' && axis !== 'z') failAst(file, span, 'roof axis = x|z', String(axis));
+  if (axis !== 'x' && axis !== 'z')
+    failAst(file, span, 'roof axis = x|z', String(axis), ['x', 'z']);
   const pitch = (attrs.pitch?.value ?? 'standard') as RoofPitch;
-  if (!['shallow', 'standard', 'steep'].includes(pitch)) failAst(file, span, 'pitch', pitch);
+  if (!['shallow', 'standard', 'steep'].includes(pitch)) {
+    failAst(file, span, 'pitch', pitch, ['shallow', 'standard', 'steep']);
+  }
   if (attrs.on === undefined && (attrs.from === undefined || attrs.to === undefined)) {
     failAst(file, span, 'roof on or from/to', 'missing');
   }
@@ -391,7 +397,8 @@ const parsePlaceAnchorItem = (sub: AshfoxNamedBlock, file: string): FurnishItem 
   const subAttrs = readBlockAssigns(sub.block, file);
   assertAllowedAttrs(file, sub.span, subAttrs, new Set(['prefab', 'on', 'offset', 'rotate']));
   const on = asStr(file, sub.span, subAttrs.on, 'on');
-  if (!ANCHOR_POS.has(on)) failAst(file, sub.span, 'cardinal|nw|ne|sw|se|center', on);
+  if (!ANCHOR_POS.has(on))
+    failAst(file, sub.span, 'cardinal|nw|ne|sw|se|center', on, [...ANCHOR_POS]);
   return {
     kind: 'place_anchor',
     prefab: asStr(file, sub.span, subAttrs.prefab, 'prefab'),

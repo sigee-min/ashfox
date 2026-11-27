@@ -6,6 +6,7 @@ import type {
 } from '../program/syntax/blockAst';
 import type { SourceSpan } from '../source/contract';
 import type { VfxCurveEasing, VfxLifeStop, VfxPaletteRole } from '../../vfx/contract';
+import { docsHint, formatDidYouMean } from '../source/suggest';
 import { VfxInputError } from './contract';
 
 export const failVfx = (
@@ -13,13 +14,17 @@ export const failVfx = (
   span: SourceSpan,
   expected: string,
   actual: string,
+  candidates?: readonly string[],
 ): never => {
+  const actualText = actual || 'EOF';
+  const suggestion = actual && candidates ? formatDidYouMean(actual, candidates) : '';
   throw new VfxInputError({
     code: 'vfx.syntax',
     file,
     pointer: `line:${span.start.line}:${span.start.column}`,
     expected,
-    actual: actual || 'EOF',
+    actual: `${actualText}${suggestion}`,
+    hint: docsHint('vfx'),
   });
 };
 
@@ -101,7 +106,12 @@ const VALID_ROLES = new Set<VfxPaletteRole>(['core', 'mid', 'edge', 'smoke']);
 export const asPaletteRole = (expr: AshfoxExpr, file: string): VfxPaletteRole => {
   const name = asName(expr, file);
   if (VALID_ROLES.has(name as VfxPaletteRole)) return name as VfxPaletteRole;
-  return failVfx(file, expr.span, 'core | mid | edge | smoke', name);
+  return failVfx(file, expr.span, 'core | mid | edge | smoke', name, [
+    'core',
+    'mid',
+    'edge',
+    'smoke',
+  ]);
 };
 
 export const asColorRoleList = (expr: AshfoxExpr, file: string): readonly VfxPaletteRole[] => {

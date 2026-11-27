@@ -124,7 +124,11 @@ export const compileSoundRecipe = (
         return renderVariantProduct(recipe, variant);
       } catch (error) {
         if (error instanceof SoundError) {
-          throw new SoundError(error.path, `${file}: ${error.detail}; variant ${variant.id}`);
+          throw new SoundError(
+            error.path,
+            `${file}: ${error.detail}; variant ${variant.id}`,
+            error.hint,
+          );
         }
         throw error;
       }
@@ -142,7 +146,7 @@ export const compileSoundSource = (source: string, file: string): readonly Sound
       } catch (error) {
         return report(
           error instanceof SoundError
-            ? new SoundError(error.path, `${error.detail}; variant ${variant.id}`)
+            ? new SoundError(error.path, `${error.detail}; variant ${variant.id}`, error.hint)
             : error,
         );
       }

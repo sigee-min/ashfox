@@ -107,6 +107,7 @@ const workspaceDiagnostics = (
       severity: 'error' as const,
       code: item.code,
       message: item.message,
+      ...(item.hint !== undefined ? { hint: item.hint } : {}),
       source: sourceRef(packageForPath(files, item.path, fallbackPackage), item.path, item.span),
     }),
   );

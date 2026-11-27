@@ -1,4 +1,5 @@
 import { RAMP_PRESETS, type RampPreset } from '../../textures/oklch';
+import { docsHint, formatDidYouMean } from '../source/suggest';
 import {
   LIGHTS,
   SpriteInputError,
@@ -18,13 +19,18 @@ export const failSprite = (
   pointer: string,
   expected: string,
   actual: unknown,
+  candidates?: readonly string[],
 ): never => {
+  const actualText = String(actual).slice(0, 160);
+  const suggestion =
+    typeof actual === 'string' && candidates ? formatDidYouMean(actual, candidates) : '';
   throw new SpriteInputError({
     code: 'sprite.contract',
     file,
     pointer,
     expected,
-    actual: String(actual).slice(0, 160),
+    actual: `${actualText}${suggestion}`,
+    hint: docsHint('sprite'),
   });
 };
 
@@ -40,9 +46,10 @@ export const readRecord = (
   }
   const record = value as RecordValue;
   if (!required) return record;
-  const allowed = new Set([...required, ...optional]);
+  const allowedList = [...required, ...optional];
+  const allowed = new Set(allowedList);
   for (const key of Object.keys(record)) {
-    if (!allowed.has(key)) failSprite(file, `${pointer}/${key}`, 'allowed key', key);
+    if (!allowed.has(key)) failSprite(file, `${pointer}/${key}`, 'allowed key', key, allowedList);
   }
   for (const key of required) {
     if (!Object.hasOwnProperty.call(record, key)) {
@@ -97,7 +104,7 @@ export const readChoice = <T extends string>(
   choices: readonly T[],
 ): T => {
   if (typeof value !== 'string' || !choices.includes(value as T)) {
-    return failSprite(file, pointer, choices.join(' | '), value);
+    return failSprite(file, pointer, choices.join(' | '), value, choices);
   }
   return value as T;
 };

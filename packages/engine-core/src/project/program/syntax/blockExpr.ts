@@ -1,4 +1,5 @@
 import { freeze } from '../../../immutable';
+import { docsHint, suggestUnit } from '../../source/suggest';
 import type {
   AshfoxBoolExpr,
   AshfoxCallExpr,
@@ -89,7 +90,14 @@ const parseNumberExpr = (s: BlockParserState): AshfoxNumberExpr => {
   if (match === null || parsed === null) {
     failAt(s, 'program.invalid-number', 'Numeric literals must be finite.', tok);
   } else if (unit === undefined) {
-    failAt(s, 'program.invalid-number-unit', `Unsupported numeric unit "${rawUnit}".`, tok);
+    const suggested = suggestUnit(rawUnit, Object.keys(UNITS).filter(Boolean));
+    failAt(
+      s,
+      'program.invalid-number-unit',
+      `Unsupported numeric unit "${rawUnit}".${suggested ? ` Did you mean "${suggested}"?` : ''}`,
+      tok,
+      docsHint('model'),
+    );
   }
   return freeze({
     kind: 'number',

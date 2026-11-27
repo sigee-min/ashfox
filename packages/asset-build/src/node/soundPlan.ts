@@ -52,7 +52,19 @@ export const resolveSoundEntryHooksJson = (
   const res = compileHooksForWorkspaceFile(sourcePath, new Map(files.map((f) => [f.path, f])));
   if (!res.ok) {
     const first = res.diagnostics[0]!;
-    throw new BuildFailure(first.code, `${first.file}:${first.line}: ${first.message}`, 3);
+    throw new BuildFailure(
+      first.code,
+      `${first.file}:${first.line}: ${first.message}`,
+      3,
+      res.diagnostics.map((d) => ({
+        severity: d.severity,
+        code: d.code,
+        file: d.file,
+        message: `${d.line}:${d.column}: ${d.message}`,
+        ...(d.hint !== undefined ? { hint: d.hint } : {}),
+      })),
+      first.hint,
+    );
   }
   return hasHooksContent(res.document) ? json(res.document) : undefined;
 };

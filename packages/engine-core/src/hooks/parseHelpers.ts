@@ -90,6 +90,7 @@ export const fail = (
   code: string,
   message: string,
   token = peek(state),
+  hint?: string,
 ): never => {
   state.diagnostics.push(
     Object.freeze({
@@ -101,6 +102,7 @@ export const fail = (
       column: token.span.start.column,
       token: token.value || 'EOF',
       span: token.span,
+      ...(hint !== undefined ? { hint } : {}),
     }),
   );
   throw new ParseRecoveryError(message);

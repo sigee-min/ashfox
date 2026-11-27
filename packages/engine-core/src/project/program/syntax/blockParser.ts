@@ -1,6 +1,7 @@
 import { freeze } from '../../../immutable';
 import { compareText } from '../../../stableOrder';
 import { sourceSpan } from '../../source/lexer';
+import { docsHint, formatDidYouMean, toSnakeCaseTrap } from '../../source/suggest';
 import {
   ASHFOX_GRAMMAR,
   ASHFOX_TOP_KINDS,
@@ -234,15 +235,26 @@ const parseBareStmt = (s: BlockParserState): AshfoxBareStmt => {
   });
 };
 
+const kebabSlice = (s: BlockParserState, endPos: number): string => {
+  let raw = '';
+  for (let i = s.index; i < endPos; i += 1) raw += s.tokens[i]!.value;
+  return raw;
+};
+
 const parseStatement = (s: BlockParserState, topLevel: boolean): AshfoxStatement | null => {
   countStmt(s);
-  if (findKebabAssignmentEnd(s) !== null) {
+  const kebabEnd = findKebabAssignmentEnd(s);
+  if (kebabEnd !== null) {
     const bad = currentTok(s);
+    const raw = kebabSlice(s, kebabEnd);
+    const snake = toSnakeCaseTrap(raw);
+    const didYouMean = snake !== null ? ` Did you mean "${snake}"?` : '';
     failAt(
       s,
       'program.invalid-key',
-      `Property key starting at "${bad.value}" cannot use kebab-case; use snake_case.`,
+      `Property key "${raw}" cannot use kebab-case; use snake_case.${didYouMean}`,
       bad,
+      docsHint('model'),
     );
     recoverStmt(s);
     return null;
@@ -299,8 +311,9 @@ const parseTopDecl = (s: BlockParserState): AshfoxTopDecl | null => {
     failAt(
       s,
       'program.expected-top-decl',
-      'Top-level declaration must be module, model, sprite, sound, structure, or vfx.',
+      `Top-level declaration must be module, model, sprite, sound, structure, or vfx.${formatDidYouMean(kindTok.value, ASHFOX_TOP_KINDS)}`,
       kindTok,
+      docsHint('model'),
     );
     return null;
   }

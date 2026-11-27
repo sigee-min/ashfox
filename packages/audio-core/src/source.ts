@@ -1,68 +1,19 @@
 import { encodeUtf8 } from '@ashfox/internal-contracts';
 import type { SoundRecipe } from './contract';
 import { readRecipe } from './read';
+import { soundDidYouMean } from './validate';
+import { applySoundDefaults, parseParamBlock, resolveParamValue } from './soundParams';
 import {
   SoundCursor,
-  convertUnitValue,
-  isParamRef,
   parseEnumIdent,
   parseKeyedBlock,
   parseUnitScalar,
   parseVoiceBlock,
-  readNumberAndUnit,
   type KeyedField,
   type ParamEntry,
   type UnitDim,
 } from './sourceBlock';
 import { HOOK_DECL_KEYWORDS, skipHookDeclaration } from './hookSkip';
-
-const readParamValue = (cursor: SoundCursor): ParamEntry => {
-  const next = cursor.peek();
-  if (next === '"') return { value: cursor.stringLiteral() };
-  if (/^[a-zA-Z_]/.test(next)) {
-    const w = cursor.name();
-    return { value: w === 'true' ? true : w === 'false' ? false : w };
-  }
-  const { num, unit } = readNumberAndUnit(cursor);
-  return { value: num, ...(unit ? { unit } : {}) };
-};
-
-const parseParamBlock = (cursor: SoundCursor, register = true): Record<string, ParamEntry> => {
-  cursor.take('{');
-  const out: Record<string, ParamEntry> = Object.create(null);
-  while (cursor.peek() !== '}') {
-    const key = cursor.name();
-    if (/[A-Z]/.test(key)) cursor.fail(`sound.legacy-syntax: camelCase param "${key}" removed`);
-    if (Object.hasOwn(out, key)) cursor.fail(`duplicate param ${key}`);
-    cursor.take('=');
-    out[key] = readParamValue(cursor);
-    cursor.take(';');
-    if (register) cursor.params.add(key);
-  }
-  cursor.take('}');
-  return out;
-};
-
-const resolveParamValue = (
-  val: unknown,
-  params: Readonly<Record<string, ParamEntry>>,
-  fail: (msg: string) => never,
-): unknown => {
-  if (isParamRef(val)) {
-    const e = params[val.$param];
-    if (!e) return fail(`unknown param "${val.$param}"`);
-    return typeof e.value === 'number'
-      ? convertUnitValue(e.value, e.unit, val.$dim, fail)
-      : e.value;
-  }
-  if (Array.isArray(val)) return val.map((item) => resolveParamValue(item, params, fail));
-  if (val && typeof val === 'object') {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(val)) out[k] = resolveParamValue(v, params, fail);
-    return out;
-  }
-  return val;
-};
 
 export interface SoundImportDecl {
   readonly path: string;
@@ -179,7 +130,10 @@ const readStepField = (
     cursor.take('..');
     vary[vk] = [a, parseUnitScalar(cursor, dim as UnitDim)];
   } else {
-    const sc = STEP_SCALARS[key] ?? cursor.fail(`unknown step field "${key}"`);
+    const allowed = ['voice', ...Object.keys(VARY_SPEC), ...Object.keys(STEP_SCALARS)];
+    const sc =
+      STEP_SCALARS[key] ??
+      cursor.fail(`unknown step field "${key}"${soundDidYouMean(key, allowed)}`);
     step[sc[0]] = parseUnitScalar(cursor, sc[1]);
   }
 };
@@ -191,7 +145,12 @@ const parseSeqStep = (cursor: SoundCursor, stepId: string): Record<string, unkno
     seen = new Set<string>();
   while (cursor.peek() !== '}') {
     const key = cursor.name();
-    if (/[A-Z]/.test(key)) cursor.fail(`sound.legacy-syntax: camelCase "${key}" removed`);
+    if (/[A-Z]/.test(key)) {
+      const allowed = ['voice', ...Object.keys(VARY_SPEC), ...Object.keys(STEP_SCALARS)];
+      cursor.fail(
+        `sound.legacy-syntax: camelCase "${key}" removed${soundDidYouMean(key, allowed)}`,
+      );
+    }
     if (seen.has(key)) cursor.fail(`duplicate step field ${key}`);
     seen.add(key);
     cursor.take('=');
@@ -225,7 +184,11 @@ const parseSeqDecl = (cursor: SoundCursor, path: string): Record<string, unknown
       const stepId = cursor.name();
       cursor.spans.set(`${path}.steps[${steps.length}]`, cursor.offset);
       steps.push(parseSeqStep(cursor, stepId));
-    } else cursor.fail(`unknown seq statement "${stmt}"`);
+    } else {
+      cursor.fail(
+        `unknown seq statement "${stmt}"${soundDidYouMean(stmt, ['start', 'repeat', 'step'])}`,
+      );
+    }
   }
   cursor.take('}');
   return { start, ...(repeat ? { repeat } : {}), steps };
@@ -282,7 +245,11 @@ const parseVoiceDecl = (cursor: SoundCursor, exported: boolean, draft: SoundUnit
     cursor.fail('sound.legacy-syntax: voice requires ": <type>" in ashfox 1');
   const rawType = cursor.name();
   if (rawType === 'resonator') cursor.fail('sound.legacy-source: resonator is removed');
-  const sourceKind = VOICE_TYPES[rawType] ?? cursor.fail(`unknown voice source type "${rawType}"`);
+  const sourceKind =
+    VOICE_TYPES[rawType] ??
+    cursor.fail(
+      `unknown voice source type "${rawType}"${soundDidYouMean(rawType, Object.keys(VOICE_TYPES))}`,
+    );
   if (draft.voices.some((d) => d.id === id)) cursor.fail(`duplicate voice ${id}`);
   draft.voices.push({
     exported,
@@ -336,6 +303,14 @@ const parseSoundScalar = (
   cursor.take(';');
 };
 
+const SOUND_BODY_KEYS = [
+  'outputs',
+  'preview',
+  'variants',
+  ...Object.keys(BODY_BLOCKS),
+  ...Object.keys(ROOT_SCALARS),
+];
+
 const parseSoundBodyStmt = (
   cursor: SoundCursor,
   first: string,
@@ -343,7 +318,9 @@ const parseSoundBodyStmt = (
   draft: SoundUnitDraft,
 ): void => {
   if (LEGACY_TOP_KEYS.has(first))
-    cursor.fail(`sound.legacy-syntax: "${first}" is removed in ashfox 1`);
+    cursor.fail(
+      `sound.legacy-syntax: "${first}" is removed in ashfox 1${soundDidYouMean(first, SOUND_BODY_KEYS)}`,
+    );
   if (first === 'outputs') draft.outputs.push(...parseOutputsDecl(cursor));
   else if (first === 'preview')
     draft.previews.push({
@@ -360,7 +337,7 @@ const parseSoundBodyStmt = (
     if (Object.hasOwn(draft.body, field)) cursor.fail(`duplicate ${first}`);
     draft.body[field] = fn(cursor);
   } else if (first in ROOT_SCALARS) parseSoundScalar(cursor, first, keyOffset, draft);
-  else cursor.fail(`unknown recipe field "${first}"`);
+  else cursor.fail(`unknown recipe field "${first}"${soundDidYouMean(first, SOUND_BODY_KEYS)}`);
 };
 
 const parseSoundImport = (cursor: SoundCursor, draft: SoundUnitDraft): void => {
@@ -403,25 +380,8 @@ const parseUnitStatement = (
   else parseSoundBodyStmt(cursor, first, keyOffset, draft);
 };
 
+export { applySoundDefaults };
 export const resolveSoundParams = resolveParamValue;
-export const applySoundDefaults = (
-  body: Record<string, unknown>,
-  params: Readonly<Record<string, ParamEntry>>,
-  fail: (msg: string) => never,
-): Record<string, unknown> => {
-  const r = resolveParamValue(body, params, fail) as Record<string, unknown>;
-  r.sample_rate ??= 48000;
-  r.channels ??= 2;
-  r.playback ??= { kind: 'oneshot' };
-  if (r.variants === undefined && typeof r.seed === 'number') {
-    const s = r.seed >>> 0;
-    r.variants = [
-      { id: 'base', seed: s },
-      { id: 'alternate', seed: (s ^ 0x9e3779b9) >>> 0 || 1 },
-    ];
-  }
-  return r;
-};
 
 export const parseSoundUnit = (source: string, file = 'sound.ashfox'): SoundSourceUnit => {
   if (encodeUtf8(source).length > 262144) throw new Error(`${file}: sound source exceeds 256 KiB`);

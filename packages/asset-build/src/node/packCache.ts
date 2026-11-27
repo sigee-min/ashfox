@@ -1,6 +1,6 @@
 import type { DirectoryPack } from '@ashfox/engine-core';
 import { compareText } from '@ashfox/internal-contracts';
-import type { Artifact, CatalogAsset, PackEncoder } from '../bundle/contract';
+import type { Artifact, CatalogAsset, LoopAudioMetadata, PackEncoder } from '../bundle/contract';
 import { compilePack } from '../packs/compile';
 import { digest, json } from '../shared/digest';
 import { readCacheBinary, writeCacheBinary, type DiskCacheContext } from './diskCache';
@@ -49,11 +49,12 @@ const packCacheKey = (
 
 const wrapEncoderWithCache = (encoder: PackEncoder, cache: DiskCacheContext): PackEncoder => ({
   fingerprint: encoder.fingerprint,
-  encode: async (wav) => {
-    const oggKey = `ogg-${digest(wav)}-${encoder.fingerprint}`;
+  encode: async (wav, loop?: LoopAudioMetadata) => {
+    const loopTag = loop ? `-loop-${loop.startSample}-${loop.lengthSamples}` : '';
+    const oggKey = `ogg-${digest(wav)}-${encoder.fingerprint}${loopTag}`;
     const hit = readCacheBinary<{ readonly ok: true }>(cache, oggKey);
     if (hit && hit.blobs.length === 1) return hit.blobs[0]!;
-    const encoded = await encoder.encode(wav);
+    const encoded = await encoder.encode(wav, loop);
     writeCacheBinary(cache, oggKey, { ok: true }, [encoded]);
     return encoded;
   },

@@ -1,4 +1,5 @@
 import type { SourceSpan } from '../../source/contract';
+import { docsHint, formatDidYouMean } from '../../source/suggest';
 import type {
   AssetAssemblyConnect,
   AssetAssemblyDecl,
@@ -80,8 +81,9 @@ const readProfileSetting = (
   if (isOneOf(['creature', 'prop', 'block'] as const, raw)) return raw;
   reader.failSpan(
     'asset.invalid-profile',
-    'Asset settings profile must be creature|prop|block.',
+    `Asset settings profile must be creature|prop|block.${raw ? formatDidYouMean(raw, ['creature', 'prop', 'block']) : ''}`,
     expr.span,
+    docsHint('model'),
   );
   return null;
 };
@@ -98,8 +100,9 @@ const readSettings = (reader: AssetReader): AssetSettingsDecl => {
   if (forward === null) {
     reader.failSpan(
       'asset.invalid-forward',
-      'Asset settings require forward = north|south|east|west.',
-      start.span,
+      `Asset settings require forward = north|south|east|west.${forwardRaw ? formatDidYouMean(forwardRaw, ['north', 'south', 'east', 'west']) : ''}`,
+      propertyValue(values, 'forward')?.span ?? start.span,
+      docsHint('model'),
     );
   }
   const profile = readProfileSetting(reader, values);

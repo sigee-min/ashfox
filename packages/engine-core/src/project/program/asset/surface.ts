@@ -1,5 +1,6 @@
 import type { ProgramTextureDecl, ProgramTextureStatement } from '../syntax/contract';
 import { parseProgramTextureStatement, type ProgramTextureReader } from '../syntax/texture';
+import { docsHint, formatDidYouMean } from '../../source/suggest';
 import type {
   AssetAtlasDecl,
   AssetChartAbiDecl,
@@ -26,8 +27,8 @@ const textureReader = (reader: AssetReader): ProgramTextureReader => ({
   take: () => reader.take(),
   checkWord: (value) => reader.checkWord(value),
   expect: (value, message) => reader.expect(value, message),
-  fail: (code, message, token) =>
-    reader.fail(code.replace(/^(?:model|program)\./, 'asset.'), message, token),
+  fail: (code, message, token, hint) =>
+    reader.fail(code.replace(/^(?:model|program)\./, 'asset.'), message, token, hint),
   abort: () => reader.abort(),
   name: (message) => reader.name(message),
   word: (message) => reader.word(message),
@@ -98,7 +99,12 @@ const readChartAbi = (reader: AssetReader): AssetChartAbiDecl => {
   const layoutToken = reader.id('Expected chart layout box or flat.');
   const layout = layoutToken.value as AssetChartAbiDecl['layout'];
   if (layout !== 'box' && layout !== 'flat') {
-    reader.fail('asset.invalid-chart-layout', 'Chart layout must be box or flat.', layoutToken);
+    reader.fail(
+      'asset.invalid-chart-layout',
+      `Chart layout must be box or flat.${formatDidYouMean(layout, ['box', 'flat'])}`,
+      layoutToken,
+      docsHint('surface'),
+    );
   }
   const values = readProperties(reader, 'surface chart');
   checkClosedProperties(reader, values, ['width', 'height', 'coverage'], 'surface chart');
@@ -109,8 +115,9 @@ const readChartAbi = (reader: AssetReader): AssetChartAbiDecl => {
   if (coverage === null) {
     reader.fail(
       'asset.invalid-coverage',
-      'Chart coverage must be opaque, binary, or optional.',
+      `Chart coverage must be opaque, binary, or optional.${coverageRaw ? formatDidYouMean(coverageRaw, ['opaque', 'binary', 'optional']) : ''}`,
       id,
+      docsHint('surface'),
     );
   }
   return Object.freeze({
@@ -140,8 +147,9 @@ const assignMaterialMode = (
   else {
     reader.failSpan(
       'asset.invalid-material',
-      'Surface material must be opaque, cutout, or double.',
+      `Surface material must be opaque, cutout, or double.${raw ? formatDidYouMean(raw, ['opaque', 'cutout', 'double']) : ''}`,
       span,
+      docsHint('surface'),
     );
   }
 };
