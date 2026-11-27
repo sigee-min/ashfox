@@ -60,6 +60,8 @@
       "poster": "griffin-poster.png",
       "artifactSha256": "sha256:f6bb810d655d66793dbeffc660392908eedfc2922649fe13ee7f40ea72d86fe3",
       "posterSha256": "sha256:5bd09ab9bf7d7b291590b1f63fa39aea860c4b1cbcecb888d22d784fa635f482",
+      "detailEnergy": 0.05,
+      "foregroundRatio": 0.1259,
       "byteLength": 946238,
       "frameCount": 74,
       "eventCount": 45
@@ -102,6 +104,8 @@
       "poster": "fox-poster.png",
       "artifactSha256": "sha256:37771fb4a890ccfa3f6c1d2767c260e024b50426d8341646ab9052f29fa02103",
       "posterSha256": "sha256:f5112efaf999d38fe66ff0aa02b87f22e770fabd39bb40958c5d3c573bb7f4fd",
+      "detailEnergy": 0.0364,
+      "foregroundRatio": 0.0965,
       "byteLength": 685598,
       "frameCount": 66,
       "eventCount": 48
@@ -151,6 +155,8 @@
       "poster": "goblin-poster.png",
       "artifactSha256": "sha256:2ff0154a94e50835319d374bdc6d0e2dccd6b8e5e373fbbd339dbee93f1095b0",
       "posterSha256": "sha256:56bda11f80fe5a5235bfffb747d7fb1e01f47a9de0eeff29d7f4c7bd21d7c706",
+      "detailEnergy": 0.0394,
+      "foregroundRatio": 0.0854,
       "byteLength": 781622,
       "frameCount": 72,
       "eventCount": 54
