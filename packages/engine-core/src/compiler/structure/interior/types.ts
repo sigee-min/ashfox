@@ -2,6 +2,7 @@ import type { Vec3 } from '../../../model/identity';
 import type { CardinalFacing } from '../../../project/structure/contract';
 import type {
   InteriorAuditReport,
+  InteriorRadiosityConfig,
   InteriorRadiosityField,
   InteriorRoomInput,
   InteriorSubVoxelIR,
@@ -36,6 +37,7 @@ export interface CompiledInteriorRoom {
   readonly input: InteriorRoomInput;
   readonly ir: InteriorSubVoxelIR;
   readonly radiosity: InteriorRadiosityField;
+  readonly radiosity_config?: Partial<InteriorRadiosityConfig>;
   readonly sun_shafts: readonly InteriorSunShaftQuad[];
   readonly window_panes: readonly TranslucentWindowPane[];
   readonly nbt_lowering: VanillaNbtLoweringIR;

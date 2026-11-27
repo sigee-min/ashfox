@@ -178,7 +178,12 @@ export const emitInteriorBakedMeshes = (
   const [hw, hd] = [grid.size[0] / 2, grid.size[2] / 2];
   const extraInstances: StructurePropInstance[] = [];
   for (const room of interiors) {
-    const colorsMap = bakeSubVoxelColors0(room.input, room.ir, room.radiosity);
+    const colorsMap = bakeSubVoxelColors0(
+      room.input,
+      room.ir,
+      room.radiosity,
+      room.radiosity_config,
+    );
     for (const box of room.ir.boxes) {
       const cols = colorsMap.get(box.id);
       if (!cols) continue;

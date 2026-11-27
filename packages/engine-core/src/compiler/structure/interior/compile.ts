@@ -306,6 +306,7 @@ const compileSingleInterior = (
     input: ctx.roomInput,
     ir,
     radiosity: { ...radiosity, compute_ms: 0 },
+    radiosity_config: ctx.radiosityConfig,
     sun_shafts: sunShafts,
     window_panes: windowPanes,
     nbt_lowering: nbtLowering,

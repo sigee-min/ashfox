@@ -12,6 +12,7 @@ import {
   readAssignEntry,
   type AttrEntry,
 } from './grammar';
+import { MAX_STRUCTURE_DIM } from './contract';
 import type { InteriorAnchor, InteriorArchKind, InteriorPropAst } from './interiorDef';
 
 export const ARCHES = new Set<string>([
@@ -164,6 +165,30 @@ export const splitInteriorBlock = (block: AshfoxBlock, file: string) => {
   return { attrs, nested };
 };
 
+const readBoundedInt = (
+  file: string,
+  span: SourceSpan,
+  entry: AttrEntry,
+  name: string,
+  max: number,
+): number => {
+  const v = asInt(file, span, entry, name);
+  if (v < 1 || v > max) failAst(file, span, `${name} within 1..${max}`, `${v}`);
+  return v;
+};
+
+const readBoundedPropSize = (
+  file: string,
+  span: SourceSpan,
+  entry: AttrEntry,
+): [number, number] => {
+  const [w, d] = asIntVec2(file, span, entry, 'size');
+  if (w < 1 || d < 1 || w > MAX_STRUCTURE_DIM || d > MAX_STRUCTURE_DIM) {
+    failAst(file, span, `prop size within 1..${MAX_STRUCTURE_DIM}`, `(${w}, ${d})`);
+  }
+  return [w, d];
+};
+
 const readPropGeometryAttrs = (
   attrs: Record<string, AttrEntry>,
   file: string,
@@ -180,12 +205,13 @@ const readPropGeometryAttrs = (
     organic_jitter?: number;
   } = {};
   if (attrs.at) out.at = asNumVec3(file, span, attrs.at, 'at');
-  if (attrs.size) out.size = asIntVec2(file, span, attrs.size, 'size');
-  if (attrs.length) out.length = asInt(file, span, attrs.length, 'length');
+  if (attrs.size) out.size = readBoundedPropSize(file, span, attrs.size);
+  if (attrs.length)
+    out.length = readBoundedInt(file, span, attrs.length, 'length', MAX_STRUCTURE_DIM);
   if (attrs.facing) out.facing = asFacing(file, span, attrs.facing);
   const seatsEntry = attrs.seat_count ?? attrs.seats;
   if (seatsEntry && typeof seatsEntry.value === 'number') {
-    out.seat_count = asInt(file, span, seatsEntry, 'seats');
+    out.seat_count = readBoundedInt(file, span, seatsEntry, 'seats', MAX_STRUCTURE_DIM * 2);
   }
   if (attrs.auto_join) out.auto_join = asBool(file, span, attrs.auto_join, 'auto_join');
   if (attrs.rotation_deg) out.rotation_deg = asNum(file, span, attrs.rotation_deg, 'rotation_deg');

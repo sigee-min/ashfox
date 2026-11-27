@@ -1,4 +1,8 @@
-import type { CardinalFacing, IntVec2 } from '../../../project/structure/contract';
+import {
+  MAX_STRUCTURE_DIM,
+  type CardinalFacing,
+  type IntVec2,
+} from '../../../project/structure/contract';
 import {
   SUBVOXEL_UNITS_PER_BLOCK,
   type InteriorPropSpec,
@@ -260,25 +264,54 @@ const rotatePointXZ = (
   return [px + (x - px) * cos - (z - pz) * sin, pz + (x - px) * sin + (z - pz) * cos];
 };
 
-/** Returns occupied block coordinates for a prop at [x, z], including explicit yaw and dining chairs. */
+const propBoxRange = (
+  spec: InteriorPropSpec,
+  x: number,
+  z: number,
+): readonly [number, number, number, number] => {
+  const [wB, dB] = spec.size ?? [1, 1];
+  const [rw, rd] = spec.facing === 'east' || spec.facing === 'west' ? [dB, wB] : [wB, dB];
+  const u = SUBVOXEL_UNITS_PER_BLOCK;
+  return boxCellRange16({
+    from_16: [x * u, 0, z * u],
+    to_16: [(x + rw) * u, u, (z + rd) * u],
+    pivot_16: [(x + rw / 2) * u, 0, (z + rd / 2) * u],
+    rotation_y_deg: spec.rotation_deg ?? 0,
+  });
+};
+
+/** Checks whether a prop's rotated XZ footprint fits inside bounds without enumerating cells. */
+export const propFitsBounds = (
+  spec: InteriorPropSpec,
+  x: number,
+  z: number,
+  bounds: ZoneFootprint,
+): boolean => {
+  const [bx0, bz0, bx1, bz1] = propBoxRange(spec, x, z);
+  if (bx0 < bounds.x0 || bx1 > bounds.x1 || bz0 < bounds.z0 || bz1 > bounds.z1) return false;
+  return diningChairPoses(spec, x, z).every((pose) => {
+    const [cx, cz] = [Math.floor(pose.cx), Math.floor(pose.cz)];
+    return cx >= bounds.x0 && cx <= bounds.x1 && cz >= bounds.z0 && cz <= bounds.z1;
+  });
+};
+
+/** Returns occupied block coordinates for a prop at [x, z], clipped to bounds and compilation caps. */
 export const propFootprintCoords = (
   spec: InteriorPropSpec,
   x: number,
   z: number,
+  bounds?: ZoneFootprint,
 ): readonly (readonly [number, number])[] => {
-  const [wB, dB] = spec.size ?? [1, 1];
-  const [rw, rd] = spec.facing === 'east' || spec.facing === 'west' ? [dB, wB] : [wB, dB];
-  const u = SUBVOXEL_UNITS_PER_BLOCK;
-  const yaw = spec.rotation_deg ?? 0;
-  const [bx0, bz0, bx1, bz1] = boxCellRange16({
-    from_16: [x * u, 0, z * u],
-    to_16: [(x + rw) * u, u, (z + rd) * u],
-    pivot_16: [(x + rw / 2) * u, 0, (z + rd / 2) * u],
-    rotation_y_deg: yaw,
-  });
+  const [bx0, bz0, bx1, bz1] = propBoxRange(spec, x, z);
+  const cx0 = bounds ? Math.max(bx0, bounds.x0) : bx0;
+  const cz0 = bounds ? Math.max(bz0, bounds.z0) : bz0;
+  const cx1 = bounds ? Math.min(bx1, bounds.x1) : bx1;
+  const cz1 = bounds ? Math.min(bz1, bounds.z1) : bz1;
+  const spanArea = cx1 >= cx0 && cz1 >= cz0 ? (cx1 - cx0 + 1) * (cz1 - cz0 + 1) : 0;
+  if (spanArea === 0 || spanArea > MAX_STRUCTURE_DIM * MAX_STRUCTURE_DIM) return [];
   const out: [number, number][] = [];
-  for (let cz = bz0; cz <= bz1; cz += 1) {
-    for (let cx = bx0; cx <= bx1; cx += 1) out.push([cx, cz]);
+  for (let cz = cz0; cz <= cz1; cz += 1) {
+    for (let cx = cx0; cx <= cx1; cx += 1) out.push([cx, cz]);
   }
   for (const pose of diningChairPoses(spec, x, z)) {
     out.push([Math.floor(pose.cx), Math.floor(pose.cz)]);

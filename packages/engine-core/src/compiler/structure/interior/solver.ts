@@ -18,6 +18,7 @@ import { hashSeed01 } from './propsGeo';
 import { compileStoryVignette } from './vignettes';
 import {
   boxCellRange16,
+  propFitsBounds,
   propFootprintCoords,
   resolvePartitionDoorway,
   resolveZoneRect,
@@ -341,7 +342,8 @@ const canPlacePropAt = (
   winClear: ReadonlySet<string>,
   stairCells: ReadonlySet<string>,
 ): boolean => {
-  const coords = propFootprintCoords(spec, x, z);
+  if (!propFitsBounds(spec, x, z, bounds)) return false;
+  const coords = propFootprintCoords(spec, x, z, bounds);
   const allowWindow = !TALL_WALL_PROPS.has(spec.kind);
   const highMount = spec.mount_on === 'wall' || spec.mount_on === 'ceiling';
   return coords.every(([cx, cz]) => {
@@ -420,7 +422,9 @@ const resolvePropSpecs = (
     const nudged = rx !== Math.round(spec.at[0]) || rz !== Math.round(spec.at[2]);
     const nextAt: Vec3 = nudged ? [rx, spec.at[1], rz] : spec.at;
     if (spec.mount_on !== 'wall' && spec.mount_on !== 'ceiling') {
-      for (const [cx, cz] of propFootprintCoords(spec, rx, rz)) occupied.add(cellKey(cx, cz));
+      const bounds = resolveZoneRect(room, spec.zone_id);
+      for (const [cx, cz] of propFootprintCoords(spec, rx, rz, bounds))
+        occupied.add(cellKey(cx, cz));
     }
     resolvedSpecs.push({ ...spec, at: nextAt });
     placements.push({ id: spec.id, original_at: spec.at, resolved_at: nextAt, nudged });
