@@ -2,6 +2,7 @@ import { compareText } from '@ashfox/internal-contracts';
 import type { AssetQualityProfile, CompiledModel } from '../model/compiled';
 import type { AssetAuthoringTelemetry, ChartAuthoringTelemetry } from '../model/telemetry';
 import type { AuditGateResult } from './contract';
+import type { CraftFloorReport } from './craftFloor';
 import type { AuditSceneGeometry } from './geometry';
 import type { AuditRasterStats } from './rasterStats';
 import { findBuriedCubes, findFloatingComponents } from './silhouette';
@@ -121,24 +122,37 @@ export const summarizeTelemetry = (
 const structuralGate = (
   profile: AssetQualityProfile,
   scene: AuditSceneGeometry,
+  craft?: CraftFloorReport,
 ): AuditGateResult => {
   const parts = scene.obbs.length;
-  const ok =
+  const minOk =
     profile === 'creature'
       ? parts >= 6 && scene.boneCount >= 3
       : profile === 'prop'
         ? parts >= 3
         : parts >= 1;
-  const msg =
+  const minMsg =
     profile === 'creature'
       ? `creature requires >= 6 visible parts and >= 3 bones (got ${parts} parts, ${scene.boneCount} bones).`
       : profile === 'prop'
         ? `prop requires >= 3 visible parts (got ${parts}).`
         : `block requires >= 1 visible part (got ${parts}).`;
+  const craftFail = minOk
+    ? craft?.blockingFailures.find((c) => c.id !== 'craft.pbrHeadroom')
+    : undefined;
+  if (craftFail) {
+    return {
+      id: 'profile_structural_minimum',
+      passed: false,
+      message: `${craftFail.id}: ${craftFail.summary}`,
+      targets: craftFail.targets,
+      fix: craftFail.fix,
+    };
+  }
   return {
     id: 'profile_structural_minimum',
-    passed: ok,
-    message: ok ? `Meets structural minimum for ${profile} (${parts} parts).` : msg,
+    passed: minOk,
+    message: minOk ? `Meets structural minimum for ${profile} (${parts} parts).` : minMsg,
     targets: [],
     fix:
       profile === 'creature'
@@ -151,6 +165,7 @@ const preGrainGate = (
   telemetry: TelemetrySummary,
   telemetryAvailable: boolean,
   raster: AuditRasterStats,
+  craft?: CraftFloorReport,
 ): AuditGateResult => {
   if (!telemetryAvailable) {
     const ok = raster.lumRange >= 0.06;
@@ -165,6 +180,18 @@ const preGrainGate = (
     };
   }
   const ok = telemetry.globalDeltaRatio >= 0.05 && telemetry.maxDistinctRoles >= 2;
+  const pbrFail = ok
+    ? craft?.blockingFailures.find((c) => c.id === 'craft.pbrHeadroom')
+    : undefined;
+  if (pbrFail) {
+    return {
+      id: 'pre_grain_authored_floor',
+      passed: false,
+      message: `${pbrFail.id}: ${pbrFail.summary}`,
+      targets: pbrFail.targets,
+      fix: pbrFail.fix,
+    };
+  }
   return {
     id: 'pre_grain_authored_floor',
     passed: ok,
@@ -229,6 +256,7 @@ export const evaluateHardGates = (
   raster: AuditRasterStats,
   telemetry: TelemetrySummary,
   telemetryAvailable: boolean,
+  craft?: CraftFloorReport,
 ): readonly AuditGateResult[] => {
   const cleanNoise = raster.isolatedNoiseRate <= 0.2 && raster.checkerRate <= 0.18;
   return [
@@ -242,7 +270,7 @@ export const evaluateHardGates = (
       targets: raster.missingFaceTargets,
       fix: 'Bind every enabled face to a surface texture with non-empty UV coordinates.',
     },
-    preGrainGate(telemetry, telemetryAvailable, raster),
+    preGrainGate(telemetry, telemetryAvailable, raster, craft),
     {
       id: 'anti_noise_coherence',
       passed: cleanNoise,
@@ -252,6 +280,6 @@ export const evaluateHardGates = (
       targets: cleanNoise ? [] : raster.noisyTextureIds,
       fix: 'Replace confetti noise and 1px checker dithering with cohesive organic gradients and clustered textures.',
     },
-    structuralGate(profile, scene),
+    structuralGate(profile, scene, craft),
   ];
 };

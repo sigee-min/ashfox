@@ -304,12 +304,16 @@ const collectExpressionVariants = (
   return variantInputs;
 };
 
+import type { ParentSolidBounds } from './canonicalLayout';
+
 export const lowerExpressionSlot = (
   record: GeometryRecord,
   parentId: string,
   surfaces: SurfaceBindings,
   plans: ReadonlyMap<string, AssetTexturePlan>,
   context: Context,
+  forward: 'north' | 'south' | 'east' | 'west' = 'north',
+  parentBounds?: ParentSolidBounds,
 ): readonly SceneNode[] => {
   const node = record.node;
   const properties = propertyMap(node, EXPR_ALLOWED, ['size'], context);
@@ -340,6 +344,11 @@ export const lowerExpressionSlot = (
       rotation: transform.rotation,
       pivot: transform.pivot,
       visible: visibleFor(properties, context, node),
+      placement: node.placement ?? 'front',
+      forward,
+      parentBounds,
+      hasOrigin: properties.has('origin'),
+      hasUAxis: properties.has('u_axis'),
     },
     collectExpressionVariants(node, size, surfaces, plans, context),
   );

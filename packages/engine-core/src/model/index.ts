@@ -44,8 +44,10 @@ export { buildPrimitivePolygons, evalPolygonFaceUvs, primitiveLocalVertices } fr
 export {
   compileExpressionChannels,
   expressionSlotName,
+  expressionSlotPlacement,
   expressionVariantName,
   isExpressionVariantNode,
+  type ExpressionPlacement,
 } from './expression';
 export {
   type BlobRef,
