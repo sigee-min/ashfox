@@ -102,12 +102,30 @@ const expandClearNeighbors = (
   }
 };
 
-const computeClearPathRatio = (room: InteriorRoomInput, ir: InteriorSubVoxelIR): number => {
-  if (ir.clear_path_cells.length === 0) return 0;
+const allGroundDoorsVisited = (
+  room: InteriorRoomInput,
+  visitedSet: ReadonlySet<string>,
+  clearSet: ReadonlyMap<string, IntVec3>,
+): boolean => {
+  const visitedMap = new Map<string, IntVec3>();
+  for (const k of visitedSet) {
+    const cell = clearSet.get(k);
+    if (cell) visitedMap.set(k, cell);
+  }
+  return room.openings
+    .filter((o) => (o.kind === 'door' || o.kind === 'arch') && o.from[1] <= room.bounds_from[1] + 2)
+    .every((o) => findOpeningSeedCell(o, visitedMap) !== null);
+};
+
+const computeClearPathStats = (
+  room: InteriorRoomInput,
+  ir: InteriorSubVoxelIR,
+): { readonly ratio: number; readonly doorsConnected: boolean } => {
+  if (ir.clear_path_cells.length === 0) return { ratio: 0, doorsConnected: false };
   const clearSet = new Map<string, IntVec3>();
   for (const c of ir.clear_path_cells) clearSet.set(cellKey(c[0], c[1], c[2]), c);
   const seed = findBfsSeedCell(room, clearSet);
-  if (!seed) return 0;
+  if (!seed) return { ratio: 0, doorsConnected: false };
   const visited = new Set<string>([cellKey(seed[0], seed[1], seed[2])]);
   const queue: IntVec3[] = [seed];
   for (let head = 0; head < queue.length; head += 1)
@@ -116,17 +134,21 @@ const computeClearPathRatio = (room: InteriorRoomInput, ir: InteriorSubVoxelIR):
   const d = Math.max(1, room.bounds_to[2] - room.bounds_from[2] + 1);
   const connectivity = visited.size / clearSet.size;
   const coverage = Math.min(1, clearSet.size / Math.max(1, w * d * 0.45));
-  return round4(clamp01(connectivity * coverage));
+  return {
+    ratio: round4(clamp01(connectivity * coverage)),
+    doorsConnected: allGroundDoorsVisited(room, visited, clearSet),
+  };
 };
 
-const isOverheadObstruction = (box: SubVoxelBoxIR): boolean => {
-  const tag = (box.semantic_tag ?? '').toLowerCase();
-  return (
-    box.layer === 'opaque' &&
-    !tag.includes('floor') &&
-    !tag.includes('carpet') &&
-    !tag.includes('rug')
+const NON_OVERHEAD_TAGS =
+  'floor,carpet,rug,drapery,baseboard,wainscot,molding,railing,volume_platform,volume_step,volume_sunken,partition_door'.split(
+    ',',
   );
+
+const isOverheadObstruction = (box: SubVoxelBoxIR): boolean => {
+  if (box.layer !== 'opaque') return false;
+  const tag = (box.semantic_tag ?? '').toLowerCase();
+  return !NON_OVERHEAD_TAGS.some((t) => tag.includes(t));
 };
 
 const cellHeadroom = (
@@ -138,6 +160,7 @@ const cellHeadroom = (
   const u = SUBVOXEL_UNITS_PER_BLOCK;
   let localTop = ceilingY;
   for (const box of overheadBoxes) {
+    if (box.to_16[1] <= cy * u + 3.5) continue;
     if (box.to_16[0] <= cx * u + 2 || box.from_16[0] >= (cx + 1) * u - 2) continue;
     if (box.to_16[2] <= cz * u + 2 || box.from_16[2] >= (cz + 1) * u - 2) continue;
     const bottomB = box.from_16[1] / u;
@@ -257,6 +280,7 @@ const makeGate = (
 const buildGates = (
   metrics: InteriorAuditMetrics,
   input: InteriorAuditInput,
+  doorsConnected: boolean,
 ): readonly InteriorAuditGate[] => {
   const nbtOk = input.nbt ? input.nbt.clearance.passed : true;
   return [
@@ -284,7 +308,7 @@ const buildGates = (
     ),
     makeGate(
       'clear_path_bfs',
-      metrics.clear_path_ratio >= 0.25 && input.ir.clear_path_cells.length > 0,
+      metrics.clear_path_ratio >= 0.25 && input.ir.clear_path_cells.length > 0 && doorsConnected,
       `BFS clear_path ratio is ${Math.round(metrics.clear_path_ratio * 100)}%.`,
       'Maintain a continuous 1x2x1 BFS-reachable path between doors and room stations.',
     ),
@@ -360,21 +384,23 @@ const buildSubmetrics = (
 /** Evaluates interior quality audit across spatial volume, 2-bounce GI, organic DNA, BFS clear_path, and hooks. */
 export const evaluateInteriorAudit = (input: InteriorAuditInput): InteriorAuditReport => {
   const { room, ir, radiosity, sunShafts, playableMeta, nbt } = input;
+  const clearStats = computeClearPathStats(room, ir);
+  const irHeadroom = computeMinHeadroom(room, ir);
   const metrics: InteriorAuditMetrics = {
     volume_feature_count: room.volumes.length,
     shell_layer_count: countShellLayers(room),
     bounce_color_contrast: computeRadiosityColorContrast(radiosity),
     sun_shaft_count: sunShafts.length,
     organic_calibration_delta: computeOrganicDelta(room),
-    clear_path_ratio: computeClearPathRatio(room, ir),
-    min_headroom_b: nbt ? nbt.clearance.min_headroom_b : computeMinHeadroom(room, ir),
+    clear_path_ratio: clearStats.ratio,
+    min_headroom_b: nbt ? Math.min(nbt.clearance.min_headroom_b, irHeadroom) : irHeadroom,
     floating_block_count: nbt ? nbt.clearance.floating_block_count : countFloatingBoxes(room, ir),
     blocked_opening_count: nbt
       ? nbt.clearance.blocked_opening_count
       : countBlockedOpenings(room, ir),
     playable_hook_count: playableMeta.hooks.length,
   };
-  const hard_gates = buildGates(metrics, input);
+  const hard_gates = buildGates(metrics, input, clearStats.doorsConnected);
   const submetrics = buildSubmetrics(metrics, hookDiversityRatio(playableMeta));
   const allGatesPass = hard_gates.every((g) => g.passed);
   const rawScore = Math.round(submetrics.reduce((sum, s) => sum + s.score, 0));

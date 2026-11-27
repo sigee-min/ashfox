@@ -230,6 +230,7 @@ const countBlockedOpenings = (
   room: InteriorRoomInput,
   grid: WalkGrid,
   boxes: readonly SubVoxelBoxIR[],
+  reachable: ReadonlySet<string>,
 ): number => {
   let blocked = 0;
   for (const op of room.openings) {
@@ -245,7 +246,7 @@ const countBlockedOpenings = (
         return ix >= bx0 && ix <= bx1 && iz >= bz0 && iz <= bz1 && b.to_16[1] > sillY16 + 6;
       });
       if (hit) blocked += 1;
-    } else if (!isCellPassable(grid, ix, iz)) {
+    } else if (!isCellPassable(grid, ix, iz) || !reachable.has(cellKey(ix, iz))) {
       blocked += 1;
     }
   }
@@ -258,7 +259,7 @@ const countBlockedSeats = (
 ): number => {
   let blocked = 0;
   for (const h of hooks) {
-    if (h.kind !== 'sit') continue;
+    if (h.kind !== 'sit' && h.kind !== 'station') continue;
     const sx = Math.floor(h.position[0]);
     const sz = Math.floor(h.position[2]);
     const ok =
@@ -273,7 +274,7 @@ const resolveBfsSeeds = (room: InteriorRoomInput, grid: WalkGrid): readonly IntV
   const entrySeeds = room.openings
     .filter((o) => o.kind !== 'window' && o.kind !== 'bay_window')
     .map(openingInwardCell);
-  if (entrySeeds.length > 0) return entrySeeds;
+  if (entrySeeds.length > 0) return [entrySeeds[0]!];
   for (let z = grid.z0; z <= grid.z1; z += 1) {
     for (let x = grid.x0; x <= grid.x1; x += 1) {
       if (isCellPassable(grid, x, z)) return [[x, grid.floorY, z]];
@@ -300,9 +301,11 @@ export const validateClearPath = (
   const grid = buildWalkGrid(room, boxes);
   const clearCells = runCirculationBfs(grid, resolveBfsSeeds(room, grid));
   const reachable = new Set(clearCells.map(([x, , z]) => cellKey(x, z)));
-  const blockedOpenings = countBlockedOpenings(room, grid, boxes);
+  const blockedOpenings = countBlockedOpenings(room, grid, boxes, reachable);
   const stairs = collectStairCells(room);
-  const blockedStairs = [...stairs.keys()].filter((k) => grid.blocked.has(k)).length;
+  const blockedStairs = [...stairs.keys()].filter(
+    (k) => grid.blocked.has(k) || !reachable.has(k),
+  ).length;
   const blockedSeats = countBlockedSeats(hooks, reachable);
   const totalCells = Math.max(1, (grid.x1 - grid.x0 + 1) * (grid.z1 - grid.z0 + 1));
   const finalHeadroom = minHeadroomForCells(grid, clearCells);

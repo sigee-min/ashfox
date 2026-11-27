@@ -331,20 +331,14 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
   };
   const volumes = buildSculptedVolumes(regRoom);
   const solved = solveInteriorLayout(regRoom, volumes.boxes);
-  assert.equal(
-    solved.clearance.clear_path_cells.some((c) => c[0] === 1 && c[2] === 3),
-    false,
+  assert.ok(
+    !solved.clearance.clear_path_cells.some((c) => c[0] === 1 && c[2] === 3) &&
+      solved.placed_props[0]!.nudged,
   );
-  assert.equal(solved.placed_props[0]!.nudged, true);
-
   const nbt = lowerInteriorToVanillaNbt(regRoom);
-  assert.equal(
-    nbt.blocks.some((b) => b.pos[2] >= 8 && b.state.includes('slab')),
-    true,
-  );
-  assert.equal(
-    nbt.blocks.some((b) => b.pos[2] <= 2 && b.pos[1] === 1 && b.state.includes('slab')),
-    false,
+  assert.ok(
+    nbt.blocks.some((b) => b.pos[2] >= 8 && b.state.includes('slab')) &&
+      !nbt.blocks.some((b) => b.pos[2] <= 2 && b.pos[1] === 1 && b.state.includes('slab')),
   );
   const shell = buildInteriorShell(regRoom);
   assert.equal(
@@ -448,18 +442,6 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
   const badPartSrc =
     'ashfox 1 structure p { size = (11b, 8b, 11b); floor f { y = 0b; height = 6b; room r { from = (0b, 0b); size = (11b, 11b); kind = living; interior { partition s { style = screen; span_from = 1; span_to = 1000000000; } } } } }';
   assert.throws(() => parseStructureSource(badPartSrc, 'p.ashfox'), StructureInputError);
-  const bigPart = {
-    kind: 'partition',
-    id: 'big',
-    style: 'screen',
-    axis: 'x',
-    at_pos: 5,
-    span_from: 1,
-    span_to: 1_000_000_000,
-    doorway_width: 0,
-  } as const;
-  const clampedVol = buildSculptedVolumes({ ...screenRoom, volumes: [bigPart] });
-  assert.ok(clampedVol.boxes.length <= 9 && clampedVol.boxes.length > 0);
   const colPart = {
     kind: 'partition',
     id: 'cols',
@@ -470,6 +452,9 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
     span_to: 9,
     doorway_width: 0,
   } as const;
+  const bigPart = { ...colPart, id: 'big', style: 'screen', span_to: 1_000_000_000 } as const;
+  const clampedVol = buildSculptedVolumes({ ...screenRoom, volumes: [bigPart] });
+  assert.ok(clampedVol.boxes.length <= 9 && clampedVol.boxes.length > 0);
   const colonnadeSolved = solveInteriorLayout({ ...screenRoom, volumes: [colPart], props: [] });
   assert.equal(
     colonnadeSolved.clearance.clear_path_cells.some((c) => c[0] === 2 && c[2] === 5),
@@ -487,6 +472,20 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
   });
   assert.equal(
     mezStack.placed_props.every((p) => !p.nudged),
+    true,
+  );
+  const splitSolved = solveInteriorLayout({
+    ...screenRoom,
+    openings: [
+      { id: 'n_door', kind: 'door', wall: 'north', from: [5, 1, 0], to: [5, 2, 0] },
+      { id: 's_door', kind: 'door', wall: 'south', from: [5, 1, 10], to: [5, 2, 10] },
+    ],
+    volumes: [{ ...colPart, id: 'wall', style: 'screen', doorway_width: 0 }],
+    props: [],
+  });
+  assert.ok(!splitSolved.clearance.passed && splitSolved.clearance.blocked_opening_count >= 1);
+  assert.equal(
+    splitSolved.clearance.clear_path_cells.every((c) => c[2] < 5),
     true,
   );
 };
