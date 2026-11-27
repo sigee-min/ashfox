@@ -177,9 +177,14 @@ for (const file of retiredSourceFiles) {
   if (/\.(?:ashfox|md|html|json)$/u.test(file)) {
     const modelStatements = isOtherAssetGrammarFile(file, source)
       ? ''
-      : source.replace(/```(?:text|ashfox)?\n(ashfox 1[\s\S]*?)```/gu, (block, body) =>
-          isOtherAssetGrammar(body) ? '' : block,
-        );
+      : source
+          .replace(/```(?:text|ashfox)?\n(ashfox 1[\s\S]*?)```/gu, (block, body) =>
+            isOtherAssetGrammar(body) ? '' : block,
+          )
+          .replace(
+            /```(?:ts|typescript|js|javascript|csharp|cs|gdscript|gd|json|sh|bash)\r?\n[\s\S]*?```/gu,
+            '',
+          );
     for (const term of retiredAuthoredStatementSyntax) {
       if (term.test(modelStatements)) {
         failures.push(`${file}: retired authored statement syntax remains in source`);

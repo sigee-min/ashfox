@@ -105,7 +105,8 @@ const SAMPLE_MANIFEST: SdkManifestInput = {
     build: { directory: 'dist/build' },
     exports: [],
   };
-  assert.deepEqual(readDirectoryWorkspace(JSON.stringify(baseCfg)).sdk, []);
+  assert.equal(readDirectoryWorkspace(JSON.stringify(baseCfg)).sdk, undefined);
+  assert.deepEqual(readDirectoryWorkspace(JSON.stringify({ ...baseCfg, sdk: [] })).sdk, []);
   assert.deepEqual(
     readDirectoryWorkspace(JSON.stringify({ ...baseCfg, sdk: ['three', 'godot'] })).sdk,
     ['three', 'godot'],

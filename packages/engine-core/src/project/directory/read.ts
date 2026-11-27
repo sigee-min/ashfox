@@ -313,7 +313,7 @@ export const readDirectoryWorkspace = (source: string): DirectoryWorkspace => {
     build: { directory: build.directory as string },
     exports: record.exports as DirectoryWorkspace['exports'],
     ...(hasPacks ? { packs } : {}),
-    sdk,
+    ...(hasSdk ? { sdk } : {}),
   });
   validateDeclaredSources(result, packages);
   return result;
