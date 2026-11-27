@@ -344,6 +344,10 @@ const runThreeRuntimeExecutionTest = async (): Promise<void> => {
   assert.match(gdActor, /signal cue_triggered/);
   assert.match(gdActor, /Marker3D/);
   assert.match(gdActor, /CollisionShape3D/);
+  const scanSection = gdActor.slice(gdActor.indexOf('func _scan_anchor_nodes'));
+  const scanBody = scanSection.slice(0, scanSection.indexOf('\nfunc '));
+  assert.doesNotMatch(scanBody, /add_child|_marker/);
+  assert.match(scanBody, /anchors\[node\.name\.substr\(7\)\] = node/);
 }
 
 compileGeneratedThree();
