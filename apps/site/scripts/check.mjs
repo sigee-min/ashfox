@@ -153,11 +153,13 @@ const retiredSourceFiles = [
   ).flat(),
   ...retiredContractFiles,
 ];
-// Model retirement rules do not define the sprite, sound, or structure property grammars.
+// Model retirement rules do not define the sprite, sound, structure, or vfx property grammars.
 const isOtherAssetGrammar = (source) =>
   /^ashfox 1(?:\s|\/\/[^\n]*(?:\n|$))+(?:sprite|sound|structure|vfx)\b/u.test(source.trim()) ||
   (/^ashfox 1\s+module\b/u.test(source.trim()) &&
-    /\bexport\s+(?:mask|material|stamp|prefab|voice|seq)\b/u.test(source));
+    /\bexport\s+(?:mask|material|stamp|prefab|voice|seq|palette|element|emitter|recipe)\b/u.test(
+      source,
+    ));
 const isOtherAssetGrammarFile = (file, source) =>
   isOtherAssetGrammar(source) || /[/\\]language[/\\](?:structures|sprites|sounds)\.md$/u.test(file);
 for (const file of retiredSourceFiles) {
