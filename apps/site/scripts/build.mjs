@@ -7,6 +7,7 @@ const { buildSkillRelease } = require('../../../scripts/skill/build.js');
 import { execFileSync } from 'node:child_process';
 import { Script } from 'node:vm';
 import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -281,16 +282,14 @@ await mkdir(path.join(outputRoot, 'showcase'), { recursive: true });
 
 const cssBundle = (
   await Promise.all(
-    ['tokens.css', 'shell.css', 'landing.css', 'assets.css', 'docs.css'].map((f) =>
+    ['tokens.css', 'shell.css', 'landing.css', 'studio.css', 'docs.css'].map((f) =>
       readFile(path.join(sourceRoot, f), 'utf8'),
     ),
   )
 ).join('\n');
 const jsTail = (
   await Promise.all(
-    ['landing.js', 'assets.js', 'docs-client.js'].map((f) =>
-      readFile(path.join(sourceRoot, f), 'utf8'),
-    ),
+    ['landing.js', 'docs-client.js'].map((f) => readFile(path.join(sourceRoot, f), 'utf8')),
   )
 ).join('\n');
 const social = {};
@@ -386,13 +385,39 @@ for (const [key, file] of [
   await writeFile(path.join(outputRoot, 'static', name), bytes);
   assets[key] = `/static/${name}`;
 }
+const landingStudioPath = path.join(repoRoot, 'dist/landing/studio.js');
+let studioBytes;
+if (existsSync(landingStudioPath)) {
+  studioBytes = await readFile(landingStudioPath);
+} else {
+  const esbuild = require('esbuild');
+  const bundled = esbuild.buildSync({
+    entryPoints: [path.join(sourceRoot, 'studio/index.js')],
+    bundle: true,
+    minify: true,
+    format: 'iife',
+    platform: 'browser',
+    target: 'es2022',
+    write: false,
+  });
+  studioBytes = bundled.outputFiles[0].contents;
+}
+const studioName = `studio-${createHash('sha256').update(studioBytes).digest('hex').slice(0, 12)}.js`;
+await writeFile(path.join(outputRoot, 'static', studioName), studioBytes);
+assets.studioJs = `/static/${studioName}`;
+
 const catalog = JSON.parse(
   await readFile(path.join(repoRoot, 'dist/landing/catalog.json'), 'utf8'),
 );
 await cp(path.join(repoRoot, 'dist/landing'), path.join(outputRoot, 'media/catalog'), {
   recursive: true,
-  filter: (source) => path.basename(source) !== 'viewer.js',
+  filter: (source) => !['viewer.js', 'studio.js'].includes(path.basename(source)),
 });
+const landingThumbsDir = path.join(repoRoot, 'dist/landing/thumbs');
+if (existsSync(landingThumbsDir)) {
+  await mkdir(path.join(outputRoot, 'media/catalog/thumbs'), { recursive: true });
+  await cp(landingThumbsDir, path.join(outputRoot, 'media/catalog/thumbs'), { recursive: true });
+}
 await cp(path.join(repoRoot, 'dist/docs-delivery'), path.join(outputRoot, 'downloads'), {
   recursive: true,
 });
@@ -427,7 +452,10 @@ for (const locale of localeRegistry.locales) {
 }
 
 for (const locale of localeRegistry.locales) {
-  await writeRoute(`${locale.prefix}/`, renderLandingPage({ assets, config, showcase, locale }));
+  await writeRoute(
+    `${locale.prefix}/`,
+    renderLandingPage({ assets, catalog, config, showcase, locale }),
+  );
   await writeRoute(
     `${locale.prefix}/assets/`,
     renderAssetsPage({ assets, catalog, config, locale }),

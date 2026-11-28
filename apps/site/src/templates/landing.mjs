@@ -13,6 +13,28 @@ const MOSAIC_ASSETS = [
   '/media/catalog/oak-planks.png',
 ];
 
+const computeCatalogCounts = (catalog = []) => {
+  const counts = {
+    all: catalog.length,
+    model: 0,
+    structure: 0,
+    vfx: 0,
+    sprite: 0,
+    tile: 0,
+    sound: 0,
+  };
+  for (const item of catalog) {
+    if (item?.domain) counts[item.domain] = (counts[item.domain] || 0) + 1;
+  }
+  return {
+    ...counts,
+    twod: counts.sprite + counts.tile,
+  };
+};
+
+const formatCount = (template, count) =>
+  escapeHtml(String(template || '').replace('{count}', String(count)));
+
 const renderPromptInstall = (t) => `
   <div class="hero-start" id="quick-start">
     <div class="prompt-bar">
@@ -105,11 +127,11 @@ const renderDiffStatusBar = (t, locale) => `      <div class="workbench-statusba
         </div>
       </div>`;
 
-const renderLiveDiffStage = (t, locale, assets, griffin) => `
+const renderLiveDiffStage = (t, messages, counts, locale, assets, griffin) => `
   <section class="landing-section stage-section" id="stage" aria-labelledby="diff-stage-title">
     <div class="linear-head linear-head-compact" data-reveal>
       <h2 id="diff-stage-title">${t('diffStageTitle')}</h2>
-      <a class="linear-link" href="${locale.prefix}/assets/">${t('browseAllAssets')} →</a>
+      <a class="linear-link" href="${locale.prefix}/assets/">${formatCount(messages.browseAllAssets, counts.all)} →</a>
     </div>
     <div class="diff-workbench" data-live-diff data-locale="${locale.code}" data-reveal>
       <div class="diff-topbar">
@@ -128,7 +150,7 @@ ${renderDiffStatusBar(t, locale)}
     </div>
   </section>`;
 
-const renderCreatureShowcase = (t, locale, showcase) => {
+const renderCreatureShowcase = (t, messages, counts, locale, showcase) => {
   const ordered = [...showcase.entries].sort(
     (a, b) => (CREATURE_ORDER[a.entryName] ?? 9) - (CREATURE_ORDER[b.entryName] ?? 9),
   );
@@ -153,7 +175,7 @@ const renderCreatureShowcase = (t, locale, showcase) => {
   <section class="landing-section" id="frontier" aria-labelledby="frontier-title">
     <div class="linear-head linear-head-compact" data-reveal>
       <h2 id="frontier-title">${t('builtShowcaseTitle')}</h2>
-      <a class="button button-ghost" href="${locale.prefix}/assets/">${t('browseAllAssets')} →</a>
+      <a class="button button-ghost" href="${locale.prefix}/assets/">${formatCount(messages.browseAllAssets, counts.all)} →</a>
     </div>
     <div class="frontier-grid">
       ${cards}
@@ -166,12 +188,14 @@ const renderCreatureShowcase = (t, locale, showcase) => {
           <div>
             <h3>${t('studioHandoffTitle')}</h3>
             <div class="handoff-pills">
-              <span>${t('studioHandoffModels')}</span>
-              <span>${t('studioHandoffSprites')}</span>
-              <span>${t('studioHandoffSounds')}</span>
+              <span>${formatCount(messages.studioHandoffModels, counts.model)}</span>
+              <span>${formatCount(messages.studioHandoffStructures, counts.structure)}</span>
+              <span>${formatCount(messages.studioHandoffVfx, counts.vfx)}</span>
+              <span>${formatCount(messages.studioHandoffSprites, counts.twod)}</span>
+              <span>${formatCount(messages.studioHandoffSounds, counts.sound)}</span>
             </div>
           </div>
-          <span class="button button-primary">${t('studioHandoffCta')} →</span>
+          <span class="button button-primary">${formatCount(messages.studioHandoffCta, counts.all)} →</span>
         </div>
       </a>
     </div>
@@ -185,7 +209,7 @@ const renderCreatureShowcase = (t, locale, showcase) => {
   </dialog>`;
 };
 
-const renderWorkflowSection = (t, locale) => `
+const renderWorkflowSection = (t, messages, counts, locale) => `
   <section class="landing-section" id="workflow" aria-labelledby="workflow-title">
     <div class="linear-head linear-head-compact" data-reveal>
       <h2 id="workflow-title">${t('workflowShortTitle')}</h2>
@@ -202,7 +226,7 @@ const renderWorkflowSection = (t, locale) => `
       </div>
       <a class="brand-pillar" href="${locale.prefix}/assets/?domain=sound" data-reveal style="--reveal-delay:140ms">
         <div class="brand-pillar-art"><img src="/brand/brand-audio-synth.png" width="1280" height="720" loading="lazy" alt=""></div>
-        <div class="brand-pillar-meta"><strong>${t('pillarAudioTitle')}</strong><span>${t('pillarAudioMeta')}</span></div>
+        <div class="brand-pillar-meta"><strong>${t('pillarAudioTitle')}</strong><span>${formatCount(messages.pillarAudioMeta, counts.sound)}</span></div>
       </a>
     </div>
   </section>
@@ -210,14 +234,21 @@ const renderWorkflowSection = (t, locale) => `
     <h2 id="finale-title">${t('finaleShortTitle')}</h2>
     <div class="finale-actions">
       <a class="button button-primary" href="#quick-start">${t('getStarted')}</a>
-      <a class="linear-link" href="${locale.prefix}/assets/">${t('browseAllAssets')} →</a>
+      <a class="linear-link" href="${locale.prefix}/assets/">${formatCount(messages.browseAllAssets, counts.all)} →</a>
       <a class="linear-link" href="${locale.prefix}/docs/">${escapeHtml(locale.ui.documentation)} →</a>
     </div>
   </section>`;
 
-export const renderLandingPage = ({ assets, config, showcase, locale = defaultLocale }) => {
+export const renderLandingPage = ({
+  assets,
+  catalog = [],
+  config,
+  showcase,
+  locale = defaultLocale,
+}) => {
   const messages = siteMessages(locale);
   const t = (key) => escapeHtml(messages[key]);
+  const counts = computeCatalogCounts(catalog);
   const alternatives = localeRegistry.locales.map((option) => ({
     ...option,
     route: `${option.prefix}/`,
@@ -226,9 +257,9 @@ export const renderLandingPage = ({ assets, config, showcase, locale = defaultLo
   const body = `
   <main id="main" class="world-landing">
     ${renderHero(t)}
-    ${renderLiveDiffStage(t, locale, assets, griffin)}
-    ${renderCreatureShowcase(t, locale, showcase)}
-    ${renderWorkflowSection(t, locale)}
+    ${renderLiveDiffStage(t, messages, counts, locale, assets, griffin)}
+    ${renderCreatureShowcase(t, messages, counts, locale, showcase)}
+    ${renderWorkflowSection(t, messages, counts, locale)}
   </main><script defer src="${assets.viewerJs}"></script>`;
   return pageShell({
     active: 'product',

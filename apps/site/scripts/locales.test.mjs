@@ -94,11 +94,23 @@ for (const route of ['', 'ko/']) {
 }
 assert.doesNotMatch(korean, /class="docs-languages"/);
 assert.match(korean, /class="language-menu" data-language-menu/);
+const englishStudio = await readFile(new URL('assets/index.html', output), 'utf8');
 const koreanLanding = await readFile(new URL('ko/index.html', output), 'utf8');
 const koreanStudio = await readFile(new URL('ko/assets/index.html', output), 'utf8');
 assert.match(koreanLanding, /코드에서 게임까지/);
 assert.match(koreanLanding, /크리처 하나를 온전히/);
 assert.match(koreanStudio, /에셋 스튜디오/);
+for (const [label, html, tabs] of [
+  ['en', englishStudio, ['All', 'Models', 'Structures', 'VFX', 'Sprites', 'Tiles', 'SFX']],
+  ['ko', koreanStudio, ['전체', '모델', '건축물', 'VFX', '스프라이트', '타일', 'SFX']],
+]) {
+  assert.match(html, /data-studio-app/, `${label} studio missing data-studio-app`);
+  assert.doesNotMatch(html, />undefined</, `${label} studio leaked >undefined<`);
+  assert.doesNotMatch(html, /\bundefined\b/, `${label} studio leaked undefined`);
+  for (const tab of tabs) {
+    assert.ok(html.includes(tab), `${label} studio missing tab label: ${tab}`);
+  }
+}
 assert.match(
   await readFile(new URL('sitemap.xml', output), 'utf8'),
   /<loc>https:\/\/ashfox.io\/ko\/<\/loc>/,

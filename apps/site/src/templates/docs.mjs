@@ -30,6 +30,8 @@ const studioDomainForRoute = (route) => {
   if (route.includes('models') || route.includes('animation') || route.includes('precision')) {
     return 'model';
   }
+  if (route.includes('structures')) return 'structure';
+  if (route.includes('vfx')) return 'vfx';
   if (route.includes('sprites') || route.includes('textures')) return 'sprite';
   if (route.includes('sounds')) return 'sound';
   return null;
