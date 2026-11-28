@@ -1,7 +1,6 @@
 ashfox 1
 model wall_lantern {
   import "std/model/prop/lighting" as prop;
-  import "std/core/material/metal" as metal;
   import "std/core/palette/element" as elem;
   import "std/core/hook/world" as world_hook;
 
@@ -12,7 +11,7 @@ model wall_lantern {
     chart frame box { coverage = opaque; }
     chart strut box { coverage = opaque; }
     chart hood box { coverage = opaque; }
-    chart brass box { coverage = opaque; }
+    chart finial box { coverage = opaque; }
     material = double;
   }
 
@@ -28,17 +27,19 @@ model wall_lantern {
       atlas = (128px, 128px);
       background = void; background_alpha = 255;
       palette {
-        void = #2a3038;
-        iron = (metal.MetalParams.iron_shadow, metal.MetalParams.iron_base, metal.MetalParams.iron_light);
-        brass = (metal.MetalParams.gold_shadow, metal.MetalParams.gold_base, metal.MetalParams.gold_light);
+        void = #252a32;
+        iron = (#5d6673, #6d7785, #7e8999);
+        iron_dark = (#58616e, #67717f, #768190);
+        iron_top = (#66707e, #75808f, #8692a3);
+        bronze = (#4f3d28, #6e5437, #8c6e4b);
       }
-      chart plate box { fill = iron; roughness = 0.34; metallic = 0.88; grain = brushed; face north { pattern border { paint = brass; width = 1px; edges = all; } } face south { pattern border { paint = brass; width = 1px; edges = all; } } pattern ao { strength = 0.35; radius = 0.5u; } }
-      chart arm box { fill = iron; roughness = 0.34; metallic = 0.88; grain = brushed; pattern ao { strength = 0.3; radius = 0.5u; } }
-      chart brace box { fill = iron; roughness = 0.34; metallic = 0.88; grain = brushed; }
-      chart frame box { fill = iron; roughness = 0.32; metallic = 0.90; roughness_variation = 0.08; grain = brushed; pattern border { paint = brass; width = 1px; edges = top; } pattern ao { strength = 0.35; radius = 0.5u; } }
-      chart strut box { fill = iron; roughness = 0.32; metallic = 0.90; grain = brushed; }
-      chart hood box { fill = iron; roughness = 0.30; metallic = 0.90; grain = brushed; pattern border { paint = brass; width = 1px; edges = bottom; } pattern ao { strength = 0.35; radius = 0.5u; } }
-      chart brass box { fill = brass; roughness = 0.26; metallic = 0.92; grain = none; }
+      chart plate box { fill = iron; roughness = 0.48; metallic = 0.74; grain = brushed; face north { pattern border { paint = bronze; width = 1px; edges = all; } } face south { pattern border { paint = bronze; width = 1px; edges = all; } } pattern ao { strength = 0.20; radius = 0.5u; } }
+      chart arm box { fill = iron; roughness = 0.46; metallic = 0.75; grain = brushed; pattern ao { strength = 0.22; radius = 0.5u; } }
+      chart brace box { fill = iron; roughness = 0.48; metallic = 0.74; grain = brushed; }
+      chart frame box { fill = iron; roughness = 0.46; metallic = 0.76; roughness_variation = 0.08; grain = brushed; pattern border { paint = bronze; width = 1px; edges = top; } pattern ao { strength = 0.22; radius = 0.5u; } }
+      chart strut box { fill = iron; roughness = 0.46; metallic = 0.76; grain = brushed; }
+      chart hood box { fill = iron; roughness = 0.50; metallic = 0.72; roughness_variation = 0.08; grain = brushed; pattern gradient { from = iron_dark; to = iron; axis = y; space = local; soft = 0.25; } pattern border { paint = bronze; width = 1px; edges = bottom; } pattern ao { strength = 0.20; radius = 0.5u; } }
+      chart finial box { fill = iron; roughness = 0.46; metallic = 0.75; grain = brushed; pattern gradient { from = iron; to = iron_top; axis = y; space = local; soft = 0.25; } pattern ao { strength = 0.20; radius = 0.4u; } }
       grain soft { seed = 707; }
       tone painterly;
     }
@@ -85,7 +86,7 @@ model wall_lantern {
           cube strut_fl { origin = (-3u, 2u, -3u); size = (1u, 5u, 1u); mirror_x = strut_fr; surface = frame.strut; }
           cube strut_bl { origin = (-3u, 2u, 2u); size = (1u, 5u, 1u); mirror_x = strut_br; surface = frame.strut; }
           taper hood { origin = (-4u, 7u, -4u); size = (8u, 2u, 8u); top_scale = (0.45, 0.45); axis = y; surface = frame.hood; }
-          cylinder finial { origin = (0u, 9u, 0u); radius = 1u; radius_top = 0.5u; height = 2u; sides = 8; axis = y; surface = frame.brass; }
+          cylinder finial { origin = (0u, 9u, 0u); radius = 1u; radius_top = 0.5u; height = 2u; sides = 8; axis = y; surface = frame.finial; }
         }
       }
     }
