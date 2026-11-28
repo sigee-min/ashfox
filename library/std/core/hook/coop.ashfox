@@ -1,0 +1,34 @@
+ashfox 1
+module coop {
+  export schema ReviveZone : volume {
+    field interact_time : second = 4s;
+    field revive_hp : float(1..200) = 30.0;
+    field temp_shield : float(0..100) = 20.0;
+    field max_helpers : int(1..4) = 1;
+    field cancel_on_damage : bool = false;
+  }
+
+  export schema MedkitTarget : anchor {
+    field heal_amount : float(1..200) = 50.0;
+    field heal_ratio : float(0..1) = 0.8;
+    field apply_time : second = 3.5s;
+    field can_share : bool = true;
+    field clears_bleed : bool = true;
+  }
+
+  export schema AmmoStash : anchor {
+    field ammo_kind : enum(universal, shotgun, rifle, smg, sidearm, throwable) = universal;
+    field refills : int(1..32) = 4;
+    field unlimited : bool = false;
+    field facing : enum(north, south, east, west) = south;
+    mc_block = "minecraft:chest[facing=${facing}]";
+  }
+
+  export schema DoorLockBar : anchor {
+    field lock_state : enum(closed, barred, broken, open) = closed;
+    field durability : float(10..2000) = 250.0;
+    field breach_time : second = 2.5s;
+    field facing : enum(north, south, east, west) = north;
+    field saferoom_seal : bool = true;
+  }
+}

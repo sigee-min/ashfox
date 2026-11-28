@@ -1,0 +1,152 @@
+ashfox 1
+module incendiary {
+  params {
+    radius = 16u;
+    duration = 1.1s;
+    seed = 503;
+  }
+
+  export palette FuelBlaze {
+    core = #fff5cc;
+    mid = #ff8424;
+    edge = #a8240c;
+    smoke = #2e2422;
+  }
+
+  export palette TarSmoke {
+    core = #ffe6bf;
+    mid = #d96b2b;
+    edge = #732919;
+    smoke = #262224;
+  }
+
+  export element flame_pool : ring {
+    at = 0s..(duration * 0.88);
+    blend = additive;
+    radius = (radius * 0.18)..radius;
+    segments = 24;
+    ripple_amp = 0.35;
+    ripple_freq = 6;
+    color = mid;
+    texture radial_flare { spikes = 8; seed = seed; posterize = 4; }
+    dissolve voronoi { frames = 10; edge_glow = core; seed = seed; }
+    scale = 0.25 -> 1.15 ease_out -> 0;
+    alpha = 0.75 -> 0.95 -> 0;
+  }
+
+  export emitter fire_tongues : voxel_burst {
+    at = 0.04s..(duration * 0.72);
+    seed = seed;
+    count = 26;
+    shape = ring(radius * 0.65);
+    particle = shard;
+    speed = 8u..18u;
+    life = 0.24s..0.46s;
+    gravity = 16u;
+    drag = 1.7;
+    turbulence = curl(2.0, 6u);
+    size_over_life = 1.1u -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = additive;
+  }
+
+  export element smoke_crown : ring {
+    at = 0s..(duration * 0.85);
+    blend = blend;
+    radius = (radius * 0.2)..(radius * 0.95);
+    segments = 20;
+    ripple_amp = 0.35;
+    ripple_freq = 4;
+    color = mid;
+    texture stylized_smoke { curl_scale = 2.6; seed = seed + 5; }
+    dissolve radial_noise { frames = 8; edge_glow = core; seed = seed + 5; }
+    scale = 0.35 -> 1.15 ease_out -> 0;
+    alpha = 0.85 -> 0.45 -> 0;
+  }
+
+  export emitter oil_smoke : voxel_burst {
+    at = 0.04s..(duration * 0.68);
+    seed = seed + 9;
+    count = 24;
+    shape = cone(32deg, radius * 0.35);
+    particle = puff;
+    speed = 8u..16u;
+    life = 0.3s..0.55s;
+    gravity = 12u;
+    drag = 2.2;
+    turbulence = curl(1.8, 6u);
+    size_over_life = 1.0u -> 3.2u ease_out -> 0u;
+    color_over_life = core -> mid -> edge -> smoke;
+    blend = blend;
+  }
+
+  export recipe IncendiarySpread {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = FuelBlaze;
+    element flame_pool : ring {
+      at = 0s..(duration * 0.88);
+      blend = additive;
+      radius = (radius * 0.18)..radius;
+      segments = 24;
+      ripple_amp = 0.35;
+      ripple_freq = 6;
+      color = mid;
+      texture radial_flare { spikes = 8; seed = seed; posterize = 4; }
+      dissolve voronoi { frames = 10; edge_glow = core; seed = seed; }
+      scale = 0.25 -> 1.15 ease_out -> 0;
+      alpha = 0.75 -> 0.95 -> 0;
+    }
+    emitter fire_tongues : voxel_burst {
+      at = 0.04s..(duration * 0.72);
+      seed = seed;
+      count = 26;
+      shape = ring(radius * 0.65);
+      particle = shard;
+      speed = 8u..18u;
+      life = 0.24s..0.46s;
+      gravity = 16u;
+      drag = 1.7;
+      turbulence = curl(2.0, 6u);
+      size_over_life = 1.1u -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = additive;
+    }
+  }
+
+  export recipe OilSmokePlume {
+    duration = 1.25s;
+    fps = 30;
+    loop = once;
+    palette = TarSmoke;
+    element smoke_crown : ring {
+      at = 0s..1.05s;
+      blend = blend;
+      radius = (radius * 0.2)..(radius * 0.95);
+      segments = 20;
+      ripple_amp = 0.35;
+      ripple_freq = 4;
+      color = mid;
+      texture stylized_smoke { curl_scale = 2.6; seed = seed + 5; }
+      dissolve radial_noise { frames = 8; edge_glow = core; seed = seed + 5; }
+      scale = 0.35 -> 1.15 ease_out -> 0;
+      alpha = 0.85 -> 0.45 -> 0;
+    }
+    emitter oil_smoke : voxel_burst {
+      at = 0.04s..0.85s;
+      seed = seed + 9;
+      count = 24;
+      shape = cone(32deg, radius * 0.35);
+      particle = puff;
+      speed = 8u..16u;
+      life = 0.3s..0.55s;
+      gravity = 12u;
+      drag = 2.2;
+      turbulence = curl(1.8, 6u);
+      size_over_life = 1.0u -> 3.2u ease_out -> 0u;
+      color_over_life = core -> mid -> edge -> smoke;
+      blend = blend;
+    }
+  }
+}

@@ -1,0 +1,247 @@
+ashfox 1
+module damage_font {
+  export material digit_normal {
+    ramp { mode = auto; base = #eef2f7; preset = cool; }
+  }
+  export material digit_crit {
+    ramp { mode = auto; base = #f2b83d; preset = vivid; }
+  }
+  export material digit_heal {
+    ramp { mode = auto; base = #54d97b; preset = organic; }
+  }
+  export material digit_shadow {
+    ramp { mode = auto; base = #353b47; preset = cool; }
+  }
+
+  export mask digit_0 {
+    rows = [
+      ".111.",
+      "11.11",
+      "11.11",
+      "11.11",
+      "11.11",
+      "11.11",
+      ".111."
+    ];
+  }
+  export mask digit_1 {
+    rows = [
+      "..11.",
+      ".111.",
+      "1.11.",
+      "..11.",
+      "..11.",
+      "..11.",
+      "11111"
+    ];
+  }
+  export mask digit_2 {
+    rows = [
+      ".111.",
+      "11.11",
+      "...11",
+      "..11.",
+      ".11..",
+      "11...",
+      "11111"
+    ];
+  }
+  export mask digit_3 {
+    rows = [
+      "1111.",
+      "...11",
+      "...11",
+      ".111.",
+      "...11",
+      "...11",
+      "1111."
+    ];
+  }
+  export mask digit_4 {
+    rows = [
+      "11.11",
+      "11.11",
+      "11.11",
+      "11111",
+      "...11",
+      "...11",
+      "...11"
+    ];
+  }
+  export mask digit_5 {
+    rows = [
+      "11111",
+      "11...",
+      "11...",
+      "1111.",
+      "...11",
+      "...11",
+      "1111."
+    ];
+  }
+  export mask digit_6 {
+    rows = [
+      ".111.",
+      "11...",
+      "11...",
+      "1111.",
+      "11.11",
+      "11.11",
+      ".111."
+    ];
+  }
+  export mask digit_7 {
+    rows = [
+      "11111",
+      "...11",
+      "..11.",
+      "..11.",
+      ".11..",
+      ".11..",
+      ".11.."
+    ];
+  }
+  export mask digit_8 {
+    rows = [
+      ".111.",
+      "11.11",
+      "11.11",
+      ".111.",
+      "11.11",
+      "11.11",
+      ".111."
+    ];
+  }
+  export mask digit_9 {
+    rows = [
+      ".111.",
+      "11.11",
+      "11.11",
+      ".1111",
+      "...11",
+      "...11",
+      ".111."
+    ];
+  }
+
+  export stamp glyph_0 {
+    rows = [
+      ".hhh.",
+      "hf.fh",
+      "hf.fh",
+      "ff.ff",
+      "ff.ff",
+      "fs.sf",
+      ".sss."
+    ];
+    slots = [h, f, s];
+  }
+  export stamp glyph_1 {
+    rows = [
+      "..hh.",
+      ".hhf.",
+      "h.hf.",
+      "..ff.",
+      "..ff.",
+      "..fs.",
+      "sssss"
+    ];
+    slots = [h, f, s];
+  }
+  export stamp glyph_2 {
+    rows = [
+      ".hhh.",
+      "hh.fh",
+      "...ff",
+      "..ff.",
+      ".ff..",
+      "fs...",
+      "sssss"
+    ];
+    slots = [h, f, s];
+  }
+  export stamp glyph_3 {
+    rows = [
+      "hhhh.",
+      "...fh",
+      "...ff",
+      ".fff.",
+      "...ff",
+      "...sf",
+      "ssss."
+    ];
+    slots = [h, f, s];
+  }
+  export stamp glyph_4 {
+    rows = [
+      "hh.hh",
+      "hf.fh",
+      "ff.ff",
+      "fffff",
+      "...ff",
+      "...sf",
+      "...ss"
+    ];
+    slots = [h, f, s];
+  }
+  export stamp glyph_5 {
+    rows = [
+      "hhhhh",
+      "hh...",
+      "ff...",
+      "ffff.",
+      "...ff",
+      "...sf",
+      "ssss."
+    ];
+    slots = [h, f, s];
+  }
+  export stamp glyph_6 {
+    rows = [
+      ".hhh.",
+      "hh...",
+      "ff...",
+      "ffff.",
+      "ff.ff",
+      "fs.sf",
+      ".sss."
+    ];
+    slots = [h, f, s];
+  }
+  export stamp glyph_7 {
+    rows = [
+      "hhhhh",
+      "...fh",
+      "..ff.",
+      "..ff.",
+      ".fs..",
+      ".fs..",
+      ".ss.."
+    ];
+    slots = [h, f, s];
+  }
+  export stamp glyph_8 {
+    rows = [
+      ".hhh.",
+      "hh.hh",
+      "ff.ff",
+      ".fff.",
+      "ff.ff",
+      "fs.sf",
+      ".sss."
+    ];
+    slots = [h, f, s];
+  }
+  export stamp glyph_9 {
+    rows = [
+      ".hhh.",
+      "hh.hh",
+      "ff.ff",
+      ".ffff",
+      "...ff",
+      "...sf",
+      ".sss."
+    ];
+    slots = [h, f, s];
+  }
+}

@@ -1,0 +1,182 @@
+ashfox 1
+module explosion {
+  params {
+    radius = 18u;
+    duration = 0.85s;
+    seed = 521;
+  }
+
+  export palette ShrapnelBlast {
+    core = #fff8db;
+    mid = #ff992e;
+    edge = #a62b12;
+    smoke = #332926;
+  }
+
+  export palette FuelFireball {
+    core = #fffbe0;
+    mid = #ffb338;
+    edge = #bd3712;
+    smoke = #2e2624;
+  }
+
+  export element blast_dome : dome {
+    at = 0s..(duration * 0.76);
+    blend = additive;
+    shape = hemisphere;
+    radius = radius;
+    subdiv = 1;
+    color = core;
+    texture radial_flare { spikes = 8; seed = seed; posterize = 4; }
+    dissolve radial_noise { frames = 8; edge_glow = core; seed = seed; }
+    scale = 0.3 -> 1.25 ease_out -> 0;
+    alpha = 0.9 -> 1.0 snap -> 0;
+  }
+
+  export element blast_ring : ring {
+    at = 0s..(duration * 0.7);
+    blend = additive;
+    radius = 2u..(radius * 1.15);
+    segments = 24;
+    bevel = 0.4;
+    ripple_amp = 0.3;
+    ripple_freq = 6;
+    color = mid;
+    texture ring_wave { rings = 3; seed = seed + 3; }
+    dissolve voronoi { frames = 8; edge_glow = core; seed = seed + 3; }
+    scale = 0.25 -> 1.3 ease_out -> 0;
+    alpha = 0.9 -> 0.5 -> 0;
+  }
+
+  export emitter shrapnel_burst : voxel_burst {
+    at = 0s..(duration * 0.55);
+    seed = seed;
+    count = 30;
+    shape = sphere(radius * 0.25);
+    particle = shard;
+    speed = 18u..36u;
+    life = 0.2s..0.44s;
+    gravity = -26u;
+    drag = 1.4;
+    ground { y = 0u; bounce = 42%; friction = 72%; }
+    size_over_life = 1.1u -> 0u;
+    color_over_life = core -> mid -> edge;
+    velocity_stretch = 1.6;
+    blend = additive;
+  }
+
+  export emitter detonation_smoke : voxel_burst {
+    at = 0.04s..(duration * 0.65);
+    seed = seed + 11;
+    count = 22;
+    shape = sphere(radius * 0.45);
+    particle = puff;
+    speed = 8u..18u;
+    life = 0.28s..0.52s;
+    gravity = 10u;
+    drag = 2.4;
+    turbulence = curl(1.8, 6u);
+    size_over_life = 1.1u -> 3.0u ease_out -> 0u;
+    color_over_life = core -> mid -> edge -> smoke;
+    blend = blend;
+  }
+
+  export recipe PipeBombBlast {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = ShrapnelBlast;
+    element blast_dome : dome {
+      at = 0s..(duration * 0.76);
+      blend = additive;
+      shape = hemisphere;
+      radius = radius;
+      subdiv = 1;
+      color = core;
+      texture radial_flare { spikes = 8; seed = seed; posterize = 4; }
+      dissolve radial_noise { frames = 8; edge_glow = core; seed = seed; }
+      scale = 0.3 -> 1.25 ease_out -> 0;
+      alpha = 0.9 -> 1.0 snap -> 0;
+    }
+    element blast_ring : ring {
+      at = 0s..(duration * 0.7);
+      blend = additive;
+      radius = 2u..(radius * 1.15);
+      segments = 24;
+      bevel = 0.4;
+      ripple_amp = 0.3;
+      ripple_freq = 6;
+      color = mid;
+      texture ring_wave { rings = 3; seed = seed + 3; }
+      dissolve voronoi { frames = 8; edge_glow = core; seed = seed + 3; }
+      scale = 0.25 -> 1.3 ease_out -> 0;
+      alpha = 0.9 -> 0.5 -> 0;
+    }
+    emitter shrapnel_burst : voxel_burst {
+      at = 0s..(duration * 0.55);
+      seed = seed;
+      count = 30;
+      shape = sphere(radius * 0.25);
+      particle = shard;
+      speed = 18u..36u;
+      life = 0.2s..0.44s;
+      gravity = -26u;
+      drag = 1.4;
+      ground { y = 0u; bounce = 42%; friction = 72%; }
+      size_over_life = 1.1u -> 0u;
+      color_over_life = core -> mid -> edge;
+      velocity_stretch = 1.6;
+      blend = additive;
+    }
+  }
+
+  export recipe FuelDetonation {
+    duration = 0.95s;
+    fps = 30;
+    loop = once;
+    palette = FuelFireball;
+    element blast_dome : dome {
+      at = 0s..0.72s;
+      blend = additive;
+      shape = hemisphere;
+      radius = radius;
+      subdiv = 1;
+      color = core;
+      texture radial_flare { spikes = 8; seed = seed; posterize = 4; }
+      dissolve radial_noise { frames = 8; edge_glow = core; seed = seed; }
+      scale = 0.3 -> 1.25 ease_out -> 0;
+      alpha = 0.9 -> 1.0 snap -> 0;
+    }
+    emitter shrapnel_burst : voxel_burst {
+      at = 0s..0.48s;
+      seed = seed;
+      count = 30;
+      shape = sphere(radius * 0.25);
+      particle = shard;
+      speed = 18u..36u;
+      life = 0.2s..0.44s;
+      gravity = -26u;
+      drag = 1.4;
+      ground { y = 0u; bounce = 42%; friction = 72%; }
+      size_over_life = 1.1u -> 0u;
+      color_over_life = core -> mid -> edge;
+      velocity_stretch = 1.6;
+      blend = additive;
+    }
+    emitter detonation_smoke : voxel_burst {
+      at = 0.04s..0.62s;
+      seed = seed + 11;
+      count = 22;
+      shape = sphere(radius * 0.45);
+      particle = puff;
+      speed = 8u..18u;
+      life = 0.28s..0.52s;
+      gravity = 10u;
+      drag = 2.4;
+      turbulence = curl(1.8, 6u);
+      size_over_life = 1.1u -> 3.0u ease_out -> 0u;
+      color_over_life = core -> mid -> edge -> smoke;
+      blend = blend;
+    }
+  }
+}

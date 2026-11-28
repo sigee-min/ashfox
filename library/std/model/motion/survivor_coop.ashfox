@@ -1,0 +1,226 @@
+ashfox 1
+module survivor_coop {
+  import "std/model/rig/biped" as biped;
+  import "std/model/rig/fps_arms" as fps;
+
+  export motion incap_crawl for biped.BipedRig {
+    duration = 1.4s; fps = 24; loop = loop;
+    track pelvis.position {
+      key 0s = (0u, -9.5u, 0u) smooth;
+      key 0.7s = (0u, -9u, 0u) smooth;
+      key 1.4s = (0u, -9.5u, 0u) smooth;
+    }
+    track torso.rotation {
+      key 0s = (-64deg, -6deg, 0deg) smooth;
+      key 0.7s = (-64deg, 6deg, 0deg) smooth;
+      key 1.4s = (-64deg, -6deg, 0deg) smooth;
+    }
+    track head.rotation {
+      key 0s = (48deg, 0deg, 0deg) smooth;
+      key 1.4s = (48deg, 0deg, 0deg) smooth;
+    }
+    track left_arm.rotation {
+      key 0s = (115deg, 0deg, -10deg) catmullrom;
+      key 0.7s = (70deg, 0deg, -10deg) catmullrom;
+      key 1.4s = (115deg, 0deg, -10deg) catmullrom;
+    }
+    track right_arm.rotation {
+      key 0s = (70deg, 0deg, 10deg) catmullrom;
+      key 0.7s = (115deg, 0deg, 10deg) catmullrom;
+      key 1.4s = (70deg, 0deg, 10deg) catmullrom;
+    }
+    track left_leg.rotation {
+      key 0s = (-78deg, 0deg, -8deg) smooth;
+      key 1.4s = (-78deg, 0deg, -8deg) smooth;
+    }
+    track right_leg.rotation {
+      key 0s = (-72deg, 0deg, 8deg) smooth;
+      key 1.4s = (-72deg, 0deg, 8deg) smooth;
+    }
+  }
+
+  export motion revive_help for biped.BipedRig {
+    duration = 1.6s; fps = 24; loop = loop;
+    track pelvis.position {
+      key 0s = (0u, -5.5u, 0u) ease_in_out;
+      key 0.8s = (0u, -4u, 1u) ease_in_out;
+      key 1.6s = (0u, -5.5u, 0u) ease_in_out;
+    }
+    track torso.rotation {
+      key 0s = (-28deg, 0deg, 0deg) smooth;
+      key 0.8s = (-18deg, 4deg, 0deg) smooth;
+      key 1.6s = (-28deg, 0deg, 0deg) smooth;
+    }
+    track head.rotation {
+      key 0s = (-12deg, 0deg, 0deg) smooth;
+      key 0.8s = (-8deg, -4deg, 0deg) smooth;
+      key 1.6s = (-12deg, 0deg, 0deg) smooth;
+    }
+    track left_arm.rotation {
+      key 0s = (68deg, 14deg, -8deg) ease_in_out;
+      key 0.8s = (82deg, 18deg, -6deg) ease_in_out;
+      key 1.6s = (68deg, 14deg, -8deg) ease_in_out;
+    }
+    track right_arm.rotation {
+      key 0s = (58deg, -16deg, 8deg) ease_in_out;
+      key 0.8s = (74deg, -18deg, 6deg) ease_in_out;
+      key 1.6s = (58deg, -16deg, 8deg) ease_in_out;
+    }
+    track left_leg.rotation {
+      key 0s = (52deg, 0deg, -6deg) smooth;
+      key 1.6s = (52deg, 0deg, -6deg) smooth;
+    }
+    track right_leg.rotation {
+      key 0s = (-48deg, 0deg, 6deg) smooth;
+      key 1.6s = (-48deg, 0deg, 6deg) smooth;
+    }
+  }
+
+  export motion heal_self for fps.FpsArmsRig {
+    duration = 1.8s; fps = 30; loop = once;
+    track arm_l.position {
+      key 0s = (0u, 0u, 0u) ease_in;
+      key 0.35s = (2.5u, 1u, 1.5u) ease_out;
+      key 1.35s = (2.8u, 1.4u, 1.2u) ease_in_out;
+      key 1.8s = (0u, 0u, 0u) smooth;
+    }
+    track arm_l.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.35s = (8deg, -38deg, -18deg) ease_out;
+      key 1.35s = (10deg, -34deg, -16deg) ease_in_out;
+      key 1.8s = (0deg, 0deg, 0deg) smooth;
+    }
+    track arm_r.position {
+      key 0s = (0u, 0u, 0u) ease_in;
+      key 0.35s = (-3u, 2u, -1u) ease_out;
+      key 0.85s = (-2u, 1u, -0.5u) ease_in_out;
+      key 1.35s = (-3u, 2u, -1u) ease_in_out;
+      key 1.8s = (0u, 0u, 0u) smooth;
+    }
+    track arm_r.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.35s = (14deg, 32deg, 18deg) ease_out;
+      key 0.85s = (-8deg, 24deg, 10deg) ease_in_out;
+      key 1.35s = (12deg, 30deg, 16deg) ease_in_out;
+      key 1.8s = (0deg, 0deg, 0deg) smooth;
+    }
+    track hand_r.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.35s = (12deg, -10deg, 16deg) ease_out;
+      key 0.85s = (-12deg, 10deg, -12deg) ease_in_out;
+      key 1.35s = (10deg, -8deg, 14deg) ease_in_out;
+      key 1.8s = (0deg, 0deg, 0deg) smooth;
+    }
+    cue 0.45s sound "bandage_wrap" at arm_l;
+  }
+
+  export motion throw_arc for fps.FpsArmsRig {
+    duration = 0.85s; fps = 30; loop = once;
+    track arm_r.position {
+      key 0s = (0u, 0u, 0u) ease_in;
+      key 0.28s = (1.5u, 2.5u, 3.5u) ease_out;
+      key 0.5s = (-1.5u, 0.5u, -4.5u) snap;
+      key 0.85s = (0u, 0u, 0u) smooth;
+    }
+    track arm_r.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.28s = (36deg, -18deg, -12deg) ease_out;
+      key 0.5s = (-32deg, 14deg, 8deg) snap;
+      key 0.85s = (0deg, 0deg, 0deg) smooth;
+    }
+    track hand_r.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.28s = (18deg, 0deg, 0deg) ease_out;
+      key 0.5s = (-24deg, 0deg, 0deg) snap;
+      key 0.85s = (0deg, 0deg, 0deg) smooth;
+    }
+    track arm_l.position {
+      key 0s = (0u, 0u, 0u) ease_in;
+      key 0.28s = (0.5u, 1.5u, -1.5u) ease_out;
+      key 0.5s = (-1u, -2u, 1u) snap;
+      key 0.85s = (0u, 0u, 0u) smooth;
+    }
+    track arm_l.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.28s = (-6deg, -14deg, 8deg) ease_out;
+      key 0.5s = (-18deg, 6deg, 12deg) snap;
+      key 0.85s = (0deg, 0deg, 0deg) smooth;
+    }
+    cue 0.48s sound "throw_whoosh" at hand_r;
+  }
+
+  export motion shove_push for fps.FpsArmsRig {
+    duration = 0.5s; fps = 30; loop = once;
+    track arm_r.position {
+      key 0s = (0u, 0u, 0u) ease_in;
+      key 0.12s = (1u, -0.5u, 2u) ease_out;
+      key 0.24s = (-2.5u, 1u, -5.5u) snap;
+      key 0.5s = (0u, 0u, 0u) smooth;
+    }
+    track arm_r.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.12s = (6deg, -18deg, 14deg) ease_out;
+      key 0.24s = (-12deg, 28deg, -22deg) snap;
+      key 0.5s = (0deg, 0deg, 0deg) smooth;
+    }
+    track arm_l.position {
+      key 0s = (0u, 0u, 0u) ease_in;
+      key 0.12s = (-0.5u, 0u, 1.5u) ease_out;
+      key 0.24s = (2u, 1.2u, -5u) snap;
+      key 0.5s = (0u, 0u, 0u) smooth;
+    }
+    track arm_l.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.12s = (4deg, 12deg, -10deg) ease_out;
+      key 0.24s = (-10deg, -24deg, 18deg) snap;
+      key 0.5s = (0deg, 0deg, 0deg) smooth;
+    }
+    track weapon_mount.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.24s = (8deg, 24deg, 32deg) snap;
+      key 0.5s = (0deg, 0deg, 0deg) smooth;
+    }
+    cue 0.22s sound "shove_whoosh" at weapon_mount;
+  }
+
+  export motion shotgun_pump for fps.FpsArmsRig {
+    duration = 0.55s; fps = 30; loop = once;
+    track weapon_mount.position {
+      key 0s = (0u, 0u, 0u) ease_in;
+      key 0.22s = (0u, 0.4u, 0.8u) ease_out;
+      key 0.38s = (0u, 0u, -0.3u) snap;
+      key 0.55s = (0u, 0u, 0u) smooth;
+    }
+    track weapon_mount.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.22s = (6deg, -8deg, 12deg) ease_out;
+      key 0.38s = (-2deg, 0deg, 4deg) snap;
+      key 0.55s = (0deg, 0deg, 0deg) smooth;
+    }
+    track arm_l.position {
+      key 0s = (0u, 0u, 0u) ease_in;
+      key 0.22s = (0u, -0.3u, 3.6u) ease_out;
+      key 0.38s = (0u, 0u, -0.4u) snap;
+      key 0.55s = (0u, 0u, 0u) smooth;
+    }
+    track arm_r.position {
+      key 0s = (0u, 0u, 0u) ease_in;
+      key 0.22s = (0u, 0u, 0.6u) ease_out;
+      key 0.55s = (0u, 0u, 0u) smooth;
+    }
+    track hand_l.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.22s = (-6deg, 0deg, 0deg) ease_out;
+      key 0.38s = (4deg, 0deg, 0deg) snap;
+      key 0.55s = (0deg, 0deg, 0deg) smooth;
+    }
+    track bolt.position {
+      key 0s = (0u, 0u, 0u) linear;
+      key 0.22s = (0u, 0u, 3.2u) ease_out;
+      key 0.38s = (0u, 0u, 0u) snap;
+    }
+    cue 0.16s sound "pump_back" at bolt_handle;
+    cue 0.22s vfx "shell_eject" at bolt_handle;
+    cue 0.34s sound "pump_forward" at bolt_handle;
+  }
+}

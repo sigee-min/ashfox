@@ -39,7 +39,7 @@ const walkStdDisk = (
 };
 
 const virtualLibs = walkStdDisk(STD_DIR);
-assert.equal(virtualLibs.size, 121, `Expected 121 stdlib modules, got ${virtualLibs.size}`);
+assert.equal(virtualLibs.size, 143, `Expected 143 stdlib modules, got ${virtualLibs.size}`);
 
 // 1. Validate canonical specifiers, pure ashfox 1 headers, zero version suffixes, and "std/*" internal imports.
 for (const [spec, source] of virtualLibs) {
@@ -63,8 +63,8 @@ assert.equal(
 );
 
 // 2. Catalog & resolver APIs.
-assert.equal(listVirtualLibraries(virtualLibs).length, 121);
-assert.equal(filterVirtualLibraries(virtualLibs, 'vfx').length, 27);
+assert.equal(listVirtualLibraries(virtualLibs).length, 143);
+assert.equal(filterVirtualLibraries(virtualLibs, 'vfx').length, 31);
 assert.equal(filterVirtualLibraries(virtualLibs, 'sound/combat').length, 3);
 assert.ok(
   describeVirtualModule('std/sound/foley/footstep', virtualLibs.get('std/sound/foley/footstep')!)
@@ -177,6 +177,11 @@ const hookCases: readonly [string, string][] = [
     'anchor p : h.ProjectileMuzzle { at = (2b, 1b, 2b); projectile_id = "arrow"; }',
   ],
   ['std/core/hook/loot', 'anchor p : h.LootChest { at = (2b, 1b, 2b); table = "dungeon/basic"; }'],
+  ['std/core/hook/traversal', 'anchor p : h.JumpPad { at = (2b, 1b, 2b); }'],
+  [
+    'std/core/hook/director',
+    'anchor p : h.RescueBeacon { at = (2b, 1b, 2b); beacon_id = "extract"; }',
+  ],
 ];
 for (const [spec, hookLine] of hookCases) {
   assertOk(
@@ -187,67 +192,36 @@ for (const [spec, hookLine] of hookCases) {
   );
 }
 
+const bipedBones = 'root pelvis torso head left_arm right_arm weapon left_leg right_leg'.split(' ');
+const bruteBones = [...bipedBones.slice(0, 6), 'left_hand', 'right_hand', 'left_leg', 'right_leg'];
 const rigCases: readonly [string, string, string, readonly string[]][] = [
-  [
-    'std/model/rig/biped',
-    'BipedRig',
-    'BipedSkeleton',
-    ['root', 'pelvis', 'torso', 'head', 'left_arm', 'right_arm', 'weapon', 'left_leg', 'right_leg'],
-  ],
+  ['std/model/rig/biped', 'BipedRig', 'BipedSkeleton', bipedBones],
+  ['std/model/rig/chibi', 'ChibiRig', 'ChibiSkeleton', bipedBones],
+  ['std/model/rig/brute', 'BruteRig', 'BruteSkeleton', bruteBones],
   [
     'std/model/rig/quadruped',
     'QuadrupedRig',
     'QuadrupedSkeleton',
-    [
-      'root',
-      'body',
-      'neck',
-      'head',
-      'tail',
-      'front_left_leg',
-      'front_right_leg',
-      'back_left_leg',
-      'back_right_leg',
-    ],
+    'root body neck head tail front_left_leg front_right_leg back_left_leg back_right_leg'.split(
+      ' ',
+    ),
   ],
   [
     'std/model/rig/winged',
     'WingedRig',
     'WingedSkeleton',
-    [
-      'root',
-      'torso',
-      'head',
-      'left_wing',
-      'left_wing_tip',
-      'right_wing',
-      'right_wing_tip',
-      'tail',
-      'left_leg',
-      'right_leg',
-    ],
+    'root torso head left_wing left_wing_tip right_wing right_wing_tip tail left_leg right_leg'.split(
+      ' ',
+    ),
   ],
   ['std/model/rig/slime', 'SlimeRig', 'SlimeSkeleton', ['root', 'body', 'core', 'crest']],
   [
     'std/model/rig/winged_quadruped',
     'WingedQuadrupedRig',
     'WingedQuadrupedSkeleton',
-    [
-      'root',
-      'torso',
-      'neck',
-      'head',
-      'wing_l',
-      'wing_tip_l',
-      'wing_r',
-      'wing_tip_r',
-      'foreleg_l',
-      'foreleg_r',
-      'hindleg_l',
-      'hindleg_r',
-      'tail',
-      'tail_tip',
-    ],
+    'root torso neck head wing_l wing_tip_l wing_r wing_tip_r foreleg_l foreleg_r hindleg_l hindleg_r tail tail_tip'.split(
+      ' ',
+    ),
   ],
 ];
 for (const [spec, rigName, skelName, bones] of rigCases) {
@@ -347,6 +321,10 @@ const spriteCases: readonly [string, string][] = [
     'std/sprite/tile/foliage',
     'fill base { material = lib.canopy_green; pattern blotch { scale = 4px; density = 0.25; seed = 7; to_material = lib.deep_fern; } grain soft { amount = 1; seed = 7; } }',
   ],
+  [
+    'std/sprite/ui/damage_font',
+    'part p { mask = lib.digit_7; material = lib.digit_crit; at = (4px, 4px); shade { form = flat; light = top_left; contrast = 1; } grain clustered { amount = 0; seed = 1; } patches = []; }',
+  ],
 ];
 for (const [spec, body] of spriteCases) {
   assertOk(
@@ -370,6 +348,7 @@ const vfxCases: readonly [string, string][] = [
   ['std/vfx/element/fire', 'EmberSolar'],
   ['std/vfx/ambient/embers', 'HearthEmbers'],
   ['std/vfx/ambient/aura', 'HealingMist'],
+  ['std/vfx/rpg/level_up', 'AscensionGold'],
 ];
 for (const [spec, palName] of vfxCases) {
   assertOk(spec, 'fx', 'vfx/fx.ashfox', vfxTemplate(spec, palName));
@@ -387,6 +366,8 @@ const soundCases: readonly [string, string, boolean][] = [
   ['std/sound/ambient/room', 'room_bed', true],
   ['std/sound/ui/click', 'crisp_tick', false],
   ['std/sound/ui/chime', 'bell_chime', false],
+  ['std/sound/rpg/pickup', 'coin_jingle', false],
+  ['std/sound/horror/stinger', 'special_spawn_cue', false],
 ];
 for (const [spec, voice, amb] of soundCases) {
   assertOk(
@@ -440,7 +421,10 @@ assert.equal(JSON.stringify(ovA), JSON.stringify(ovB));
 // 5. modularityGuard: unused exports inside library/std/** permitted, unused import in consumer rejected, duplicate hint present.
 const guardOk = checkWorkspaceModularity(
   [
-    { path: 'library/std/core/hook/world.ashfox', source: virtualLibs.get('std/core/hook/world')! },
+    {
+      path: 'library/std/core/hook/world.ashfox',
+      source: virtualLibs.get('std/core/hook/world')!,
+    },
     {
       path: 'assets/structures/a.ashfox',
       source:
@@ -454,7 +438,10 @@ assert.equal(guardOk.diagnostics.length, 0);
 
 const unusedImport = checkWorkspaceModularity(
   [
-    { path: 'library/std/core/hook/world.ashfox', source: virtualLibs.get('std/core/hook/world')! },
+    {
+      path: 'library/std/core/hook/world.ashfox',
+      source: virtualLibs.get('std/core/hook/world')!,
+    },
     {
       path: 'assets/structures/a.ashfox',
       source:

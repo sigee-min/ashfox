@@ -1,0 +1,65 @@
+ashfox 1
+module stinger {
+  params {
+    spawn_pitch = 220hz;
+    horn_pitch = 115hz;
+    bolt_pitch = 260hz;
+  }
+
+  export voice special_spawn_cue : fm {
+    pitch = log(0: spawn_pitch -> 0.35: 310hz -> 1: 185hz);
+    ratio = 1.414;
+    index = lin(0: 3.6 -> 0.5: 4.8 -> 1: 1.2);
+    vibrato_hz = 6hz;
+    vibrato_cents = 35cents;
+    highpass = 75hz;
+    drive : grit { amount = 1.8; }
+    fx : delay { mix = 26%; time_ms = 38ms; feedback = 30%; ping_pong = true; }
+    gain { env = adsr; attack = 12ms; decay = 180ms; sustain = 0.55; release = 220ms; peak = 0.92; }
+  }
+
+  export voice horde_alert_horn : osc {
+    waveform = saw;
+    pitch = log(0: horn_pitch -> 0.25: 132hz -> 0.75: 118hz -> 1: 98hz);
+    unison = 3;
+    detune_cents = 24cents;
+    filter : lowpass { cutoff = log(0: 1800hz -> 0.45: 920hz -> 1: 420hz); q = 1.4; }
+    highpass = 42hz;
+    drive : tube { amount = 2.0; }
+    fx : chorus { mix = 28%; rate = 1.2hz; depth = 0.45; }
+    gain { env = adsr; attack = 35ms; decay = 220ms; sustain = 0.72; release = 260ms; peak = 0.94; }
+  }
+
+  export voice saferoom_bolt_slam : modal_plate {
+    material = iron;
+    pitch = bolt_pitch;
+    size = 1.15;
+    hardness = 0.94;
+    damping = 0.48;
+    brightness = 0.78;
+    modes = 16;
+    strike = mallet;
+    twin_beat = 0.42;
+    splash = 0.46;
+    stereo_spread = 0.45;
+    highpass = 45hz;
+    eq { low = (120hz, 3db); }
+    drive : grit { amount = 1.6; }
+    gain { env = ad; attack = 2ms; peak = 0.96; curve = exp; }
+  }
+
+  export seq special_spawn_stinger {
+    start = 10ms;
+    step cue { voice = special_spawn_cue; at = 0ms; duration = 680ms; vary_pitch = -35cents..35cents; }
+  }
+
+  export seq horde_alert_stinger {
+    start = 10ms;
+    step horn { voice = horde_alert_horn; at = 0ms; duration = 760ms; vary_pitch = -25cents..25cents; }
+  }
+
+  export seq saferoom_slam_stinger {
+    start = 8ms;
+    step bolt { voice = saferoom_bolt_slam; at = 0ms; duration = 420ms; vary_pitch = -30cents..30cents; }
+  }
+}

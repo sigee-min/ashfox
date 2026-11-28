@@ -1,0 +1,116 @@
+ashfox 1
+module throwable {
+  export socket contract GadgetGrip {
+  }
+
+  export socket contract FuseTipSocket {
+  }
+
+  export rig contract ThrowableRig {
+    joint root { parent = none; role = root; channels = (position, rotation, scale); }
+    joint body { parent = root; role = prop; channels = rotation; }
+    joint cap { parent = body; role = prop; channels = (position, rotation); }
+    anchor fuse_tip { joint = cap; offset = (0u, 3u, 0u); }
+    socket grip: GadgetGrip { joint = root; capacity = one; }
+    socket fuse_tip_socket: FuseTipSocket { joint = cap; capacity = one; }
+  }
+
+  export skeleton ThrowableSkeleton implements ThrowableRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind body { parent_origin = (0u, 0u, 0u); }
+    bind cap { parent_origin = (0u, 5u, 0u); }
+  }
+
+  export surface contract FireBottleSurface {
+    chart bottle box { coverage = opaque; }
+    chart fuel box { coverage = opaque; }
+    chart shoulder box { coverage = opaque; }
+    chart neck box { coverage = opaque; }
+    chart wick box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract PipeBombSurface {
+    chart casing box { coverage = opaque; }
+    chart endcap box { coverage = opaque; }
+    chart timer box { coverage = opaque; }
+    chart beacon box { coverage = opaque; }
+    chart fuse box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract BileFlaskSurface {
+    chart lower_bulb box { coverage = opaque; }
+    chart upper_dome box { coverage = opaque; }
+    chart fluid box { coverage = opaque; }
+    chart strap box { coverage = opaque; }
+    chart collar box { coverage = opaque; }
+    chart stopper box { coverage = opaque; }
+    material = double;
+  }
+
+  export component FireBottle(param scale_factor : ratio = 1.0) {
+    requires rig skeleton: ThrowableRig;
+    requires surface skin: FireBottleSurface;
+    bind bone root to skeleton.root;
+    bind bone body to skeleton.body;
+    bind bone cap to skeleton.cap;
+    geometry {
+      bone root {
+        bone body {
+          cylinder glass_base { origin = (0u, 0u, 0u); radius = 2u * scale_factor; radius_top = 2u * scale_factor; height = 4u * scale_factor; sides = 8; axis = y; surface = skin.bottle; }
+          cylinder fuel_core { origin = (0u, 0.5u, 0u); radius = 1u * scale_factor; radius_top = 1u * scale_factor; height = 3u * scale_factor; sides = 8; axis = y; surface = skin.fuel; }
+          taper shoulder { origin = (-2u * scale_factor, 4u * scale_factor, -2u * scale_factor); size = (4u * scale_factor, 2u * scale_factor, 4u * scale_factor); top_scale = (0.45, 0.45); axis = y; surface = skin.shoulder; }
+          bone cap {
+            cylinder neck_collar { origin = (0u, 1u, 0u); radius = 1u * scale_factor; radius_top = 1u * scale_factor; height = 2u * scale_factor; sides = 8; axis = y; surface = skin.neck; }
+            wedge rag_wick { origin = (-1u, 2u, -1u); size = (2u, 3u, 2u); slope = north; pivot = (0u, 2u, 0u); rotation = (16deg, 0deg, 12deg); surface = skin.wick; }
+          }
+        }
+      }
+    }
+  }
+
+  export component PipeBomb(param scale_factor : ratio = 1.0) {
+    requires rig skeleton: ThrowableRig;
+    requires surface skin: PipeBombSurface;
+    bind bone root to skeleton.root;
+    bind bone body to skeleton.body;
+    bind bone cap to skeleton.cap;
+    geometry {
+      bone root {
+        bone body {
+          cylinder pipe_shell { origin = (0u, 0u, 0u); radius = 2u * scale_factor; radius_top = 2u * scale_factor; height = 5u * scale_factor; sides = 8; axis = y; surface = skin.casing; }
+          cylinder bottom_cap { origin = (0u, -1u, 0u); radius = 2u * scale_factor; radius_top = 2u * scale_factor; height = 1u * scale_factor; sides = 8; axis = y; surface = skin.endcap; }
+          cube timer_module { origin = (-1u, 1u, -2.5u); size = (2u, 3u, 1u); surface = skin.timer; }
+          bone cap {
+            cylinder top_cap { origin = (0u, 0u, 0u); radius = 2u * scale_factor; radius_top = 2u * scale_factor; height = 1u * scale_factor; sides = 8; axis = y; surface = skin.endcap; }
+            cube blink_beacon { origin = (-0.5u, 1u, -0.5u); size = (1u, 1u, 1u); surface = skin.beacon; }
+            cube fuse_cord { origin = (0.5u, 1u, -0.5u); size = (1u, 2u, 1u); pivot = (0.5u, 1u, 0u); rotation = (0deg, 0deg, -20deg); surface = skin.fuse; }
+          }
+        }
+      }
+    }
+  }
+
+  export component BileFlask(param scale_factor : ratio = 1.0) {
+    requires rig skeleton: ThrowableRig;
+    requires surface skin: BileFlaskSurface;
+    bind bone root to skeleton.root;
+    bind bone body to skeleton.body;
+    bind bone cap to skeleton.cap;
+    geometry {
+      bone root {
+        bone body {
+          taper lower_bulb { origin = (-2u * scale_factor, 0u, -2u * scale_factor); size = (4u * scale_factor, 2u * scale_factor, 4u * scale_factor); top_scale = (1.2, 1.2); axis = y; surface = skin.lower_bulb; }
+          taper upper_dome { origin = (-2.5u * scale_factor, 2u * scale_factor, -2.5u * scale_factor); size = (5u * scale_factor, 3u * scale_factor, 5u * scale_factor); top_scale = (0.4, 0.4); axis = y; surface = skin.upper_dome; }
+          cylinder bile_core { origin = (0u, 0.5u, 0u); radius = 2u * scale_factor; radius_top = 1u * scale_factor; height = 3u * scale_factor; sides = 8; axis = y; surface = skin.fluid; }
+          cube band_strap { origin = (-2.5u * scale_factor, 2u * scale_factor, -2.5u * scale_factor); size = (5u * scale_factor, 1u, 5u * scale_factor); surface = skin.strap; }
+          bone cap {
+            cylinder neck_lip { origin = (0u, 0u, 0u); radius = 1u * scale_factor; radius_top = 1u * scale_factor; height = 1u * scale_factor; sides = 8; axis = y; surface = skin.collar; }
+            cylinder cork_stopper { origin = (0u, 1u, 0u); radius = 1u * scale_factor; radius_top = 1u * scale_factor; height = 1u * scale_factor; sides = 8; axis = y; surface = skin.stopper; }
+          }
+        }
+      }
+    }
+  }
+}

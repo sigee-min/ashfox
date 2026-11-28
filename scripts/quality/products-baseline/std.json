@@ -7,7 +7,7 @@
     {
       "input": "library/std",
       "ok": true,
-      "sourceHash": "d9fabcfc03ecf1f7aff608810dfedaf30e419c4e02f99debca1c54cafdd03529",
+      "sourceHash": "a60588a72e05324c7d65e48a0a0b4003c90959a701ea994bc8e17170f8563af1",
       "modules": [
         {
           "path": "library/std/core/hook/combat.ashfox",
@@ -23,6 +23,33 @@
           "params": []
         },
         {
+          "path": "library/std/core/hook/coop.ashfox",
+          "specifier": "std/core/hook/coop",
+          "sha256": "af89f02e308ccd97dbc1b7eb49b8c40c563859731cabd2bcf333799cf764c4fd",
+          "exports": [
+            "AmmoStash",
+            "DoorLockBar",
+            "MedkitTarget",
+            "ReviveZone"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/core/hook/director.ashfox",
+          "specifier": "std/core/hook/director",
+          "sha256": "688238251d286dff67cd092094faed39be1e5bc6d5bbd731ac3bf1df22a0ba74",
+          "exports": [
+            "HordeSpawnZone",
+            "NavClimbEdge",
+            "PanicEventTrigger",
+            "RescueBeacon",
+            "SaferoomZone"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
           "path": "library/std/core/hook/loot.ashfox",
           "specifier": "std/core/hook/loot",
           "sha256": "3c3facf244c804685a661f23334b6d5654da0f6ead11566cb43a7ffc33c5972b",
@@ -31,6 +58,19 @@
             "HarvestingNode",
             "ItemDrop",
             "LootChest"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/core/hook/traversal.ashfox",
+          "specifier": "std/core/hook/traversal",
+          "sha256": "25fda1a075a62e387dc8f3df888009ae892c41ee8160e276454f31e855dd0ab8",
+          "exports": [
+            "ClimbRail",
+            "JumpPad",
+            "OneWayPlatform",
+            "PortalLink"
           ],
           "imports": [],
           "params": []
@@ -400,6 +440,26 @@
           ]
         },
         {
+          "path": "library/std/model/face/chibi.ashfox",
+          "specifier": "std/model/face/chibi",
+          "sha256": "868ef4a82fb3d16262bcc826ce4ba22c4d677500698182b0edbd6214c9ab5218",
+          "exports": [
+            "ChibiEyes",
+            "ChibiFaceDesign",
+            "ChibiMouth",
+            "chibi_eyes_bright",
+            "chibi_mouth_warm"
+          ],
+          "imports": [],
+          "params": [
+            "mouth_height",
+            "mouth_width",
+            "skull_eye_ratio",
+            "slot_height",
+            "slot_width"
+          ]
+        },
+        {
           "path": "library/std/model/face/eagle.ashfox",
           "specifier": "std/model/face/eagle",
           "sha256": "88a084986929f5a9628ea2ff422bd55ce4e5e529b438afe8e9f7e8be29e7e204",
@@ -523,6 +583,24 @@
           "params": []
         },
         {
+          "path": "library/std/model/motion/infected_adv.ashfox",
+          "specifier": "std/model/motion/infected_adv",
+          "sha256": "325e2810a19d740752c48e335ed375a7b58a883f965bbc6baa9640c033e28cff",
+          "exports": [
+            "brute_slam",
+            "climb_vault",
+            "pin_maul",
+            "pounce_leap",
+            "rock_throw",
+            "sprint_frenzy"
+          ],
+          "imports": [
+            "std/model/rig/biped",
+            "std/model/rig/brute"
+          ],
+          "params": []
+        },
+        {
           "path": "library/std/model/motion/locomotion.ashfox",
           "specifier": "std/model/motion/locomotion",
           "sha256": "942362b20c63569f70f3560e8e7018f8c04aff5d1f896f495c32d6c2acb8ce2f",
@@ -556,6 +634,20 @@
           "params": []
         },
         {
+          "path": "library/std/model/motion/monster_cute.ashfox",
+          "specifier": "std/model/motion/monster_cute",
+          "sha256": "9b3ebbc1fb0f964b79f6219d0c9f63eb0849825b8e7c8be2431e8a3685ba29a7",
+          "exports": [
+            "hop_bounce",
+            "poof_die",
+            "squish_hit"
+          ],
+          "imports": [
+            "std/model/rig/mushroom"
+          ],
+          "params": []
+        },
+        {
           "path": "library/std/model/motion/nature.ashfox",
           "specifier": "std/model/motion/nature",
           "sha256": "bdd5b4b634d2ef93d7ccf11cab85403c94f8123ee528aa90495e80b335882483",
@@ -565,6 +657,50 @@
             "wind_sway"
           ],
           "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/motion/platformer.ashfox",
+          "specifier": "std/model/motion/platformer",
+          "sha256": "30dc162e7b5fbffac2c0d231f26ce2a2a3d239d8b58cf163b46b729cde930f1c",
+          "exports": [
+            "biped_double_jump",
+            "biped_fall_loop",
+            "biped_jump_rise",
+            "biped_knockback_hit",
+            "biped_ladder_climb",
+            "biped_land_squash",
+            "biped_sit_chair",
+            "double_jump",
+            "fall_loop",
+            "jump_rise",
+            "knockback_hit",
+            "ladder_climb",
+            "land_squash",
+            "sit_chair"
+          ],
+          "imports": [
+            "std/model/rig/biped",
+            "std/model/rig/chibi"
+          ],
+          "params": []
+        },
+        {
+          "path": "library/std/model/motion/survivor_coop.ashfox",
+          "specifier": "std/model/motion/survivor_coop",
+          "sha256": "4ad4113e831269a4ccbd738c5133c7b54a643a74bfd2fb4faa188e5849f76dfe",
+          "exports": [
+            "heal_self",
+            "incap_crawl",
+            "revive_help",
+            "shotgun_pump",
+            "shove_push",
+            "throw_arc"
+          ],
+          "imports": [
+            "std/model/rig/biped",
+            "std/model/rig/fps_arms"
+          ],
           "params": []
         },
         {
@@ -741,6 +877,36 @@
           "params": []
         },
         {
+          "path": "library/std/model/rig/brute.ashfox",
+          "specifier": "std/model/rig/brute",
+          "sha256": "fde151f9798685f0cc72f87119f753af727d4848310b0c3f38975631a6aa58c7",
+          "exports": [
+            "BackMount",
+            "BruteRig",
+            "BruteSkeleton",
+            "HulkMount",
+            "ThrowRockMount"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/rig/chibi.ashfox",
+          "specifier": "std/model/rig/chibi",
+          "sha256": "b33254b77a4f9426f673a40cc50042a319bb68f8ac72116c80153a2838269c3e",
+          "exports": [
+            "CapeMount",
+            "ChibiRig",
+            "ChibiSkeleton",
+            "HairSocket",
+            "HandGrip",
+            "HeadHelmSocket",
+            "PetPerchSocket"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
           "path": "library/std/model/rig/drone.ashfox",
           "specifier": "std/model/rig/drone",
           "sha256": "92fdd59d080fea829f3bed20a3bb9f3dc80068edaa7b441c4e59f7b236d9192b",
@@ -773,6 +939,17 @@
             "MechRig",
             "MechSkeleton",
             "MechWeaponMount"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/rig/mushroom.ashfox",
+          "specifier": "std/model/rig/mushroom",
+          "sha256": "b5463bdef53945f4f8053c023364273c974dd83e20f13ca3f917a860df70283e",
+          "exports": [
+            "MushroomRig",
+            "MushroomSkeleton"
           ],
           "imports": [],
           "params": []
@@ -845,6 +1022,56 @@
           ],
           "imports": [],
           "params": []
+        },
+        {
+          "path": "library/std/model/weapon/firearm_kit.ashfox",
+          "specifier": "std/model/weapon/firearm_kit",
+          "sha256": "a77ebeca47e90b8794b1523dfde3dfcf801d8b80e9176f1abec96ee998e70621",
+          "exports": [
+            "AssaultRifle",
+            "PumpShotgun",
+            "ReceiverBase",
+            "ReceiverSurface",
+            "RifleSurface",
+            "ShotgunSurface",
+            "Sidearm",
+            "SidearmSurface",
+            "SmgSurface",
+            "SubmachineGun"
+          ],
+          "imports": [
+            "std/model/rig/fps_arms"
+          ],
+          "params": [
+            "barrel_scale",
+            "barrel_scale",
+            "barrel_scale",
+            "barrel_scale",
+            "body_scale"
+          ]
+        },
+        {
+          "path": "library/std/model/weapon/throwable.ashfox",
+          "specifier": "std/model/weapon/throwable",
+          "sha256": "0dcc2e668df9d9cea029a6d27424c20c25ea870f13d3c71f0c6aa3bc7c75b47b",
+          "exports": [
+            "BileFlask",
+            "BileFlaskSurface",
+            "FireBottle",
+            "FireBottleSurface",
+            "FuseTipSocket",
+            "GadgetGrip",
+            "PipeBomb",
+            "PipeBombSurface",
+            "ThrowableRig",
+            "ThrowableSkeleton"
+          ],
+          "imports": [],
+          "params": [
+            "scale_factor",
+            "scale_factor",
+            "scale_factor"
+          ]
         },
         {
           "path": "library/std/sound/ambient/fire.ashfox",
@@ -999,6 +1226,25 @@
           ]
         },
         {
+          "path": "library/std/sound/horror/stinger.ashfox",
+          "specifier": "std/sound/horror/stinger",
+          "sha256": "c59c1e0466ab2abbe7c1fe7af61ee9b87dd713e709e1db6e72fbc3892464dc16",
+          "exports": [
+            "horde_alert_horn",
+            "horde_alert_stinger",
+            "saferoom_bolt_slam",
+            "saferoom_slam_stinger",
+            "special_spawn_cue",
+            "special_spawn_stinger"
+          ],
+          "imports": [],
+          "params": [
+            "bolt_pitch",
+            "horn_pitch",
+            "spawn_pitch"
+          ]
+        },
+        {
           "path": "library/std/sound/mech/servo.ashfox",
           "specifier": "std/sound/mech/servo",
           "sha256": "e7b95c292a583187683ec5ce41bb4ff82a0a33e1b3488118d76cb3c876333f3e",
@@ -1013,6 +1259,41 @@
             "motor_pitch",
             "rotor_cutoff",
             "shield_pitch"
+          ]
+        },
+        {
+          "path": "library/std/sound/rpg/level_up.ashfox",
+          "specifier": "std/sound/rpg/level_up",
+          "sha256": "c0d63d7f75f7d25e8dde21a99b6091dc38ad532d3105c61ccaf9478e856d806c",
+          "exports": [
+            "fanfare_chime",
+            "fanfare_overtone",
+            "fanfare_sparkle",
+            "level_up_fanfare"
+          ],
+          "imports": [],
+          "params": [
+            "base_pitch",
+            "shimmer_mix"
+          ]
+        },
+        {
+          "path": "library/std/sound/rpg/pickup.ashfox",
+          "specifier": "std/sound/rpg/pickup",
+          "sha256": "86b0d25bbfa0d3cb857cad16cf4a13af2107fef0ed3d035feffd046eaf873413",
+          "exports": [
+            "coin_jingle",
+            "coin_pickup",
+            "item_pickup",
+            "item_pop",
+            "potion_drink",
+            "potion_gulp"
+          ],
+          "imports": [],
+          "params": [
+            "coin_pitch",
+            "gulp_pitch",
+            "pop_pitch"
           ]
         },
         {
@@ -1278,6 +1559,39 @@
           "params": []
         },
         {
+          "path": "library/std/sprite/ui/damage_font.ashfox",
+          "specifier": "std/sprite/ui/damage_font",
+          "sha256": "567c7c7a1542d696f2ab8a48c691250e20beab292db47edd79d73fc94ad39ee7",
+          "exports": [
+            "digit_0",
+            "digit_1",
+            "digit_2",
+            "digit_3",
+            "digit_4",
+            "digit_5",
+            "digit_6",
+            "digit_7",
+            "digit_8",
+            "digit_9",
+            "digit_crit",
+            "digit_heal",
+            "digit_normal",
+            "digit_shadow",
+            "glyph_0",
+            "glyph_1",
+            "glyph_2",
+            "glyph_3",
+            "glyph_4",
+            "glyph_5",
+            "glyph_6",
+            "glyph_7",
+            "glyph_8",
+            "glyph_9"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
           "path": "library/std/sprite/ui/marker.ashfox",
           "specifier": "std/sprite/ui/marker",
           "sha256": "787e6ffc5f8e7b53db651c8a49b68800d6f1ba3d255028c0f3aab0b9d672b6fb",
@@ -1310,6 +1624,26 @@
             "scifi_bezel",
             "scifi_slate",
             "survival_plate"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/sprite/ui/skill_slot.ashfox",
+          "specifier": "std/sprite/ui/skill_slot",
+          "sha256": "1b6c293fdae8467338f3587c146269baddc2a7e1c3deb5491243e318bc2399de",
+          "exports": [
+            "active_cyan",
+            "badge_slate",
+            "cooldown_mask",
+            "cooldown_veil",
+            "hotkey_badge",
+            "ready_gold",
+            "ready_spark",
+            "slot_bezel",
+            "slot_corner_pip",
+            "slot_frame",
+            "slot_well"
           ],
           "imports": [],
           "params": []
@@ -1603,6 +1937,28 @@
           ]
         },
         {
+          "path": "library/std/vfx/element/ice.ashfox",
+          "specifier": "std/vfx/element/ice",
+          "sha256": "825f25345a91b2043db971e379351ac5c3c5eba0c260ee377294c7ce4e9afc71",
+          "exports": [
+            "DeepFrost",
+            "FrostMist",
+            "GlacialBlue",
+            "IceShard",
+            "RimeCyan",
+            "frost_puffs",
+            "frost_ring",
+            "ice_crown",
+            "ice_shards"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "radius",
+            "seed"
+          ]
+        },
+        {
           "path": "library/std/vfx/element/lightning.ashfox",
           "specifier": "std/vfx/element/lightning",
           "sha256": "df9f38effcd85091d675215caf7cfab092680ad39fe1dd7dc9cab9227cd1dcf1",
@@ -1620,6 +1976,48 @@
             "height",
             "seed",
             "width"
+          ]
+        },
+        {
+          "path": "library/std/vfx/hazard/explosion.ashfox",
+          "specifier": "std/vfx/hazard/explosion",
+          "sha256": "b3a8e4434e2e2721d0185c8fb07438de05cf02897e740c7ed18412d6081e1989",
+          "exports": [
+            "FuelDetonation",
+            "FuelFireball",
+            "PipeBombBlast",
+            "ShrapnelBlast",
+            "blast_dome",
+            "blast_ring",
+            "detonation_smoke",
+            "shrapnel_burst"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "radius",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/hazard/incendiary.ashfox",
+          "specifier": "std/vfx/hazard/incendiary",
+          "sha256": "7d8855f959038333bd1108dee4fc2a996ac232968cd274a6c8964f580e76f370",
+          "exports": [
+            "FuelBlaze",
+            "IncendiarySpread",
+            "OilSmokePlume",
+            "TarSmoke",
+            "fire_tongues",
+            "flame_pool",
+            "oil_smoke",
+            "smoke_crown"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "radius",
+            "seed"
           ]
         },
         {
@@ -1849,6 +2247,27 @@
           "params": [
             "duration",
             "length",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/rpg/level_up.ashfox",
+          "specifier": "std/vfx/rpg/level_up",
+          "sha256": "4a40c8c9ca08b874323dc126fd1c5a584b0f4e73b87c393a115ded533c8ae864",
+          "exports": [
+            "AscensionGold",
+            "LevelUpPillar",
+            "RadiantCyan",
+            "ValorEmerald",
+            "halo_ring",
+            "pillar_beam",
+            "rising_sparks"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "height",
+            "radius",
             "seed"
           ]
         },

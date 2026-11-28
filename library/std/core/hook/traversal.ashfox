@@ -1,0 +1,34 @@
+ashfox 1
+module traversal {
+  export schema ClimbRail : volume {
+    field kind : enum(ladder, rope, vine, ledge) = ladder;
+    field facing : enum(north, south, east, west) = north;
+    field speed : float(0.5..24) = 4.5;
+    field can_jump_off : bool = true;
+    field mount_top : bool = true;
+  }
+
+  export schema OneWayPlatform : volume {
+    field pass_from : enum(below, above, both) = below;
+    field drop_through : bool = true;
+    field snap_margin : unit = 4u;
+    field surface_tag : string = "";
+  }
+
+  export schema PortalLink : anchor {
+    field target_map : string;
+    field spawn_tag : string = "default";
+    field transition : enum(walk_in, interact, auto) = interact;
+    field facing : enum(north, south, east, west) = north;
+    field locked : bool = false;
+    field key_item : string = "";
+  }
+
+  export schema JumpPad : anchor {
+    field velocity : vec3 = (0, 14, 0);
+    field boost_speed : float(0..120) = 18.0;
+    field air_control : float(0..1) = 0.65;
+    field cooldown : second = 0.4s;
+    field sfx : string = "";
+  }
+}

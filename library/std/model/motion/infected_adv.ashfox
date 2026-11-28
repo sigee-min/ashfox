@@ -1,0 +1,298 @@
+ashfox 1
+module infected_adv {
+  import "std/model/rig/biped" as biped;
+  import "std/model/rig/brute" as brute;
+
+  export motion sprint_frenzy for biped.BipedRig {
+    duration = 0.56s; fps = 30; loop = loop;
+    track pelvis.position {
+      key 0s = (0u, -0.8u, 0u) catmullrom;
+      key 0.14s = (0u, 0.7u, 0u) catmullrom;
+      key 0.28s = (0u, -0.8u, 0u) catmullrom;
+      key 0.42s = (0u, 0.7u, 0u) catmullrom;
+      key 0.56s = (0u, -0.8u, 0u) catmullrom;
+    }
+    track torso.rotation {
+      key 0s = (-24deg, -10deg, 5deg) catmullrom;
+      key 0.28s = (-26deg, 10deg, -5deg) catmullrom;
+      key 0.56s = (-24deg, -10deg, 5deg) catmullrom;
+    }
+    track head.rotation {
+      key 0s = (16deg, 8deg, -4deg) catmullrom;
+      key 0.28s = (18deg, -8deg, 4deg) catmullrom;
+      key 0.56s = (16deg, 8deg, -4deg) catmullrom;
+    }
+    track left_arm.rotation {
+      key 0s = (82deg, 0deg, -8deg) catmullrom;
+      key 0.28s = (-38deg, 0deg, -10deg) catmullrom;
+      key 0.56s = (82deg, 0deg, -8deg) catmullrom;
+    }
+    track right_arm.rotation {
+      key 0s = (-38deg, 0deg, 10deg) catmullrom;
+      key 0.28s = (82deg, 0deg, 8deg) catmullrom;
+      key 0.56s = (-38deg, 0deg, 10deg) catmullrom;
+    }
+    track left_leg.rotation {
+      key 0s = (-46deg, 0deg, -3deg) catmullrom;
+      key 0.28s = (48deg, 0deg, -3deg) catmullrom;
+      key 0.56s = (-46deg, 0deg, -3deg) catmullrom;
+    }
+    track right_leg.rotation {
+      key 0s = (48deg, 0deg, 3deg) catmullrom;
+      key 0.28s = (-46deg, 0deg, 3deg) catmullrom;
+      key 0.56s = (48deg, 0deg, 3deg) catmullrom;
+    }
+  }
+
+  export motion climb_vault for biped.BipedRig {
+    duration = 0.85s; fps = 30; loop = once;
+    track pelvis.position {
+      key 0s = (0u, 0u, 0u) ease_in;
+      key 0.22s = (0u, -2.5u, 1u) ease_out;
+      key 0.54s = (0u, 7.5u, -3.5u) ease_in_out;
+      key 0.85s = (0u, 0u, 0u) smooth;
+    }
+    track torso.rotation {
+      key 0s = (-10deg, 0deg, 0deg) ease_in;
+      key 0.28s = (-34deg, -8deg, 0deg) ease_out;
+      key 0.58s = (-28deg, 8deg, 0deg) ease_in_out;
+      key 0.85s = (0deg, 0deg, 0deg) smooth;
+    }
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.28s = (22deg, 0deg, 0deg) ease_out;
+      key 0.6s = (12deg, 0deg, 0deg) ease_in_out;
+      key 0.85s = (0deg, 0deg, 0deg) smooth;
+    }
+    track left_arm.rotation {
+      key 0s = (20deg, 0deg, -6deg) ease_in;
+      key 0.26s = (132deg, 8deg, -10deg) ease_out;
+      key 0.56s = (35deg, 0deg, -14deg) ease_in_out;
+      key 0.85s = (0deg, 0deg, 0deg) smooth;
+    }
+    track right_arm.rotation {
+      key 0s = (12deg, 0deg, 6deg) ease_in;
+      key 0.34s = (118deg, -8deg, 10deg) ease_out;
+      key 0.62s = (28deg, 0deg, 14deg) ease_in_out;
+      key 0.85s = (0deg, 0deg, 0deg) smooth;
+    }
+    track left_leg.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.38s = (78deg, 0deg, -8deg) ease_out;
+      key 0.68s = (20deg, 0deg, -4deg) ease_in_out;
+      key 0.85s = (0deg, 0deg, 0deg) smooth;
+    }
+    track right_leg.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.22s = (-20deg, 0deg, 4deg) ease_out;
+      key 0.58s = (72deg, 0deg, 8deg) ease_out;
+      key 0.85s = (0deg, 0deg, 0deg) smooth;
+    }
+  }
+
+  export motion pounce_leap for biped.BipedRig {
+    duration = 0.9s; fps = 30; loop = once;
+    track pelvis.position {
+      key 0s = (0u, 0u, 0u) ease_in;
+      key 0.24s = (0u, -6.5u, 2u) ease_out;
+      key 0.48s = (0u, 6u, -5u) snap;
+      key 0.9s = (0u, 0u, 0u) smooth;
+    }
+    track torso.rotation {
+      key 0s = (-10deg, 0deg, 0deg) ease_in;
+      key 0.24s = (-38deg, 0deg, 0deg) ease_out;
+      key 0.48s = (-54deg, 0deg, 0deg) snap;
+      key 0.9s = (-10deg, 0deg, 0deg) smooth;
+    }
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.24s = (24deg, 0deg, 0deg) ease_out;
+      key 0.48s = (34deg, 0deg, 0deg) snap;
+      key 0.9s = (0deg, 0deg, 0deg) smooth;
+    }
+    track left_arm.rotation {
+      key 0s = (20deg, 0deg, -6deg) ease_in;
+      key 0.24s = (-36deg, 0deg, -18deg) ease_out;
+      key 0.48s = (112deg, 10deg, -14deg) snap;
+      key 0.9s = (20deg, 0deg, -6deg) smooth;
+    }
+    track right_arm.rotation {
+      key 0s = (20deg, 0deg, 6deg) ease_in;
+      key 0.24s = (-36deg, 0deg, 18deg) ease_out;
+      key 0.48s = (112deg, -10deg, 14deg) snap;
+      key 0.9s = (20deg, 0deg, 6deg) smooth;
+    }
+    track left_leg.rotation {
+      key 0s = (0deg, 0deg, -3deg) ease_in;
+      key 0.24s = (66deg, 0deg, -8deg) ease_out;
+      key 0.52s = (-50deg, 0deg, -6deg) snap;
+      key 0.9s = (0deg, 0deg, -3deg) smooth;
+    }
+    track right_leg.rotation {
+      key 0s = (0deg, 0deg, 3deg) ease_in;
+      key 0.24s = (66deg, 0deg, 8deg) ease_out;
+      key 0.52s = (-50deg, 0deg, 6deg) snap;
+      key 0.9s = (0deg, 0deg, 3deg) smooth;
+    }
+    cue 0.28s sound "pouncer_leap" at head;
+  }
+
+  export motion pin_maul for biped.BipedRig {
+    duration = 0.9s; fps = 30; loop = loop;
+    track pelvis.position {
+      key 0s = (0u, -6u, 0u) smooth;
+      key 0.22s = (0u, -5.2u, -0.5u) snap;
+      key 0.45s = (0u, -6u, 0u) smooth;
+      key 0.67s = (0u, -5.2u, -0.5u) snap;
+      key 0.9s = (0u, -6u, 0u) smooth;
+    }
+    track torso.rotation {
+      key 0s = (-46deg, 12deg, -4deg) ease_in_out;
+      key 0.22s = (-52deg, -14deg, 6deg) snap;
+      key 0.45s = (-46deg, -12deg, 4deg) ease_in_out;
+      key 0.67s = (-52deg, 14deg, -6deg) snap;
+      key 0.9s = (-46deg, 12deg, -4deg) ease_in_out;
+    }
+    track head.rotation {
+      key 0s = (22deg, -8deg, 0deg) smooth;
+      key 0.22s = (12deg, 6deg, 0deg) snap;
+      key 0.45s = (22deg, 8deg, 0deg) smooth;
+      key 0.67s = (12deg, -6deg, 0deg) snap;
+      key 0.9s = (22deg, -8deg, 0deg) smooth;
+    }
+    track left_arm.rotation {
+      key 0s = (114deg, 10deg, -10deg) ease_in;
+      key 0.22s = (44deg, -18deg, -4deg) snap;
+      key 0.45s = (78deg, 4deg, -8deg) ease_out;
+      key 0.9s = (114deg, 10deg, -10deg) smooth;
+    }
+    track right_arm.rotation {
+      key 0s = (78deg, -4deg, 8deg) ease_out;
+      key 0.45s = (114deg, -10deg, 10deg) ease_in;
+      key 0.67s = (44deg, 18deg, 4deg) snap;
+      key 0.9s = (78deg, -4deg, 8deg) smooth;
+    }
+    track left_leg.rotation {
+      key 0s = (55deg, 0deg, -10deg) smooth;
+      key 0.9s = (55deg, 0deg, -10deg) smooth;
+    }
+    track right_leg.rotation {
+      key 0s = (55deg, 0deg, 10deg) smooth;
+      key 0.9s = (55deg, 0deg, 10deg) smooth;
+    }
+    cue 0.22s sound "maul_swipe" at left_arm;
+    cue 0.67s sound "maul_swipe" at right_arm;
+  }
+
+  export motion brute_slam for brute.BruteRig {
+    duration = 1.1s; fps = 30; loop = once;
+    track pelvis.position {
+      key 0s = (0u, 0u, 0u) ease_in;
+      key 0.32s = (0u, 1.5u, 1u) ease_out;
+      key 0.58s = (0u, -4.5u, -2u) snap;
+      key 0.78s = (0u, -2u, -1u) ease_out;
+      key 1.1s = (0u, 0u, 0u) smooth;
+    }
+    track torso.rotation {
+      key 0s = (-8deg, 0deg, 0deg) ease_in;
+      key 0.32s = (18deg, 0deg, 0deg) ease_out;
+      key 0.58s = (-44deg, 0deg, 0deg) snap;
+      key 1.1s = (-8deg, 0deg, 0deg) smooth;
+    }
+    track head.rotation {
+      key 0s = (6deg, 0deg, 0deg) ease_in;
+      key 0.32s = (22deg, 0deg, 0deg) ease_out;
+      key 0.58s = (-14deg, 0deg, 0deg) snap;
+      key 1.1s = (6deg, 0deg, 0deg) smooth;
+    }
+    track left_arm.rotation {
+      key 0s = (14deg, 0deg, -10deg) ease_in;
+      key 0.32s = (152deg, 6deg, -12deg) ease_out;
+      key 0.58s = (42deg, -10deg, -6deg) snap;
+      key 1.1s = (14deg, 0deg, -10deg) smooth;
+    }
+    track right_arm.rotation {
+      key 0s = (14deg, 0deg, 10deg) ease_in;
+      key 0.32s = (152deg, -6deg, 12deg) ease_out;
+      key 0.58s = (42deg, 10deg, 6deg) snap;
+      key 1.1s = (14deg, 0deg, 10deg) smooth;
+    }
+    track left_hand.rotation {
+      key 0s = (0deg, 0deg, 0deg) linear;
+      key 0.58s = (18deg, 0deg, 0deg) snap;
+      key 1.1s = (0deg, 0deg, 0deg) smooth;
+    }
+    track right_hand.rotation {
+      key 0s = (0deg, 0deg, 0deg) linear;
+      key 0.58s = (18deg, 0deg, 0deg) snap;
+      key 1.1s = (0deg, 0deg, 0deg) smooth;
+    }
+    track left_leg.rotation {
+      key 0s = (0deg, 0deg, -6deg) ease_in;
+      key 0.32s = (-12deg, 0deg, -6deg) ease_out;
+      key 0.58s = (24deg, 0deg, -8deg) snap;
+      key 1.1s = (0deg, 0deg, -6deg) smooth;
+    }
+    track right_leg.rotation {
+      key 0s = (0deg, 0deg, 6deg) ease_in;
+      key 0.32s = (-12deg, 0deg, 6deg) ease_out;
+      key 0.58s = (24deg, 0deg, 8deg) snap;
+      key 1.1s = (0deg, 0deg, 6deg) smooth;
+    }
+    cue 0.58s sound "brute_slam" at slam_impact;
+  }
+
+  export motion rock_throw for brute.BruteRig {
+    duration = 1.2s; fps = 30; loop = once;
+    track pelvis.position {
+      key 0s = (0u, 0u, 0u) ease_in;
+      key 0.34s = (0u, -2.5u, 1.5u) ease_out;
+      key 0.64s = (0u, -1u, -2.5u) snap;
+      key 1.2s = (0u, 0u, 0u) smooth;
+    }
+    track torso.rotation {
+      key 0s = (-8deg, 0deg, 0deg) ease_in;
+      key 0.34s = (16deg, -28deg, 6deg) ease_out;
+      key 0.64s = (-26deg, 24deg, -8deg) snap;
+      key 1.2s = (-8deg, 0deg, 0deg) smooth;
+    }
+    track head.rotation {
+      key 0s = (4deg, 0deg, 0deg) ease_in;
+      key 0.34s = (-4deg, 24deg, 0deg) ease_out;
+      key 0.64s = (16deg, -18deg, 0deg) snap;
+      key 1.2s = (4deg, 0deg, 0deg) smooth;
+    }
+    track right_arm.rotation {
+      key 0s = (14deg, 0deg, 8deg) ease_in;
+      key 0.34s = (145deg, -22deg, 18deg) ease_out;
+      key 0.64s = (65deg, 14deg, 4deg) snap;
+      key 0.85s = (26deg, 18deg, 6deg) ease_out;
+      key 1.2s = (14deg, 0deg, 8deg) smooth;
+    }
+    track right_hand.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.34s = (-24deg, 0deg, 0deg) ease_out;
+      key 0.64s = (26deg, 0deg, 0deg) snap;
+      key 1.2s = (0deg, 0deg, 0deg) smooth;
+    }
+    track left_arm.rotation {
+      key 0s = (14deg, 0deg, -8deg) ease_in;
+      key 0.34s = (72deg, 18deg, -14deg) ease_out;
+      key 0.64s = (-24deg, -12deg, -12deg) snap;
+      key 1.2s = (14deg, 0deg, -8deg) smooth;
+    }
+    track left_leg.rotation {
+      key 0s = (0deg, 0deg, -4deg) ease_in;
+      key 0.34s = (-14deg, 0deg, -6deg) ease_out;
+      key 0.64s = (30deg, 0deg, -6deg) snap;
+      key 1.2s = (0deg, 0deg, -4deg) smooth;
+    }
+    track right_leg.rotation {
+      key 0s = (0deg, 0deg, 4deg) ease_in;
+      key 0.34s = (-26deg, 0deg, 6deg) ease_out;
+      key 0.64s = (-12deg, 0deg, 6deg) snap;
+      key 1.2s = (0deg, 0deg, 4deg) smooth;
+    }
+    cue 0.64s sound "rock_hurl" at rock_origin;
+  }
+}
