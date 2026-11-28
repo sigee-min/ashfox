@@ -207,7 +207,49 @@ const testCreatureModelsThreeTierLod = async (): Promise<void> => {
 
     assert.equal(Object.values(doc1.scene.nodes).filter((n) => n.kind === 'plane').length, 0);
     assert.ok(a1.lod0TriCount <= a0.lod0TriCount * 0.55, `${entryName} LOD1 tris > 55%`);
-    assert.ok(b1 <= Math.ceil(b0 * 0.55), `${entryName} bones ${b0} -> ${b1}`);
+    assert.ok(b1 <= b0, `${entryName} bones ${b0} -> ${b1}`);
+    for (const clip of Object.values(doc.animations)) {
+      for (const ch of Object.values(clip.channels)) {
+        if (doc.scene.nodes[ch.targetNodeId]?.kind === 'bone') {
+          assert.ok(
+            doc1.scene.nodes[ch.targetNodeId],
+            `${entryName} LOD1 dropped animated bone ${ch.targetNodeId}`,
+          );
+        }
+      }
+    }
+    const rootBoneId = Object.values(doc.scene.nodes).find(
+      (n) => n.kind === 'bone' && n.parentId === null,
+    )?.id;
+    assert.ok(rootBoneId, `${entryName} missing root bone`);
+    const withStaticLeaf = {
+      ...structuredClone(doc),
+      scene: {
+        ...structuredClone(doc.scene),
+        nodes: {
+          ...structuredClone(doc.scene.nodes),
+          __static_leaf_test: {
+            id: '__static_leaf_test',
+            name: '__static_leaf_test',
+            kind: 'bone' as const,
+            parentId: rootBoneId,
+            visible: true,
+            transform: {
+              position: [0, 0, 0] as const,
+              rotation: [0, 0, 0] as const,
+              scale: [1, 1, 1] as const,
+              pivot: [0, 0, 0] as const,
+            },
+          },
+        },
+      },
+    };
+    const lod1WithStaticLeaf = buildModelLod1Document(withStaticLeaf);
+    assert.equal(
+      lod1WithStaticLeaf.scene.nodes.__static_leaf_test,
+      undefined,
+      `${entryName} LOD1 should flatten un-animated static leaf bone`,
+    );
     assert.ok(mesh2.indices.length > 0 && mesh2.colors.length === mesh2.positions.length);
 
     const adapted = adaptProjectForExport(doc, { target: 'glb', modelPath: entryName });

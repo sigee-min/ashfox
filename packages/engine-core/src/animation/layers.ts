@@ -197,6 +197,89 @@ const mirrorTime = (layer: LayerSpec, time: number, duration: number, loop: bool
   return Math.min(duration, shifted);
 };
 
+const hasLargeEulerStep = (keys: readonly JointTrack['keys'][number][]): boolean => {
+  for (let i = 0; i < keys.length - 1; i += 1) {
+    const a = keys[i]!.value;
+    const b = keys[i + 1]!.value;
+    if (
+      Math.abs(b[0] - a[0]) >= 120 ||
+      Math.abs(b[1] - a[1]) >= 120 ||
+      Math.abs(b[2] - a[2]) >= 120
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const wrapEulerTime = (
+  keys: readonly JointTrack['keys'][number][],
+  time: number,
+  loop: boolean,
+  duration: number,
+): number => {
+  const total = duration > 1e-8 ? duration : keys[keys.length - 1]!.time;
+  if (!loop || total <= 1e-8) return time;
+  if (Math.abs(time - total) <= 1e-8 && time > 0) return total;
+  return ((time % total) + total) % total;
+};
+
+const sampleContinuousEulerQuat = (
+  sorted: readonly JointTrack['keys'][number][],
+  time: number,
+  loop: boolean,
+  duration: number,
+): Quat => {
+  if (sorted.length === 0) return IDENTITY_QUAT;
+  if (sorted.length === 1) return quatFromEulerXyzDeg(sorted[0]!.value);
+  const t = wrapEulerTime(sorted, time, loop, duration);
+  if (t <= sorted[0]!.time + 1e-8) return quatFromEulerXyzDeg(sorted[0]!.value);
+  const last = sorted[sorted.length - 1]!;
+  if (t >= last.time - 1e-8) return quatFromEulerXyzDeg(last.value);
+  let idx = sorted.length - 2;
+  for (let i = 0; i < sorted.length - 1; i += 1) {
+    if (sorted[i + 1]!.time >= t) {
+      idx = i;
+      break;
+    }
+  }
+  const a = sorted[idx]!;
+  const b = sorted[idx + 1]!;
+  const dt = b.time - a.time;
+  if (dt <= 1e-8 || a.curve?.kind === 'step') return quatFromEulerXyzDeg(a.value);
+  const u = (t - a.time) / dt;
+  const eased = evaluateCurve(a.curve, u);
+  return quatFromEulerXyzDeg([
+    a.value[0] + (b.value[0] - a.value[0]) * eased,
+    a.value[1] + (b.value[1] - a.value[1]) * eased,
+    a.value[2] + (b.value[2] - a.value[2]) * eased,
+  ]);
+};
+
+const sampleRotationTrack = (
+  srcRot: JointTrack | undefined,
+  evalTime: number,
+  loop: boolean,
+  dur: number,
+): Quat => {
+  if (!srcRot) return IDENTITY_QUAT;
+  const sorted = [...srcRot.keys].sort((a, b) => a.time - b.time);
+  if (hasLargeEulerStep(sorted)) {
+    return sampleContinuousEulerQuat(sorted, evalTime, loop, dur);
+  }
+  return sampleQuatKeys(
+    sorted.map((k) => ({
+      time: k.time,
+      quat: quatFromEulerXyzDeg(k.value),
+      curve: k.curve,
+    })),
+    evalTime,
+    evaluateCurve,
+    loop,
+    dur,
+  );
+};
+
 const sampleLayerTracks = (
   layer: PreparedLayer,
   joint: RigJoint,
@@ -208,7 +291,7 @@ const sampleLayerTracks = (
     layer.tracksByKey.has(trackKey(joint.id, 'position')) ||
     layer.tracksByKey.has(trackKey(joint.id, 'rotation')) ||
     layer.tracksByKey.has(trackKey(joint.id, 'scale'));
-  const useMirror = !hasOwn && Boolean(joint.mirror);
+  const useMirror = !hasOwn && Boolean(joint.mirror) && Boolean(layer.spec.mirrorMode);
   const srcId = useMirror ? joint.mirror! : joint.id;
   const evalTime = useMirror ? mirrorTime(layer.spec, time, dur, loop) : time;
 
@@ -218,19 +301,7 @@ const sampleLayerTracks = (
   const rawPos: Vec3 = srcPos
     ? sampleVec3Keys(srcPos.keys, evalTime, [0, 0, 0], { loop, duration: dur })
     : [0, 0, 0];
-  const rawRot: Quat = srcRot
-    ? sampleQuatKeys(
-        srcRot.keys.map((k) => ({
-          time: k.time,
-          quat: quatFromEulerXyzDeg(k.value),
-          curve: k.curve,
-        })),
-        evalTime,
-        evaluateCurve,
-        loop,
-        dur,
-      )
-    : IDENTITY_QUAT;
+  const rawRot = sampleRotationTrack(srcRot, evalTime, loop, dur);
   const scl: Vec3 = srcScale
     ? sampleVec3Keys(srcScale.keys, evalTime, [1, 1, 1], { loop, duration: dur })
     : [1, 1, 1];

@@ -147,12 +147,40 @@ const rdpCollect = <T>(
   }
 };
 
+const splitLargeQuatSpan = (
+  samples: readonly { readonly time: number; readonly val: Quat }[],
+  lo: number,
+  hi: number,
+  keep: Set<number>,
+): void => {
+  if (hi - lo <= 1) return;
+  if (quatAngleDeg(samples[lo]!.val, samples[hi]!.val) <= 60) return;
+  const mid = Math.floor((lo + hi) / 2);
+  keep.add(mid);
+  splitLargeQuatSpan(samples, lo, mid, keep);
+  splitLargeQuatSpan(samples, mid, hi, keep);
+};
+
+const splitLargeQuatChords = (
+  samples: readonly { readonly time: number; readonly val: Quat }[],
+  keep: Set<number>,
+): void => {
+  const ordered = [...keep].sort((a, b) => a - b);
+  for (let i = 0; i < ordered.length - 1; i += 1) {
+    splitLargeQuatSpan(samples, ordered[i]!, ordered[i + 1]!, keep);
+  }
+};
+
 const decimateSamples = <T extends Vec3 | Quat>(
   samples: readonly { readonly time: number; readonly val: T }[],
   stepBoundaries: readonly number[],
   tolerance: number,
   errorFn: (a: T, b: T, u: number, actual: T) => number,
   cleanFn: (val: T) => T,
+  postSplitFn?: (
+    items: readonly { readonly time: number; readonly val: T }[],
+    keep: Set<number>,
+  ) => void,
 ): readonly BakedKey[] => {
   if (samples.length === 0) return [];
   if (samples.length === 1) {
@@ -173,6 +201,7 @@ const decimateSamples = <T extends Vec3 | Quat>(
   for (let s = 0; s < splits.length - 1; s += 1) {
     rdpCollect(samples, splits[s]!, splits[s + 1]!, tolerance, errorFn, keep);
   }
+  postSplitFn?.(samples, keep);
   return [...keep]
     .sort((a, b) => a - b)
     .map((idx) => {
@@ -197,6 +226,7 @@ export const decimateQuatSamples = (
     toleranceDeg,
     (a, b, u, actual) => quatAngleDeg(actual, slerpQuat(a, b, u)),
     cleanQuat,
+    splitLargeQuatChords,
   );
 
 /** Vec3 Ramer-Douglas-Peucker decimation preserving STEP boundaries. */

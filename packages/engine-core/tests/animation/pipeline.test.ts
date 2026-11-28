@@ -5,6 +5,16 @@ import {
   openAssetProject,
   readExportAdapterInput,
 } from '../../src';
+import {
+  IDENTITY_QUAT,
+  quatAngleDeg,
+  quatFromEulerXyzDeg,
+  slerpQuat,
+} from '../../src/animation/quat';
+import { bakeClip } from '../../src/animation/bake';
+import type { Quat, Vec3 } from '../../src/animation/contract';
+import { buildModelLod1Document } from '../../src/export/targets/gltf/modelLod';
+import { optimizeGltfAnimationSamples } from '../../src/export/targets/gltf/samples';
 
 const workspaceConfig = JSON.stringify({
   format: 'ashfox-workspace',
@@ -190,4 +200,284 @@ if (compiled.ok) {
   }
 }
 
+console.log('animation end-to-end pipeline ok');
+
+// Multi-turn glTF sample retention never exceeds 61 deg per chord & preserves 90/180/270 deg poses
+const spinWs = JSON.stringify({
+  format: 'ashfox-workspace',
+  version: 2,
+  name: 'spin_pipe',
+  packages: [
+    {
+      name: 'spin_pipe',
+      root: 'assets/models',
+      manifest: {
+        format: 'ashfox-package',
+        version: 1,
+        dependencies: [],
+        entries: [{ name: 'spinner', path: 'spinner.ashfox' }],
+        modules: [],
+      },
+    },
+  ],
+  include: ['assets/**/*.ashfox'],
+  ignore: [],
+  build: { directory: 'dist/build' },
+  exports: [],
+});
+
+const SPIN_SOURCE = `ashfox 1
+model spinner {
+  rig contract Rig {
+    handedness = right;
+    joint root { parent = none; role = root; channels = (position, rotation); }
+    joint rotor { parent = root; role = prop; channels = rotation; }
+    joint turbine { parent = root; role = prop; channels = rotation; }
+    joint wheel { parent = root; role = prop; channels = rotation; }
+    joint spine { parent = root; role = body; channels = rotation; }
+    joint arm_tip { parent = spine; role = arm; channels = rotation; }
+    joint decor_a { parent = root; role = prop; channels = rotation; }
+    joint decor_b { parent = root; role = prop; channels = rotation; }
+    joint decor_c { parent = root; role = prop; channels = rotation; }
+  }
+  skeleton Skel implements Rig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind rotor { parent_origin = (0u, 8u, 0u); }
+    bind turbine { parent_origin = (0u, 4u, 0u); }
+    bind wheel { parent_origin = (0u, 2u, 0u); }
+    bind spine { parent_origin = (0u, 4u, 0u); }
+    bind arm_tip { parent_origin = (2u, 2u, 0u); }
+    bind decor_a { parent_origin = (-2u, 1u, 0u); }
+    bind decor_b { parent_origin = (2u, 1u, 0u); }
+    bind decor_c { parent_origin = (-2u, 3u, 0u); }
+  }
+  surface contract Skin { chart body box { coverage = opaque; } material = opaque; }
+  surface skin : Skin {
+    material = opaque;
+    texture atlas {
+      atlas = (32px, 32px); density = 1; background = metal; background_alpha = 255;
+      palette { metal = (#505660, #707884, #909aa8); }
+      chart body box { fill = metal; grain = none; }
+    }
+  }
+  component Body {
+    requires rig r : Rig; requires surface s : Skin;
+    bind bone root to r.root; bind bone rotor to r.rotor; bind bone turbine to r.turbine;
+    bind bone wheel to r.wheel; bind bone spine to r.spine; bind bone arm_tip to r.arm_tip;
+    bind bone decor_a to r.decor_a; bind bone decor_b to r.decor_b; bind bone decor_c to r.decor_c;
+    geometry {
+      bone root {
+        cube hub { origin = (-1u, 0u, -1u); size = (2u, 2u, 2u); surface = s.body; }
+        bone rotor { cube blade { origin = (-1u, 8u, -1u); size = (2u, 2u, 2u); surface = s.body; } }
+        bone turbine { cube fan { origin = (-1u, 4u, -1u); size = (2u, 2u, 2u); surface = s.body; } }
+        bone wheel { cube rim { origin = (-1u, 2u, -1u); size = (2u, 2u, 2u); surface = s.body; } }
+        bone spine {
+          cube back { origin = (-1u, 3u, -1u); size = (2u, 2u, 2u); surface = s.body; }
+          bone arm_tip { cube hand { origin = (1u, 5u, -1u); size = (2u, 2u, 2u); surface = s.body; } }
+        }
+        bone decor_a { cube da { origin = (-3u, 0u, -1u); size = (2u, 2u, 2u); surface = s.body; } }
+        bone decor_b { cube db { origin = (1u, 0u, -1u); size = (2u, 2u, 2u); surface = s.body; } }
+        bone decor_c { cube dc { origin = (-3u, 2u, -1u); size = (2u, 2u, 2u); surface = s.body; } }
+      }
+    }
+  }
+  motion spin for Rig {
+    duration = 1.0s; fps = 30; loop = loop; rest_relative = true;
+    layer base {
+      mode = base;
+      track rotor.rotation { key 0.0s = (0deg, 0deg, 0deg) linear; key 0.5s = (0deg, 180deg, 0deg) linear; key 1.0s = (0deg, 360deg, 0deg) linear; }
+      track turbine.rotation { key 0.0s = (0deg, 0deg, 0deg) linear; key 0.5s = (0deg, 360deg, 0deg) linear; key 1.0s = (0deg, 720deg, 0deg) linear; }
+      track wheel.rotation { key 0.0s = (0deg, 0deg, 0deg) linear; key 0.5s = (-180deg, 0deg, 0deg) linear; key 1.0s = (-360deg, 0deg, 0deg) linear; }
+      track arm_tip.rotation { key 0.0s = (0deg, 0deg, 0deg) linear; key 0.5s = (25deg, 0deg, 0deg) linear; key 1.0s = (0deg, 0deg, 0deg) linear; }
+    }
+  }
+  settings { density = 16; forward = north; profile = prop; }
+  skeleton = Skel;
+  motions = [spin];
+  use Body { r = Rig; s = skin; }
+}
+`;
+
+const spinCompiled = compileDirectoryWorkspace(spinWs, [
+  { path: 'assets/models/spinner.ashfox', source: SPIN_SOURCE },
+]);
+assert.equal(
+  spinCompiled.ok,
+  true,
+  spinCompiled.ok ? '' : JSON.stringify(spinCompiled.diagnostics),
+);
+if (spinCompiled.ok && spinCompiled.products[0]?.kind === 'model') {
+  const prod = spinCompiled.products[0];
+  const opened = openAssetProject({
+    workspace: prod.workspace,
+    entry: prod.entry,
+    identity: { id: 'spinner', revision: 'r1', createdAt: '2026-01-01T00:00:00.000Z' },
+  });
+  assert.equal(opened.ok, true);
+  if (opened.ok) {
+    const doc = opened.project.document;
+    const lod1 = buildModelLod1Document(doc);
+    assert.ok(lod1.scene.nodes['arm_tip'], 'LOD1 must preserve animated leaf bone arm_tip');
+    assert.ok(lod1.scene.nodes['spine'], 'LOD1 must preserve ancestor bone spine');
+    assert.ok(lod1.scene.nodes['root'], 'LOD1 must preserve root bone');
+    const flattenedDecor = ['decor_a', 'decor_b', 'decor_c'].filter((id) => !lod1.scene.nodes[id]);
+    assert.ok(flattenedDecor.length >= 1, 'LOD1 must still flatten un-animated leaf bones');
+
+    const bundle = compileProjectBundle(
+      opened.project,
+      readExportAdapterInput({ target: 'gltf', modelPath: 'spinner' }),
+    );
+    const gltfFile = bundle.files.find((f) => f.kind === 'json' && f.path.endsWith('.gltf'));
+    const binFile = bundle.files.find((f) => f.kind === 'binary' && f.path.endsWith('.bin'));
+    assert.ok(gltfFile?.kind === 'json' && binFile?.kind === 'binary');
+    const gltf = gltfFile.data as {
+      nodes: { name?: string }[];
+      accessors: {
+        bufferView: number;
+        byteOffset?: number;
+        count: number;
+        componentType: number;
+        type: string;
+      }[];
+      bufferViews: { byteOffset?: number; byteLength: number }[];
+      animations: {
+        samplers: { input: number; output: number }[];
+        channels: { sampler: number; target: { node: number; path: string } }[];
+      }[];
+    };
+    const readQuats = (accessorIdx: number): Quat[] => {
+      const acc = gltf.accessors[accessorIdx]!;
+      const bv = gltf.bufferViews[acc.bufferView]!;
+      const off = (bv.byteOffset ?? 0) + (acc.byteOffset ?? 0);
+      const view = new DataView(binFile.data.buffer, binFile.data.byteOffset + off, acc.count * 8);
+      return Array.from({ length: acc.count }, (_, i) => [
+        view.getInt16(i * 8, true) / 32767,
+        view.getInt16(i * 8 + 2, true) / 32767,
+        view.getInt16(i * 8 + 4, true) / 32767,
+        view.getInt16(i * 8 + 6, true) / 32767,
+      ]);
+    };
+    const anim = gltf.animations[0]!;
+    for (const nodeName of ['rotor', 'turbine', 'wheel']) {
+      const nodeIdx = gltf.nodes.findIndex((n) => n.name === nodeName);
+      const ch = anim.channels.find(
+        (c) => c.target.node === nodeIdx && c.target.path === 'rotation',
+      )!;
+      const quats = readQuats(anim.samplers[ch.sampler]!.output);
+      assert.ok(quats.length >= 7, `expected subdivided rotation keys for ${nodeName}`);
+      for (let i = 0; i < quats.length - 1; i += 1) {
+        assert.ok(
+          quatAngleDeg(quats[i]!, quats[i + 1]!) <= 61,
+          `${nodeName} chord exceeded 61 deg`,
+        );
+      }
+    }
+    const readChannelPoses = (name: string) => {
+      const ch = Object.values(Object.values(doc.animations)[0]!.channels).find(
+        (c) => c.targetNodeId === name && c.property === 'rotation',
+      )!;
+      return (t: number) => {
+        const i = Math.max(
+          0,
+          ch.keys.findIndex(
+            (k, idx) => idx < ch.keys.length - 1 && t <= ch.keys[idx + 1]!.timeSeconds + 1e-6,
+          ),
+        );
+        const [a, b] = [ch.keys[i]!, ch.keys[Math.min(ch.keys.length - 1, i + 1)]!];
+        return a === b
+          ? a.quaternion!
+          : slerpQuat(
+              a.quaternion!,
+              b.quaternion!,
+              (t - a.timeSeconds) / Math.max(1e-6, b.timeSeconds - a.timeSeconds),
+            );
+      };
+    };
+    const [rS, tS, wS] = [
+      readChannelPoses('rotor'),
+      readChannelPoses('turbine'),
+      readChannelPoses('wheel'),
+    ];
+    const checks: readonly [typeof rS, number, Vec3][] = [
+      [rS, 0.25, [0, 90, 0]],
+      [rS, 0.5, [0, 180, 0]],
+      [rS, 0.75, [0, 270, 0]],
+      [tS, 0.125, [0, 90, 0]],
+      [tS, 0.25, [0, 180, 0]],
+      [tS, 0.375, [0, 270, 0]],
+      [wS, 0.25, [-90, 0, 0]],
+      [wS, 0.5, [-180, 0, 0]],
+      [wS, 0.75, [-270, 0, 0]],
+    ];
+    for (const [fn, t, e] of checks) assert.ok(quatAngleDeg(fn(t), quatFromEulerXyzDeg(e)) < 1);
+  }
+}
+
+const spinTrack = (jointId: string, k0: Vec3, k1: Vec3, k2: Vec3) => ({
+  jointId,
+  property: 'rotation' as const,
+  keys: [
+    { time: 0, value: k0 },
+    { time: 0.5, value: k1 },
+    { time: 1, value: k2 },
+  ],
+});
+const bakedSpin = bakeClip({
+  id: 'spin',
+  name: 'spin',
+  duration: 1,
+  fps: 30,
+  loop: 'loop',
+  rig: {
+    joints: ['y360', 'y720', 'x360'].map((id) => ({
+      id,
+      parentId: null,
+      role: 'prop' as const,
+      channels: ['rotation' as const],
+      restPosition: [0, 0, 0] as Vec3,
+      restRotation: IDENTITY_QUAT,
+      restScale: [1, 1, 1] as Vec3,
+    })),
+  },
+  layers: [
+    {
+      id: 'base',
+      mode: 'base',
+      tracks: [
+        spinTrack('y360', [0, 0, 0], [0, 180, 0], [0, 360, 0]),
+        spinTrack('y720', [0, 0, 0], [0, 360, 0], [0, 720, 0]),
+        spinTrack('x360', [0, 0, 0], [-180, 0, 0], [-360, 0, 0]),
+      ],
+    },
+  ],
+});
+for (const ch of bakedSpin.channels) {
+  for (let i = 0; i < ch.keys.length - 1; i += 1) {
+    assert.ok(quatAngleDeg(ch.keys[i]!.value as Quat, ch.keys[i + 1]!.value as Quat) <= 61);
+  }
+}
+
+// Direct glTF sample optimizer check: exact geodesic SLERP samples across 0->180->360 bisect <= 61 deg
+const denseTimes = Array.from({ length: 17 }, (_, i) => i / 16);
+const denseQuats = denseTimes.flatMap((t) => [...quatFromEulerXyzDeg([0, t * 360, 0])]);
+const opt = optimizeGltfAnimationSamples(
+  { id: 'rot', targetNodeId: 'rotor', property: 'rotation', keys: [] },
+  { times: denseTimes, values: denseQuats, componentCount: 4, interpolation: 'LINEAR' },
+);
+assert.ok(opt.times.length >= 7);
+for (let i = 0; i < opt.times.length - 1; i += 1) {
+  const a: Quat = [
+    opt.values[i * 4]!,
+    opt.values[i * 4 + 1]!,
+    opt.values[i * 4 + 2]!,
+    opt.values[i * 4 + 3]!,
+  ];
+  const b: Quat = [
+    opt.values[(i + 1) * 4]!,
+    opt.values[(i + 1) * 4 + 1]!,
+    opt.values[(i + 1) * 4 + 2]!,
+    opt.values[(i + 1) * 4 + 3]!,
+  ];
+  assert.ok(quatAngleDeg(a, b) <= 61);
+}
 console.log('animation end-to-end pipeline ok');

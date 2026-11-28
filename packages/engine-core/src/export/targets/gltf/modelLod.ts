@@ -81,11 +81,25 @@ const isLeafBone = (
     isIdentityScale(b.transform.scale),
   );
 
+const collectProtectedBones = (document: ProjectDocument): Set<string> => {
+  const protectedBones = new Set<string>();
+  const channels = Object.values(document.animations).flatMap((a) => Object.values(a.channels));
+  for (const ch of channels) {
+    let currId: string | null = ch.targetNodeId;
+    while (currId !== null && !protectedBones.has(currId)) {
+      protectedBones.add(currId);
+      currId = document.scene.nodes[currId]?.parentId ?? null;
+    }
+  }
+  return protectedBones;
+};
+
 const pickFlatBones = (
   nodes: Readonly<Record<string, SceneNode>>,
   vis: ReadonlySet<string>,
   kept: ReadonlySet<string>,
   a: ModelBoundsAnalysis,
+  protectedBones: ReadonlySet<string>,
 ) => {
   const bones = Object.values(nodes).filter(
     (n): n is BoneNode => n.kind === 'bone' && vis.has(n.id),
@@ -99,7 +113,7 @@ const pickFlatBones = (
   }
   const target = Math.max(1, Math.round(bones.length * BONE_DROP));
   const cands = bones
-    .filter((b) => isLeafBone(b, nodes, kids))
+    .filter((b) => !protectedBones.has(b.id) && isLeafBone(b, nodes, kids))
     .sort(
       (x, y) =>
         boneDepth(y.id, nodes) - boneDepth(x.id, nodes) ||
@@ -155,7 +169,8 @@ export const buildModelLod1Document = (document: ProjectDocument): ProjectDocume
   const vis = effectivelyVisibleSceneNodeIds(document);
   const analysis = computeModelBoundsAndPartSizes(document);
   const kept = selectCubes(analysis);
-  const flat = pickFlatBones(document.scene.nodes, vis, kept, analysis);
+  const protectedBones = collectProtectedBones(document);
+  const flat = pickFlatBones(document.scene.nodes, vis, kept, analysis, protectedBones);
   const nodes: Record<string, SceneNode> = {};
   for (const node of Object.values(document.scene.nodes)) {
     const out = vis.has(node.id) ? remapNode(node, document, kept, flat) : null;

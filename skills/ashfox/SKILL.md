@@ -28,4 +28,5 @@ npx --no-install ashfox build <input> [--json] [--bindings ts|cs|gd]  # Build GL
 2. Before writing unfamiliar syntax, run `ashfox docs grammar` and `ashfox docs <topic>`.
 3. Prefer `import "std/..."` over duplicating rigs, palettes, materials, VFX, sounds, interiors, or hook schemas.
 4. Always run `ashfox check`, inspect `ashfox render` views (or `ashfox dev`) and built audio, and verify `ashfox build` outputs before reporting completion.
-5. Run `scripts/sync.py` without `--install` to check skill updates; pass `--install` only when the user asks.
+5. Follow right-handed rotations (`forward = north (-Z)`): `+X` pitches `-Z` parts up, hanging `-Y` limbs forward, and `+Y` torso/neck back; `-X` pitches `+Y` torso/neck forward (hunch/lunge). Set `mirror = antiphase;` or `mirror = sync;` (`mirrorMode`) explicitly on symmetric `layer`s—omitting it keeps single-limb tracks independent.
+6. Run `scripts/sync.py` without `--install` to check skill updates; pass `--install` only when the user asks.

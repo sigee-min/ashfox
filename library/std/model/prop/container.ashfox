@@ -23,7 +23,7 @@ module container {
     duration = 1s; fps = 24; loop = once;
     track lid.rotation {
       key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.5s = (-72deg, 0deg, 0deg) catmullrom;
+      key 0.5s = (72deg, 0deg, 0deg) catmullrom;
       key 1s = (0deg, 0deg, 0deg) catmullrom;
     }
   }

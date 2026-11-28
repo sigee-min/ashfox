@@ -58,6 +58,45 @@ const interpolationError = (
   );
 };
 
+const MAX_QUAT_CHORD_RADIANS = Math.PI / 3;
+
+const quatGeodesicAngle = (left: readonly number[], right: readonly number[]): number => {
+  const dot = left.reduce((sum, component, index) => sum + component * right[index], 0);
+  return 2 * Math.acos(Math.min(1, Math.abs(dot)));
+};
+
+const findSegmentSplitIndex = (
+  channel: TransformChannel,
+  samples: GltfAnimationSamples,
+  start: number,
+  end: number,
+  tolerance: number,
+): number => {
+  const duration = samples.times[end] - samples.times[start];
+  const left = sampleValue(samples, start);
+  const right = sampleValue(samples, end);
+  let worstIndex = -1;
+  let worstError = tolerance;
+  for (let index = start + 1; index < end; index += 1) {
+    const alpha =
+      duration <= Number.EPSILON ? 0 : (samples.times[index] - samples.times[start]) / duration;
+    const error = interpolationError(channel, sampleValue(samples, index), left, right, alpha);
+    if (!Number.isFinite(error) || error > worstError) {
+      worstError = error;
+      worstIndex = index;
+    }
+  }
+  if (worstIndex >= 0) return worstIndex;
+  if (
+    channel.property === 'rotation' &&
+    end - start > 1 &&
+    quatGeodesicAngle(left, right) > MAX_QUAT_CHORD_RADIANS
+  ) {
+    return Math.floor((start + end) / 2);
+  }
+  return -1;
+};
+
 const retainedLinearIndices = (
   channel: TransformChannel,
   samples: GltfAnimationSamples,
@@ -69,23 +108,10 @@ const retainedLinearIndices = (
   const segments: Array<[number, number]> = [[0, last]];
   while (segments.length > 0) {
     const [start, end] = segments.pop() as [number, number];
-    const duration = samples.times[end] - samples.times[start];
-    const left = sampleValue(samples, start);
-    const right = sampleValue(samples, end);
-    let worstIndex = -1;
-    let worstError = tolerance;
-    for (let index = start + 1; index < end; index += 1) {
-      const alpha =
-        duration <= Number.EPSILON ? 0 : (samples.times[index] - samples.times[start]) / duration;
-      const error = interpolationError(channel, sampleValue(samples, index), left, right, alpha);
-      if (!Number.isFinite(error) || error > worstError) {
-        worstError = error;
-        worstIndex = index;
-      }
-    }
-    if (worstIndex < 0) continue;
-    retained.add(worstIndex);
-    segments.push([start, worstIndex], [worstIndex, end]);
+    const splitIndex = findSegmentSplitIndex(channel, samples, start, end, tolerance);
+    if (splitIndex < 0) continue;
+    retained.add(splitIndex);
+    segments.push([start, splitIndex], [splitIndex, end]);
   }
   return [...retained].sort((left, right) => left - right);
 };

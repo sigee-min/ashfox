@@ -86,6 +86,27 @@ example `smooth(...)` or `overshoot(strength = 1.4)`). The interpolation curve
 belongs after the value, before the semicolon; rotation channels bake with
 quaternion-native SLERP interpolation.
 
+#### Rotation sign convention (right-handed, `forward = north (-Z)`)
+
+Ashfox uses a right-handed coordinate frame with **`+X` right**, **`+Y` up**,
+and **`-Z` north (front)** (`+Z` back). Point your right thumb along the
+positive axis to find positive rotation direction:
+
+- **`+X` rotation (thumb right)**: pitches `-Z` forward parts **upward (`+Y`)**,
+  hanging `-Y` limbs (arms/legs) **forward (`-Z`)**, and upward `+Y` torso/neck
+  **backward (`+Z`)**.
+- **`-X` rotation**: pitches upward `+Y` torso/neck **forward (`-Z`, hunch/lunge)**,
+  `-Z` forward parts **downward (`-Y`)**, and hanging `-Y` limbs **backward (`+Z`)**.
+- **`+Y` / `-Y` yaw (thumb up)**: `+Y` turns `-Z` forward parts left
+  (counter-clockwise from above); `-Y` turns right.
+- **`+Z` / `-Z` roll (thumb back)**: `+Z` tilts `+X` toward `+Y` (rolls left /
+  lifts the `+X` side); `-Z` tilts `-X` toward `+Y` (rolls right / lifts the `-X` side).
+
+Mirroring is explicit opt-in via `mirror = antiphase;` or `mirror = sync;`
+(`mirrorMode`) on a `layer` block—omitting it keeps single-limb tracks
+independent without auto-mirroring opposite limbs. Continuous multi-turn spins
+(`360deg` / `720deg`) interpolate cleanly along the declared Euler winding.
+
 ## Procedural waves, IK, secondary physics, combat, and cues
 
 Motions also compose higher-level animation blocks directly inside `motion`:
