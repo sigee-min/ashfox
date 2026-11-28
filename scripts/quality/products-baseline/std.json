@@ -7,7 +7,7 @@
     {
       "input": "library/std",
       "ok": true,
-      "sourceHash": "a60588a72e05324c7d65e48a0a0b4003c90959a701ea994bc8e17170f8563af1",
+      "sourceHash": "490dced36ee472df92ccb89f14747893317e6923606b7c5a85d3b6270de9b4a4",
       "modules": [
         {
           "path": "library/std/core/hook/combat.ashfox",
@@ -542,7 +542,7 @@
         {
           "path": "library/std/model/motion/combat.ashfox",
           "specifier": "std/model/motion/combat",
-          "sha256": "38adcb4d4f8dd2990915ca18375ec204b5d8fd12dfc30b920fb56d497ecb5564",
+          "sha256": "f049b9c822c252cc9df60f02d5460d1e9095efcfce26652841d8174a1b4aa7d5",
           "exports": [
             "guard",
             "slash",

@@ -7,7 +7,7 @@
     {
       "input": "showcase/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:1bbb240ffdbb9543ab551f8ebbe2bb9812c47050093f4ba098c3302276c94d05",
+      "sourceHash": "sha256:652e18d5f2e41131c58984a4025e736a725a5901683cd1861bff2b20abc4b60f",
       "products": [
         {
           "entry": "sounds/claw_hit",
