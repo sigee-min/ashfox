@@ -1,0 +1,17 @@
+ashfox 1
+module mushroom {
+  export rig contract MushroomRig {
+    joint root { parent = none; role = root; channels = (position, rotation, scale); }
+    joint stem { parent = root; role = body; channels = (position, rotation, scale); }
+    joint cap { parent = stem; role = head; channels = (position, rotation, scale); }
+
+    chain spine = [root, stem, cap];
+    anchor cap_apex { joint = cap; offset = (0u, 6u, 0u); }
+  }
+
+  export skeleton MushroomSkeleton implements MushroomRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind stem { parent_origin = (0u, 1u, 0u); }
+    bind cap { parent_origin = (0u, 6u, 0u); }
+  }
+}

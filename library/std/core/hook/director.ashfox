@@ -1,0 +1,46 @@
+ashfox 1
+module director {
+  export schema HordeSpawnZone : volume {
+    field wave_budget : int(1..64) = 12;
+    field intensity_min : float(0..1) = 0.0;
+    field intensity_max : float(0..1) = 1.0;
+    field pool : enum(wanderer, sprinter, pouncer, brute, special_mix) = wanderer;
+    field require_unseen : bool = true;
+    field cooldown : second = 15s;
+    field tag : string = "";
+  }
+
+  export schema PanicEventTrigger : anchor {
+    field event_id : string;
+    field duration : second = 30s;
+    field wave_count : int(1..16) = 3;
+    field cadence : second = 8s;
+    field radius : float(1..64) = 18.0;
+    field one_shot : bool = true;
+    field alarm_sfx : string = "";
+  }
+
+  export schema SaferoomZone : volume {
+    field checkpoint_id : string;
+    field role : enum(start, transition, end) = transition;
+    field heal_on_enter : bool = false;
+    field clear_threat : bool = true;
+    field door_id : string = "";
+  }
+
+  export schema RescueBeacon : anchor {
+    field beacon_id : string;
+    field holdout_duration : second = 90s;
+    field extract_radius : float(1..32) = 6.0;
+    field signal_delay : second = 10s;
+    field facing : enum(north, south, east, west) = north;
+  }
+
+  export schema NavClimbEdge : anchor {
+    field climb_height : unit = 16u;
+    field facing : enum(north, south, east, west) = north;
+    field traversal : enum(climb_up, vault_over, drop_down, ledge_leap) = climb_up;
+    field speed_mult : float(0.2..3) = 1.0;
+    field allow_brute : bool = false;
+  }
+}

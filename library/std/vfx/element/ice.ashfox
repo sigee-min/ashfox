@@ -1,0 +1,159 @@
+ashfox 1
+module ice {
+  params {
+    radius = 12u;
+    duration = 0.75s;
+    seed = 491;
+  }
+
+  export palette GlacialBlue {
+    core = #f2fcff;
+    mid = #66ccf2;
+    edge = #295c99;
+    smoke = #1e2d42;
+  }
+
+  export palette RimeCyan {
+    core = #ebffff;
+    mid = #7ae3d8;
+    edge = #2b6f7a;
+    smoke = #1e3238;
+  }
+
+  export palette DeepFrost {
+    core = #eef6ff;
+    mid = #7a9ef5;
+    edge = #32469c;
+    smoke = #20253d;
+  }
+
+  export element ice_crown : ring {
+    at = 0s..(duration * 0.68);
+    blend = additive;
+    radius = (radius * 0.2)..radius;
+    segments = 18;
+    bevel = 0.45;
+    color = core;
+    texture starburst { spikes = 6; seed = seed; posterize = 4; }
+    dissolve voronoi { frames = 8; edge_glow = core; seed = seed; }
+    scale = 0.35 -> 1.15 ease_out -> 0;
+    alpha = 0.8 -> 1.0 snap -> 0;
+  }
+
+  export emitter ice_shards : voxel_burst {
+    at = 0.02s..(duration * 0.62);
+    seed = seed;
+    count = 24;
+    shape = cone(42deg, 3u);
+    particle = shard;
+    speed = 14u..28u;
+    life = 0.22s..0.42s;
+    gravity = -22u;
+    drag = 1.5;
+    ground { y = 0u; bounce = 35%; friction = 75%; }
+    size_over_life = 1.1u -> 0u;
+    color_over_life = core -> mid -> edge;
+    velocity_stretch = 1.4;
+    blend = additive;
+  }
+
+  export element frost_ring : ring {
+    at = 0s..(duration * 0.85);
+    blend = blend;
+    radius = (radius * 0.25)..(radius * 1.1);
+    segments = 20;
+    ripple_amp = 0.3;
+    ripple_freq = 5;
+    color = mid;
+    texture stylized_smoke { curl_scale = 2.2; seed = seed + 3; }
+    dissolve radial_noise { frames = 8; edge_glow = core; seed = seed + 3; }
+    scale = 0.4 -> 1.1 ease_out -> 0;
+    alpha = 0.75 -> 0.5 -> 0;
+  }
+
+  export emitter frost_puffs : voxel_burst {
+    at = 0.04s..(duration * 0.68);
+    seed = seed + 7;
+    count = 22;
+    shape = sphere(radius * 0.55);
+    particle = puff;
+    speed = 4u..10u;
+    life = 0.28s..0.5s;
+    gravity = -4u;
+    drag = 2.6;
+    turbulence = curl(1.6, 5u);
+    size_over_life = 0.9u -> 2.4u ease_out -> 0u;
+    color_over_life = core -> mid -> smoke;
+    blend = blend;
+  }
+
+  export recipe IceShard {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = GlacialBlue;
+    element ice_crown : ring {
+      at = 0s..(duration * 0.68);
+      blend = additive;
+      radius = (radius * 0.2)..radius;
+      segments = 18;
+      bevel = 0.45;
+      color = core;
+      texture starburst { spikes = 6; seed = seed; posterize = 4; }
+      dissolve voronoi { frames = 8; edge_glow = core; seed = seed; }
+      scale = 0.35 -> 1.15 ease_out -> 0;
+      alpha = 0.8 -> 1.0 snap -> 0;
+    }
+    emitter ice_shards : voxel_burst {
+      at = 0.02s..(duration * 0.62);
+      seed = seed;
+      count = 24;
+      shape = cone(42deg, 3u);
+      particle = shard;
+      speed = 14u..28u;
+      life = 0.22s..0.42s;
+      gravity = -22u;
+      drag = 1.5;
+      ground { y = 0u; bounce = 35%; friction = 75%; }
+      size_over_life = 1.1u -> 0u;
+      color_over_life = core -> mid -> edge;
+      velocity_stretch = 1.4;
+      blend = additive;
+    }
+  }
+
+  export recipe FrostMist {
+    duration = 0.95s;
+    fps = 30;
+    loop = once;
+    palette = RimeCyan;
+    element frost_ring : ring {
+      at = 0s..0.8s;
+      blend = blend;
+      radius = (radius * 0.25)..(radius * 1.1);
+      segments = 20;
+      ripple_amp = 0.3;
+      ripple_freq = 5;
+      color = mid;
+      texture stylized_smoke { curl_scale = 2.2; seed = seed + 3; }
+      dissolve radial_noise { frames = 8; edge_glow = core; seed = seed + 3; }
+      scale = 0.4 -> 1.1 ease_out -> 0;
+      alpha = 0.75 -> 0.5 -> 0;
+    }
+    emitter frost_puffs : voxel_burst {
+      at = 0.04s..0.64s;
+      seed = seed + 7;
+      count = 22;
+      shape = sphere(radius * 0.55);
+      particle = puff;
+      speed = 4u..10u;
+      life = 0.28s..0.5s;
+      gravity = -4u;
+      drag = 2.6;
+      turbulence = curl(1.6, 5u);
+      size_over_life = 0.9u -> 2.4u ease_out -> 0u;
+      color_over_life = core -> mid -> smoke;
+      blend = blend;
+    }
+  }
+}

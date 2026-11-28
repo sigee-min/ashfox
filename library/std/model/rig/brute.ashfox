@@ -1,0 +1,46 @@
+ashfox 1
+module brute {
+  export socket contract ThrowRockMount {
+  }
+
+  export socket contract HulkMount {
+  }
+
+  export socket contract BackMount {
+  }
+
+  export rig contract BruteRig {
+    joint root { parent = none; role = root; channels = (rotation, scale); }
+    joint pelvis { parent = root; role = pelvis; channels = (position, rotation); }
+    joint torso { parent = pelvis; role = body; channels = rotation; }
+    joint head { parent = torso; role = head; channels = rotation; }
+    joint left_arm { parent = torso; role = arm; channels = rotation; mirror = right_arm; }
+    joint right_arm { parent = torso; role = arm; channels = rotation; mirror = left_arm; }
+    joint left_hand { parent = left_arm; role = prop; channels = rotation; mirror = right_hand; }
+    joint right_hand { parent = right_arm; role = prop; channels = rotation; mirror = left_hand; }
+    joint left_leg { parent = pelvis; role = leg; channels = rotation; mirror = right_leg; }
+    joint right_leg { parent = pelvis; role = leg; channels = rotation; mirror = left_leg; }
+
+    chain spine = [pelvis, torso, head];
+    anchor slam_impact { joint = root; offset = (0u, 0u, -16u); }
+    anchor rock_origin { joint = right_hand; offset = (0u, -2u, -2u); }
+    anchor foot_l { joint = left_leg; offset = (0u, -12u, 0u); }
+    anchor foot_r { joint = right_leg; offset = (0u, -12u, 0u); }
+    socket throw_rock: ThrowRockMount { joint = right_hand; capacity = one; }
+    socket hulk: HulkMount { joint = torso; capacity = one; }
+    socket back: BackMount { joint = torso; capacity = one; }
+  }
+
+  export skeleton BruteSkeleton implements BruteRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind pelvis { parent_origin = (0u, 14u, 0u); }
+    bind torso { parent_origin = (0u, 3u, 0u); }
+    bind head { parent_origin = (0u, 13u, -2u); }
+    bind left_arm { parent_origin = (-10u, 11u, -1u); }
+    bind right_arm { parent_origin = (10u, 11u, -1u); }
+    bind left_hand { parent_origin = (0u, -12u, -1u); }
+    bind right_hand { parent_origin = (0u, -12u, -1u); }
+    bind left_leg { parent_origin = (-4u, 0u, 0u); }
+    bind right_leg { parent_origin = (4u, 0u, 0u); }
+  }
+}

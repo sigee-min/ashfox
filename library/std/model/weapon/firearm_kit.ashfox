@@ -1,0 +1,190 @@
+ashfox 1
+module firearm_kit {
+  import "std/model/rig/fps_arms" as fps;
+
+  export surface contract ReceiverSurface {
+    chart receiver_upper box { coverage = opaque; }
+    chart receiver_lower box { coverage = opaque; }
+    chart rail box { coverage = opaque; }
+    chart grip box { coverage = opaque; }
+    chart bolt box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract ShotgunSurface {
+    chart receiver box { coverage = opaque; }
+    chart barrel box { coverage = opaque; }
+    chart tube box { coverage = opaque; }
+    chart pump box { coverage = opaque; }
+    chart stock box { coverage = opaque; }
+    chart grip box { coverage = opaque; }
+    chart rail box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract RifleSurface {
+    chart receiver box { coverage = opaque; }
+    chart handguard box { coverage = opaque; }
+    chart barrel box { coverage = opaque; }
+    chart muzzle box { coverage = opaque; }
+    chart stock box { coverage = opaque; }
+    chart grip box { coverage = opaque; }
+    chart rail box { coverage = opaque; }
+    chart mag box { coverage = opaque; }
+    chart bolt box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract SmgSurface {
+    chart receiver box { coverage = opaque; }
+    chart shroud box { coverage = opaque; }
+    chart barrel box { coverage = opaque; }
+    chart stock box { coverage = opaque; }
+    chart grip box { coverage = opaque; }
+    chart foregrip box { coverage = opaque; }
+    chart rail box { coverage = opaque; }
+    chart mag box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract SidearmSurface {
+    chart frame box { coverage = opaque; }
+    chart slide box { coverage = opaque; }
+    chart barrel box { coverage = opaque; }
+    chart grip box { coverage = opaque; }
+    chart sight box { coverage = opaque; }
+    chart mag box { coverage = opaque; }
+    material = double;
+  }
+
+  export component ReceiverBase(param body_scale : ratio = 1.0) {
+    requires socket mount: fps.WeaponMount;
+    requires surface skin: ReceiverSurface;
+    provides socket optic: fps.OpticMount capacity = one;
+    provides socket mag_well: fps.MagMount capacity = one;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    bind socket optic to bone root {
+      frame { origin = (0u, 2u, -2u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    bind socket mag_well to bone root {
+      frame { origin = (0u, -2u, -3u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube upper { origin = (-1u, -1u, -7u * body_scale); size = (2u, 2u, 11u * body_scale); surface = skin.receiver_upper; }
+        cube lower { origin = (-1u, -3u, -5u * body_scale); size = (2u, 2u, 8u * body_scale); surface = skin.receiver_lower; }
+        cube top_rail { origin = (-1u, 1u, -6u * body_scale); size = (2u, 1u, 8u * body_scale); surface = skin.rail; }
+        cube grip { origin = (-1u, -6u, 0u); size = (2u, 4u, 2u); pivot = (0u, -2u, 1u); rotation = (-16deg, 0deg, 0deg); surface = skin.grip; }
+        cube bolt_handle { origin = (1u, 0u, -3u); size = (1u, 1u, 3u); surface = skin.bolt; }
+      }
+    }
+  }
+
+  export component PumpShotgun(param barrel_scale : ratio = 1.0) {
+    requires socket mount: fps.WeaponMount;
+    requires surface skin: ShotgunSurface;
+    provides socket optic: fps.OpticMount capacity = one;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    bind socket optic to bone root {
+      frame { origin = (0u, 2u, -2u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube receiver { origin = (-1.5u, -2u, -6u); size = (3u, 3u, 9u); surface = skin.receiver; }
+        cube top_rail { origin = (-1u, 1u, -6u); size = (2u, 1u, 7u); surface = skin.rail; }
+        cylinder barrel { origin = (0u, 0u, -6u - 13u * barrel_scale); radius = 1u; radius_top = 1u; height = 13u * barrel_scale; sides = 8; axis = z; surface = skin.barrel; }
+        cylinder under_tube { origin = (0u, -1.5u, -6u - 11u * barrel_scale); radius = 1u; radius_top = 1u; height = 11u * barrel_scale; sides = 8; axis = z; surface = skin.tube; }
+        cube forend_pump { origin = (-1.5u, -2.5u, -14u); size = (3u, 2u, 6u); surface = skin.pump; }
+        wedge stock { origin = (-1u, -3u, 3u); size = (2u, 4u, 7u); slope = south; surface = skin.stock; }
+        cube grip { origin = (-1u, -5u, 1u); size = (2u, 3u, 2u); pivot = (0u, -2u, 2u); rotation = (-20deg, 0deg, 0deg); surface = skin.grip; }
+      }
+    }
+  }
+
+  export component AssaultRifle(param barrel_scale : ratio = 1.0) {
+    requires socket mount: fps.WeaponMount;
+    requires surface skin: RifleSurface;
+    provides socket optic: fps.OpticMount capacity = one;
+    provides socket mag_well: fps.MagMount capacity = one;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    bind socket optic to bone root {
+      frame { origin = (0u, 2u, -2u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    bind socket mag_well to bone root {
+      frame { origin = (0u, -2u, -3u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube receiver { origin = (-1u, -2u, -7u); size = (2u, 3u, 11u); surface = skin.receiver; }
+        cube handguard { origin = (-1u, -1u, -14u); size = (2u, 2u, 7u); surface = skin.handguard; }
+        cylinder barrel { origin = (0u, 0u, -14u - 6u * barrel_scale); radius = 1u; radius_top = 1u; height = 6u * barrel_scale; sides = 8; axis = z; surface = skin.barrel; }
+        taper flash_hider { origin = (-1u, -1u, -16u - 6u * barrel_scale); size = (2u, 2u, 2u); top_scale = (0.75, 0.75); axis = z; surface = skin.muzzle; }
+        wedge buttstock { origin = (-1u, -3u, 4u); size = (2u, 4u, 6u); slope = south; surface = skin.stock; }
+        cube grip { origin = (-1u, -5u, 1u); size = (2u, 4u, 2u); pivot = (0u, -2u, 2u); rotation = (-16deg, 0deg, 0deg); surface = skin.grip; }
+        cube optic_rail { origin = (-1u, 1u, -6u); size = (2u, 1u, 5u); surface = skin.rail; }
+        cube mag_body { origin = (-1u, -6u, -4u); size = (2u, 5u, 3u); pivot = (0u, -2u, -3u); rotation = (12deg, 0deg, 0deg); surface = skin.mag; }
+        cube bolt_handle { origin = (1u, 0u, -3u); size = (1u, 1u, 3u); surface = skin.bolt; }
+      }
+    }
+  }
+
+  export component SubmachineGun(param barrel_scale : ratio = 1.0) {
+    requires socket mount: fps.WeaponMount;
+    requires surface skin: SmgSurface;
+    provides socket optic: fps.OpticMount capacity = one;
+    provides socket mag_well: fps.MagMount capacity = one;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    bind socket optic to bone root {
+      frame { origin = (0u, 2u, -2u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    bind socket mag_well to bone root {
+      frame { origin = (0u, -2u, -3u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube receiver { origin = (-1u, -2u, -6u); size = (2u, 3u, 9u); surface = skin.receiver; }
+        cube shroud { origin = (-1u, -1u, -10u); size = (2u, 2u, 4u); surface = skin.shroud; }
+        cylinder barrel { origin = (0u, 0u, -10u - 4u * barrel_scale); radius = 1u; radius_top = 1u; height = 4u * barrel_scale; sides = 8; axis = z; surface = skin.barrel; }
+        cube wire_stock { origin = (-1u, -1u, 3u); size = (2u, 2u, 5u); surface = skin.stock; }
+        cube grip { origin = (-1u, -5u, 0u); size = (2u, 4u, 2u); pivot = (0u, -2u, 1u); rotation = (-14deg, 0deg, 0deg); surface = skin.grip; }
+        cube foregrip { origin = (-1u, -4u, -9u); size = (2u, 3u, 2u); surface = skin.foregrip; }
+        cube top_rail { origin = (-1u, 1u, -5u); size = (2u, 1u, 5u); surface = skin.rail; }
+        cube stick_mag { origin = (-1u, -7u, -4u); size = (2u, 5u, 2u); surface = skin.mag; }
+      }
+    }
+  }
+
+  export component Sidearm(param barrel_scale : ratio = 1.0) {
+    requires socket mount: fps.WeaponMount;
+    requires surface skin: SidearmSurface;
+    provides socket optic: fps.OpticMount capacity = one;
+    provides socket mag_well: fps.MagMount capacity = one;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    bind socket optic to bone root {
+      frame { origin = (0u, 2u, -1u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    bind socket mag_well to bone root {
+      frame { origin = (0u, -4u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube frame_body { origin = (-1u, -1u, -6u); size = (2u, 1u, 8u); surface = skin.frame; }
+        cube slide { origin = (-1u, 0u, -6u * barrel_scale); size = (2u, 2u, 8u * barrel_scale); surface = skin.slide; }
+        cylinder barrel_tip { origin = (0u, 1u, -6u * barrel_scale - 2u); radius = 1u; radius_top = 1u; height = 2u; sides = 8; axis = z; surface = skin.barrel; }
+        cube grip { origin = (-1u, -5u, -1u); size = (2u, 4u, 2u); pivot = (0u, -1u, 0u); rotation = (-16deg, 0deg, 0deg); surface = skin.grip; }
+        cube front_sight { origin = (-0.5u, 2u, -6u * barrel_scale); size = (1u, 1u, 1u); surface = skin.sight; }
+        cube mag_base { origin = (-1u, -6u, -1u); size = (2u, 1u, 3u); pivot = (0u, -1u, 0u); rotation = (-16deg, 0deg, 0deg); surface = skin.mag; }
+      }
+    }
+  }
+}

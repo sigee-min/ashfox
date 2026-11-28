@@ -1,0 +1,78 @@
+ashfox 1
+module chibi {
+  export socket contract HeadHelmSocket {
+  }
+
+  export socket contract HairSocket {
+  }
+
+  export socket contract CapeMount {
+  }
+
+  export socket contract PetPerchSocket {
+  }
+
+  export socket contract HandGrip {
+  }
+
+  export rig contract ChibiRig {
+    joint root { parent = none; role = root; channels = (position, rotation, scale); }
+    joint pelvis { parent = root; role = pelvis; channels = (position, rotation, scale); }
+    joint torso { parent = pelvis; role = body; channels = (rotation, scale); }
+    joint head { parent = torso; role = head; channels = (rotation, scale); }
+    joint left_arm { parent = torso; role = arm; channels = rotation; mirror = right_arm; }
+    joint right_arm { parent = torso; role = arm; channels = rotation; mirror = left_arm; }
+    joint weapon { parent = right_arm; role = weapon; channels = rotation; }
+    joint left_leg { parent = pelvis; role = leg; channels = rotation; mirror = right_leg; }
+    joint right_leg { parent = pelvis; role = leg; channels = rotation; mirror = left_leg; }
+
+    chain spine = [pelvis, torso, head];
+    anchor weapon_tip { joint = weapon; offset = (0u, -6u, 0u); }
+    anchor foot_l { joint = left_leg; offset = (0u, -6u, 0u); }
+    anchor foot_r { joint = right_leg; offset = (0u, -6u, 0u); }
+
+    socket head_helm: HeadHelmSocket {
+      joint = head;
+      capacity = one;
+      frame { origin = (0u, 8u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    socket hair: HairSocket {
+      joint = head;
+      capacity = one;
+      frame { origin = (0u, 7u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    socket back_cape: CapeMount {
+      joint = torso;
+      capacity = one;
+      frame { origin = (0u, 7u, 2.5u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    socket pet_perch: PetPerchSocket {
+      joint = torso;
+      capacity = one;
+      frame { origin = (-5.5u, 7u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    socket main_hand: HandGrip {
+      joint = right_arm;
+      capacity = one;
+      frame { origin = (0u, -5u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    socket off_hand: HandGrip {
+      joint = left_arm;
+      capacity = one;
+      frame { origin = (0u, -5u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+  }
+
+  // Stylized 2.5-head-ratio SD biped: 10u skull over 15u body height (25u total).
+  export skeleton ChibiSkeleton implements ChibiRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind pelvis { parent_origin = (0u, 6u, 0u); }
+    bind torso { parent_origin = (0u, 1u, 0u); }
+    bind head { parent_origin = (0u, 8u, 0u); }
+    bind left_arm { parent_origin = (-5u, 6.5u, 0u); }
+    bind right_arm { parent_origin = (5u, 6.5u, 0u); }
+    bind weapon { parent_origin = (0u, -5u, -1u); }
+    bind left_leg { parent_origin = (-2u, 0u, 0u); }
+    bind right_leg { parent_origin = (2u, 0u, 0u); }
+  }
+}

@@ -1,0 +1,88 @@
+ashfox 1
+module skill_slot {
+  export material slot_bezel {
+    ramp { mode = auto; base = #5a6678; preset = metal; }
+  }
+  export material slot_well {
+    ramp { mode = auto; base = #2d333d; preset = cool; }
+  }
+  export material cooldown_veil {
+    ramp { mode = auto; base = #3f4f66; preset = cool; }
+  }
+  export material ready_gold {
+    ramp { mode = auto; base = #e8b845; preset = warm; }
+  }
+  export material active_cyan {
+    ramp { mode = auto; base = #4ed8eb; preset = emissive; }
+  }
+  export material badge_slate {
+    ramp { mode = auto; base = #454e5e; preset = metal; }
+  }
+
+  export mask slot_frame {
+    rows = [
+      ".11111111111111.",
+      "1111111111111111",
+      "11............11",
+      "11............11",
+      "11............11",
+      "11............11",
+      "11............11",
+      "11............11",
+      "11............11",
+      "11............11",
+      "11............11",
+      "11............11",
+      "11............11",
+      "11............11",
+      "1111111111111111",
+      ".11111111111111."
+    ];
+  }
+
+  export mask cooldown_mask {
+    rows = [
+      "......111111",
+      "......111111",
+      "......111111",
+      "......111111",
+      "......111111",
+      "......111111",
+      "......11111.",
+      "......1111..",
+      "......111...",
+      "......11....",
+      "......1.....",
+      "............"
+    ];
+  }
+
+  export mask hotkey_badge {
+    rows = [
+      ".11111.",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111",
+      "1111111",
+      ".11111."
+    ];
+  }
+
+  export stamp slot_corner_pip {
+    rows = [
+      "hl",
+      "ls"
+    ];
+    slots = [h, l, s];
+  }
+
+  export stamp ready_spark {
+    rows = [
+      ".g.",
+      "gcg",
+      ".g."
+    ];
+    slots = [g, c];
+  }
+}

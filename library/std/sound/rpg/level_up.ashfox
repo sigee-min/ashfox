@@ -1,0 +1,64 @@
+ashfox 1
+module level_up {
+  params {
+    base_pitch = 520hz;
+    shimmer_mix = 18%;
+  }
+
+  export voice fanfare_chime : modal_plate {
+    material = bell;
+    pitch = base_pitch;
+    size = 0.98;
+    hardness = 0.88;
+    damping = 0.24;
+    brightness = 0.86;
+    modes = 14;
+    strike = mallet;
+    twin_beat = 0.46;
+    splash = 0.24;
+    stereo_spread = 0.44;
+    highpass = 85hz;
+    filter : lowpass { cutoff = log(0: 14000hz -> 0.4: 5200hz -> 1: 1800hz); q = 1.05; }
+    pan = -0.1;
+    gain { env = ad; attack = 2ms; peak = 0.94; curve = exp; }
+  }
+
+  export voice fanfare_overtone : material {
+    material = bronze;
+    pitch = 1040hz;
+    size = 0.86;
+    hardness = 0.84;
+    damping = 0.22;
+    brightness = 0.82;
+    modes = 12;
+    strike = mallet;
+    twin_beat = 0.4;
+    stereo_spread = 0.48;
+    highpass = 140hz;
+    fx : shimmer { mix = shimmer_mix; feedback = 22%; shift_semitones = 12st; }
+    pan = 0.12;
+    gain { env = ad; attack = 2ms; peak = 0.8; curve = exp; }
+  }
+
+  export voice fanfare_sparkle : granular {
+    texture = spark;
+    density = 76;
+    grain_ms = 10ms;
+    pitch = log(0: 4200hz -> 1: 8400hz);
+    spread = 0.72;
+    turbulence = 0.4;
+    stereo_width = 0.76;
+    itd_ms = 0.24ms;
+    highpass = 1200hz;
+    gain { env = ad; attack = 2ms; peak = 0.48; curve = exp; }
+  }
+
+  export seq level_up_fanfare {
+    start = 10ms;
+    step note_root { voice = fanfare_chime; at = 0ms; duration = 180ms; pitch = 0cents; }
+    step note_third { voice = fanfare_chime; at = 85ms; duration = 180ms; pitch = 400cents; }
+    step note_fifth { voice = fanfare_chime; at = 170ms; duration = 200ms; pitch = 700cents; }
+    step note_octave { voice = fanfare_overtone; at = 255ms; duration = 360ms; pitch = 0cents; }
+    step glint { voice = fanfare_sparkle; at = 255ms; duration = 240ms; gain = 0.65; }
+  }
+}

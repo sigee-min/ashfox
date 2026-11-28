@@ -1,0 +1,156 @@
+ashfox 1
+module chibi {
+  export design ChibiFaceDesign {
+    slot_width: unit = 6u;
+    slot_height: unit = 4u;
+    mouth_width: unit = 4u;
+    mouth_height: unit = 2u;
+    skull_eye_ratio: ratio = 0.46;
+  }
+
+  export surface contract ChibiEyes {
+    chart neutral flat { coverage = opaque; }
+    chart blink flat { coverage = opaque; }
+    chart happy flat { coverage = opaque; }
+    chart fierce flat { coverage = opaque; }
+    chart hurt flat { coverage = opaque; }
+    material = cutout;
+  }
+
+  export surface chibi_eyes_bright: ChibiEyes {
+    material = cutout;
+    texture atlas {
+      density = 2;
+      atlas = (128px, 128px);
+      background = void;
+      background_alpha = 0;
+      palette {
+        void = #000000;
+        skin = (#cc8c6e, #f2be9d, #ffe0c8);
+        lash = #2b1d24;
+        iris = #3264b8;
+        iris_light = #6ba8ff;
+        glint = #ffffff;
+        blush = #f28c9c;
+        hurt_red = #d94646;
+      }
+      stamp eyes_neutral {
+        pixels = ".ll....ll./lgl....lgl/lii....iil/b........b";
+        l = lash;
+        i = iris;
+        g = glint;
+        b = blush;
+      }
+      stamp eyes_blink {
+        pixels = "........../.ll....ll./l..l..l..l/b........b";
+        l = lash;
+        b = blush;
+      }
+      stamp eyes_happy {
+        pixels = ".ll....ll./l..l..l..l/........../b........b";
+        l = lash;
+        b = blush;
+      }
+      stamp eyes_fierce {
+        pixels = "ll......ll/.lgl..lgl./.ias..sai./..........";
+        l = lash;
+        i = iris;
+        a = iris_light;
+        g = glint;
+        s = lash;
+      }
+      stamp eyes_hurt {
+        pixels = ".l.l..l.l./..l....l../.r.r..r.r./..........";
+        l = lash;
+        r = hurt_red;
+      }
+      chart neutral flat {
+        fill = skin;
+        stamp eyes_neutral { at = (1px, 2px); protect = true; }
+      }
+      chart blink flat {
+        fill = skin;
+        stamp eyes_blink { at = (1px, 2px); protect = true; }
+      }
+      chart happy flat {
+        fill = skin;
+        stamp eyes_happy { at = (1px, 2px); protect = true; }
+      }
+      chart fierce flat {
+        fill = skin;
+        stamp eyes_fierce { at = (1px, 2px); protect = true; }
+      }
+      chart hurt flat {
+        fill = skin;
+        stamp eyes_hurt { at = (1px, 2px); protect = true; }
+      }
+      grain soft { seed = 2101; }
+      tone painterly;
+    }
+  }
+
+  export surface contract ChibiMouth {
+    chart neutral flat { coverage = opaque; }
+    chart happy flat { coverage = opaque; }
+    chart shout flat { coverage = opaque; }
+    chart hurt flat { coverage = opaque; }
+    material = cutout;
+  }
+
+  export surface chibi_mouth_warm: ChibiMouth {
+    material = cutout;
+    texture atlas {
+      density = 2;
+      atlas = (128px, 128px);
+      background = void;
+      background_alpha = 0;
+      palette {
+        void = #000000;
+        skin = (#cc8c6e, #f2be9d, #ffe0c8);
+        line = #6b3838;
+        inner = #a83c4b;
+        tongue = #eb7a88;
+        tooth = #fff7f0;
+      }
+      stamp mouth_neutral {
+        pixels = "......../..llll../........";
+        l = line;
+      }
+      stamp mouth_happy {
+        pixels = "l......l/.itttti./..iiii..";
+        l = line;
+        i = inner;
+        t = tongue;
+      }
+      stamp mouth_shout {
+        pixels = ".lwwwwl./.liiiil./.lttttl.";
+        l = line;
+        w = tooth;
+        i = inner;
+        t = tongue;
+      }
+      stamp mouth_hurt {
+        pixels = "..llll../.l....l./........";
+        l = line;
+      }
+      chart neutral flat {
+        fill = skin;
+        stamp mouth_neutral { at = (0px, 1px); protect = true; }
+      }
+      chart happy flat {
+        fill = skin;
+        stamp mouth_happy { at = (0px, 1px); protect = true; }
+      }
+      chart shout flat {
+        fill = skin;
+        stamp mouth_shout { at = (0px, 1px); protect = true; }
+      }
+      chart hurt flat {
+        fill = skin;
+        stamp mouth_hurt { at = (0px, 1px); protect = true; }
+      }
+      grain soft { seed = 2102; }
+      tone painterly;
+    }
+  }
+}
