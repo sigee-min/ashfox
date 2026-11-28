@@ -1,0 +1,64 @@
+ashfox 1
+module urban_ruin {
+  palette {
+    asphalt = mix("minecraft:black_concrete" * 80%, "minecraft:gray_concrete" * 20%);
+    lane_mark = "minecraft:white_concrete";
+    curb = "minecraft:smooth_stone_slab[type=bottom]";
+    cracked_brick = mix("minecraft:stone_bricks" * 65%, "minecraft:cracked_stone_bricks" * 25%, "minecraft:mossy_stone_bricks" * 10%);
+    red_brick = "minecraft:bricks";
+    parapet_wall = "minecraft:stone_brick_wall";
+    parapet_cap = "minecraft:stone_brick_slab[type=bottom]";
+    grate = "minecraft:iron_bars";
+    steel = "minecraft:iron_block";
+    rust = "minecraft:exposed_copper";
+    stair_n = "minecraft:deepslate_brick_stairs[facing=north,half=bottom]";
+    stair_e = "minecraft:deepslate_brick_stairs[facing=east,half=bottom]";
+    stair_w = "minecraft:deepslate_brick_stairs[facing=west,half=bottom]";
+    tunnel_wall = "minecraft:deepslate_bricks";
+    tunnel_tile = "minecraft:deepslate_tiles";
+    rubble = "minecraft:gravel";
+    lamp = "minecraft:sea_lantern";
+  }
+
+  export prefab AsphaltRoadBay {
+    box { from = (0b, 0b, 0b); to = (5b, 0b, 5b); block = asphalt; }
+    box { from = (0b, 1b, 0b); to = (0b, 1b, 5b); block = curb; }
+    box { from = (5b, 1b, 0b); to = (5b, 1b, 5b); block = curb; }
+    set { at = (2b, 0b, 1b); block = lane_mark; }
+    set { at = (2b, 0b, 2b); block = lane_mark; }
+    set { at = (3b, 0b, 4b); block = rubble; }
+  }
+
+  export prefab FireEscapeStair {
+    box { from = (0b, 0b, 0b); to = (3b, 0b, 3b); block = steel; }
+    set { at = (0b, 1b, 0b); block = grate; }
+    set { at = (0b, 2b, 0b); block = grate; }
+    set { at = (3b, 1b, 0b); block = grate; }
+    set { at = (3b, 2b, 0b); block = grate; }
+    set { at = (1b, 1b, 2b); block = stair_n; }
+    set { at = (1b, 2b, 1b); block = stair_n; }
+    box { from = (0b, 3b, 0b); to = (3b, 3b, 1b); block = rust; }
+    box { from = (0b, 4b, 0b); to = (3b, 4b, 0b); block = grate; }
+  }
+
+  export prefab RooftopParapet {
+    box { from = (0b, 0b, 0b); to = (4b, 0b, 1b); block = cracked_brick; }
+    box { from = (0b, 1b, 0b); to = (4b, 2b, 0b); block = red_brick; }
+    box { from = (0b, 3b, 0b); to = (1b, 3b, 0b); block = parapet_cap; }
+    set { at = (2b, 3b, 0b); block = parapet_wall; }
+    box { from = (3b, 3b, 0b); to = (4b, 3b, 0b); block = parapet_cap; }
+    set { at = (4b, 1b, 1b); block = rust; }
+  }
+
+  export prefab SubwayTunnelBay {
+    box { from = (0b, 0b, 0b); to = (5b, 0b, 3b); block = tunnel_tile; }
+    box { from = (0b, 1b, 0b); to = (0b, 3b, 3b); block = tunnel_wall; }
+    box { from = (5b, 1b, 0b); to = (5b, 3b, 3b); block = tunnel_wall; }
+    box { from = (1b, 3b, 0b); to = (1b, 3b, 3b); block = stair_e; }
+    box { from = (4b, 3b, 0b); to = (4b, 3b, 3b); block = stair_w; }
+    box { from = (0b, 4b, 0b); to = (5b, 4b, 3b); block = tunnel_wall; }
+    set { at = (2b, 4b, 1b); block = lamp; }
+    set { at = (3b, 4b, 1b); block = lamp; }
+    set { at = (2b, 1b, 2b); block = rubble; }
+  }
+}

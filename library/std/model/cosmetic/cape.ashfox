@@ -1,0 +1,56 @@
+ashfox 1
+module cape {
+  import "std/model/rig/biped" as biped;
+
+  export surface contract CapeSurface {
+    chart collar box { coverage = opaque; }
+    chart clasp box { coverage = opaque; }
+    chart mantle box { coverage = opaque; }
+    chart drape box { coverage = opaque; }
+    chart hem box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract FairyWingsSurface {
+    chart hub box { coverage = opaque; }
+    chart upper_vein box { coverage = opaque; }
+    chart lower_vein box { coverage = opaque; }
+    chart upper_wing flat { coverage = binary; }
+    chart lower_wing flat { coverage = binary; }
+    material = double;
+  }
+
+  export component ClothCape(param cape_length : ratio = 1.0) {
+    requires socket mount: biped.CapeMount;
+    requires surface skin: CapeSurface;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube collar_rim { origin = (-5u, 0u, -1u); size = (10u, 2u, 3u); surface = skin.collar; }
+        cube clasp_l { origin = (-4.5u, 0.5u, -1.5u); size = (2u, 2u, 2u); mirror_x = clasp_r; surface = skin.clasp; }
+        taper upper_mantle { origin = (-4.5u, -7u * cape_length, 0.5u); size = (9u, 7u * cape_length, 2u); top_scale = (0.85, 1.0); axis = y; pivot = (0u, 0u, 1u); rotation = (12deg, 0deg, 0deg); surface = skin.mantle; }
+        taper lower_drape { origin = (-6u, -16u * cape_length, 2u); size = (12u, 9u * cape_length, 2u); top_scale = (0.78, 1.0); axis = y; pivot = (0u, 0u, 1u); rotation = (16deg, 0deg, 0deg); surface = skin.drape; }
+        cube bottom_hem { origin = (-6.5u, -18u * cape_length, 2.3u); size = (13u, 2u, 2u); pivot = (0u, 0u, 1u); rotation = (16deg, 0deg, 0deg); surface = skin.hem; }
+      }
+    }
+  }
+
+  export component FairyWings(param wing_span : ratio = 1.0) {
+    requires socket mount: biped.CapeMount;
+    requires surface skin: FairyWingsSurface;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube spine_hub { origin = (-1.5u, -2u, 0u); size = (3u, 5u, 2u); surface = skin.hub; }
+        cube upper_strut_l { origin = (-9u * wing_span, 2u, 1u); size = (8u * wing_span, 1u, 1u); pivot = (-1u, 1.5u, 1.5u); rotation = (-16deg, 24deg, -18deg); mirror_x = upper_strut_r; surface = skin.upper_vein; }
+        plane upper_foil_l { origin = (-13u * wing_span, -1u, 1.4u); size = (12u * wing_span, 10u); u_axis = (1u, 0u, 0u); v_axis = (0u, 1u, 0u); pivot = (-1u, 1.5u, 1.5u); rotation = (-16deg, 24deg, -14deg); mirror_x = upper_foil_r; surface = skin.upper_wing; }
+        cube lower_strut_l { origin = (-7u * wing_span, -2.5u, 1u); size = (6u * wing_span, 1u, 1u); pivot = (-1u, -1u, 1.5u); rotation = (-12deg, 20deg, 14deg); mirror_x = lower_strut_r; surface = skin.lower_vein; }
+        plane lower_foil_l { origin = (-10u * wing_span, -9u, 1.4u); size = (9u * wing_span, 8u); u_axis = (1u, 0u, 0u); v_axis = (0u, 1u, 0u); pivot = (-1u, -1u, 1.5u); rotation = (-12deg, 20deg, 12deg); mirror_x = lower_foil_r; surface = skin.lower_wing; }
+      }
+    }
+  }
+}

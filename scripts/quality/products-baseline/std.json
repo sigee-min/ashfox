@@ -7,7 +7,7 @@
     {
       "input": "library/std",
       "ok": true,
-      "sourceHash": "490dced36ee472df92ccb89f14747893317e6923606b7c5a85d3b6270de9b4a4",
+      "sourceHash": "92fe9c63e2fb236803800e47d9a82b3fb7de2fa537f52559150af45d3aeb735f",
       "modules": [
         {
           "path": "library/std/core/hook/combat.ashfox",
@@ -45,6 +45,18 @@
             "PanicEventTrigger",
             "RescueBeacon",
             "SaferoomZone"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/core/hook/interaction.ashfox",
+          "specifier": "std/core/hook/interaction",
+          "sha256": "1402331b3e25a088dae44fc0991bae5ab661d66b20717082cfc16b5fa92f7f5b",
+          "exports": [
+            "Interactable",
+            "PromptKey",
+            "TriggerRadius"
           ],
           "imports": [],
           "params": []
@@ -88,6 +100,38 @@
           ],
           "imports": [],
           "params": []
+        },
+        {
+          "path": "library/std/core/material/crystal.ashfox",
+          "specifier": "std/core/material/crystal",
+          "sha256": "b112331cda57a1efa023f98fe22c52fce1d0e1db1f7344100fd8f6c3ba7cb3df",
+          "exports": [
+            "CrystalParams",
+            "CrystalSurface",
+            "FrostedCrystalSurface",
+            "frosted_crystal",
+            "gem_crystal"
+          ],
+          "imports": [],
+          "params": [
+            "amethyst_base",
+            "amethyst_light",
+            "amethyst_shadow",
+            "edge_wear",
+            "emerald_base",
+            "emerald_light",
+            "emerald_shadow",
+            "frost_base",
+            "frost_light",
+            "frost_shadow",
+            "frosted_roughness",
+            "metallic",
+            "normal_strength",
+            "roughness",
+            "sapphire_base",
+            "sapphire_light",
+            "sapphire_shadow"
+          ]
         },
         {
           "path": "library/std/core/material/fabric.ashfox",
@@ -437,6 +481,41 @@
           "imports": [],
           "params": [
             "shield_scale"
+          ]
+        },
+        {
+          "path": "library/std/model/cosmetic/cape.ashfox",
+          "specifier": "std/model/cosmetic/cape",
+          "sha256": "fec97ea086243548897e02c685383f2a7875e9e3d86fb782d01c787ba96b85c5",
+          "exports": [
+            "CapeSurface",
+            "ClothCape",
+            "FairyWings",
+            "FairyWingsSurface"
+          ],
+          "imports": [
+            "std/model/rig/biped"
+          ],
+          "params": [
+            "cape_length",
+            "wing_span"
+          ]
+        },
+        {
+          "path": "library/std/model/cosmetic/hair.ashfox",
+          "specifier": "std/model/cosmetic/hair",
+          "sha256": "501f7f573dd1fdc575a49a11d7fd67315af0098bc2ac6ed48d328bdd70ac4510",
+          "exports": [
+            "BangsHair",
+            "HairSurface",
+            "PonytailHair"
+          ],
+          "imports": [
+            "std/model/rig/chibi"
+          ],
+          "params": [
+            "hair_scale",
+            "tail_length"
           ]
         },
         {
@@ -850,6 +929,88 @@
           "params": []
         },
         {
+          "path": "library/std/model/prop/medical.ashfox",
+          "specifier": "std/model/prop/medical",
+          "sha256": "0dc7b04b3e4efd0a4c28a6a15f4b6850d00c1a35a2a0047ce15b30a085d57fb8",
+          "exports": [
+            "AdrenalineShot",
+            "AdrenalineShotSurface",
+            "DefibUnit",
+            "DefibUnitSurface",
+            "FirstAidKit",
+            "FirstAidKitSurface",
+            "MedicalGrip",
+            "MedicalRig",
+            "MedicalSkeleton",
+            "PainPills",
+            "PainPillsSurface"
+          ],
+          "imports": [],
+          "params": [
+            "scale_factor",
+            "scale_factor",
+            "scale_factor",
+            "scale_factor"
+          ]
+        },
+        {
+          "path": "library/std/model/prop/town_rpg.ashfox",
+          "specifier": "std/model/prop/town_rpg",
+          "sha256": "2cb9bac7b46681c7e545dcc79ad97d9620603bcea0732e81ee814e7246784857",
+          "exports": [
+            "MarketStall",
+            "MarketStallSurface",
+            "PortalPedestal",
+            "PortalPedestalRig",
+            "PortalPedestalSkeleton",
+            "PortalPedestalSurface",
+            "QuestBoard",
+            "QuestBoardSurface",
+            "RestChair",
+            "RestChairSurface",
+            "Signpost",
+            "SignpostSurface",
+            "TownPropRig",
+            "TownPropSkeleton"
+          ],
+          "imports": [],
+          "params": [
+            "board_scale",
+            "height_scale",
+            "scale_factor",
+            "seat_scale",
+            "width_scale"
+          ]
+        },
+        {
+          "path": "library/std/model/prop/urban_hazard.ashfox",
+          "specifier": "std/model/prop/urban_hazard",
+          "sha256": "2aa0b3118882b9cb2f80d038c8262f11b6e03d68b8b7f2ab7143892675a047ff",
+          "exports": [
+            "AlarmCarProp",
+            "AlarmCarSurface",
+            "AmmoPile",
+            "AmmoPileSurface",
+            "GasCan",
+            "GasCanSurface",
+            "GeneratorUnit",
+            "GeneratorUnitSurface",
+            "HazardMount",
+            "HazardPropRig",
+            "HazardPropSkeleton",
+            "PropaneTank",
+            "PropaneTankSurface"
+          ],
+          "imports": [],
+          "params": [
+            "scale_factor",
+            "scale_factor",
+            "scale_factor",
+            "scale_factor",
+            "scale_factor"
+          ]
+        },
+        {
           "path": "library/std/model/prop/weapon.ashfox",
           "specifier": "std/model/prop/weapon",
           "sha256": "2e3b78550070f23b3095ff59c5cf3d0b83b9ff24ccb2174e6b8fe7ae24c38337",
@@ -977,6 +1138,19 @@
           "params": []
         },
         {
+          "path": "library/std/model/rig/tendril.ashfox",
+          "specifier": "std/model/rig/tendril",
+          "sha256": "6a402b3017c60ea3263faddd3dc45ffc155f886852b003713c5d5a38adabc52a",
+          "exports": [
+            "PustuleMount",
+            "TendrilRig",
+            "TendrilSkeleton",
+            "TendrilTipMount"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
           "path": "library/std/model/rig/turret.ashfox",
           "specifier": "std/model/rig/turret",
           "sha256": "2dda86dfabd3475e64e9a08b41798f76197425c0328a954edadf7082a5b8e338",
@@ -1024,6 +1198,26 @@
           "params": []
         },
         {
+          "path": "library/std/model/weapon/bow.ashfox",
+          "specifier": "std/model/weapon/bow",
+          "sha256": "35efeead6e3740ca3e90d3f9cf876223f566d8e3cc1848e769bd3ebb91959420",
+          "exports": [
+            "BowRig",
+            "BowSkeleton",
+            "Crossbow",
+            "CrossbowSurface",
+            "ShortBow",
+            "ShortBowSurface"
+          ],
+          "imports": [
+            "std/model/rig/biped"
+          ],
+          "params": [
+            "draw_scale",
+            "prod_scale"
+          ]
+        },
+        {
           "path": "library/std/model/weapon/firearm_kit.ashfox",
           "specifier": "std/model/weapon/firearm_kit",
           "sha256": "a77ebeca47e90b8794b1523dfde3dfcf801d8b80e9176f1abec96ee998e70621",
@@ -1048,6 +1242,26 @@
             "barrel_scale",
             "barrel_scale",
             "body_scale"
+          ]
+        },
+        {
+          "path": "library/std/model/weapon/staff.ashfox",
+          "specifier": "std/model/weapon/staff",
+          "sha256": "f35a79a173a5759105fd7b8f7c03988592a6409562a7eb60fbd24a02030e48c6",
+          "exports": [
+            "CrystalWand",
+            "CrystalWandSurface",
+            "MageStaff",
+            "MageStaffSurface",
+            "StaffRig",
+            "StaffSkeleton"
+          ],
+          "imports": [
+            "std/model/rig/biped"
+          ],
+          "params": [
+            "shaft_scale",
+            "wand_scale"
           ]
         },
         {
@@ -1393,6 +1607,27 @@
           ]
         },
         {
+          "path": "library/std/sprite/decal/biohazard.ashfox",
+          "specifier": "std/sprite/decal/biohazard",
+          "sha256": "b0f04f9b8ae0183477118f65511a7daf73cf8b39c59746cc8066447423119523",
+          "exports": [
+            "acid_bubbles",
+            "acid_caustic",
+            "acid_stain",
+            "bile_glow",
+            "blood_crimson",
+            "blood_splatter",
+            "dried_smear",
+            "handprint_smear",
+            "scorch_char",
+            "scorch_mark",
+            "smear_streak",
+            "splatter_drops"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
           "path": "library/std/sprite/decal/impact.ashfox",
           "specifier": "std/sprite/decal/impact",
           "sha256": "15dded4316683a85b09f03e3a87c0d70c4a90fe9a0b86273437860600d3f876f",
@@ -1406,6 +1641,28 @@
             "radial_scorch",
             "scorch_soot",
             "splatter_core"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/sprite/decal/signage.ashfox",
+          "specifier": "std/sprite/decal/signage",
+          "sha256": "0b2987f4ad1d61614e810ad06cccd95d6530f3d79acea5195bb1d6ee8e3b24de",
+          "exports": [
+            "chalk_white",
+            "chevron_stripe",
+            "exit_emerald",
+            "exit_sign",
+            "hazard_tape",
+            "hazard_yellow",
+            "saferoom_amber",
+            "saferoom_arrow",
+            "stencil_corner",
+            "stencil_red",
+            "stencil_slate",
+            "tally_marks",
+            "wall_graffiti"
           ],
           "imports": [],
           "params": []
@@ -1698,6 +1955,32 @@
           "params": []
         },
         {
+          "path": "library/std/structure/arch/storybook.ashfox",
+          "specifier": "std/structure/arch/storybook",
+          "sha256": "0da146ebccdb116dcea198c618fd672eeeb227f9e4fbc77404b8eb342cc39f0e",
+          "exports": [
+            "CanopyPortal",
+            "MushroomRoof",
+            "TimberBalcony",
+            "TreehouseArch"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/arch/urban_ruin.ashfox",
+          "specifier": "std/structure/arch/urban_ruin",
+          "sha256": "ef11ece17e6c25bc00e68d7bb318d1562d8527d0ae88dedc0481588089e349b1",
+          "exports": [
+            "AsphaltRoadBay",
+            "FireEscapeStair",
+            "RooftopParapet",
+            "SubwayTunnelBay"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
           "path": "library/std/structure/dungeon/chamber.ashfox",
           "specifier": "std/structure/dungeon/chamber",
           "sha256": "1270fea6c010099ced5c2d87f241773b4c9e07e0f35c036ba2bcc8bfab33d334",
@@ -1795,6 +2078,18 @@
           "params": []
         },
         {
+          "path": "library/std/structure/interior/clinic.ashfox",
+          "specifier": "std/structure/interior/clinic",
+          "sha256": "9dba08c3cabffd9dd18eefb66fd6e500d51c4d785cd9531eaa91deccda9364a2",
+          "exports": [
+            "ClinicWardBay",
+            "ExitSignFixture",
+            "QuarantineCurtain"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
           "path": "library/std/structure/interior/gallery.ashfox",
           "specifier": "std/structure/interior/gallery",
           "sha256": "554d0ea0e8c3b97d5ef0d9130d94e1057af36607569a42fbc149e4bba17487e8",
@@ -1816,6 +2111,18 @@
             "CampOutpostBay",
             "RuinedCounter",
             "SurvivalStash"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/interior/saferoom.ashfox",
+          "specifier": "std/structure/interior/saferoom",
+          "sha256": "53dc1992f1070cd59d14b385a6a777d4617d7d040025d26ac04c25136b1fd599",
+          "exports": [
+            "GraffitiWallBoard",
+            "SaferoomSteelDoor",
+            "WeaponSupplyTable"
           ],
           "imports": [],
           "params": []
@@ -1857,6 +2164,20 @@
           "imports": [
             "std/structure/furnish/storage"
           ],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/platform/field.ashfox",
+          "specifier": "std/structure/platform/field",
+          "sha256": "af4b9f2966641a9364ce53ef5cd991958f1ef3beab98189f09bbb50cd240fe01",
+          "exports": [
+            "FloatingDeck",
+            "LadderSpan",
+            "PlatformAnchor",
+            "RopeHang",
+            "SlopeBridge"
+          ],
+          "imports": [],
           "params": []
         },
         {
@@ -1976,6 +2297,28 @@
             "height",
             "seed",
             "width"
+          ]
+        },
+        {
+          "path": "library/std/vfx/hazard/caustic_pool.ashfox",
+          "specifier": "std/vfx/hazard/caustic_pool",
+          "sha256": "5d1fe97ad6ed58b779a497d0bfd92e3baf8e9f49ca944d62fceb1debe62cd391",
+          "exports": [
+            "AcidCaustic",
+            "BileMist",
+            "BileSplash",
+            "CausticPuddle",
+            "acid_pool",
+            "bile_droplets",
+            "bile_plume",
+            "bile_ring",
+            "caustic_bubbles"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "radius",
+            "seed"
           ]
         },
         {
@@ -2251,6 +2594,30 @@
           ]
         },
         {
+          "path": "library/std/vfx/rpg/drop_sparkle.ashfox",
+          "specifier": "std/vfx/rpg/drop_sparkle",
+          "sha256": "273bd4ee178404488c81a9be1a87a29401448b909e53207cb2e5ab459136e278",
+          "exports": [
+            "ArcaneTeal",
+            "CoinGlint",
+            "EmeraldDrop",
+            "LootBeam",
+            "RarityGold",
+            "coin_twinkles",
+            "glint_star",
+            "loot_base_ring",
+            "loot_column",
+            "loot_motes"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "height",
+            "radius",
+            "seed"
+          ]
+        },
+        {
           "path": "library/std/vfx/rpg/level_up.ashfox",
           "specifier": "std/vfx/rpg/level_up",
           "sha256": "4a40c8c9ca08b874323dc126fd1c5a584b0f4e73b87c393a115ded533c8ae864",
@@ -2262,6 +2629,31 @@
             "halo_ring",
             "pillar_beam",
             "rising_sparks"
+          ],
+          "imports": [],
+          "params": [
+            "duration",
+            "height",
+            "radius",
+            "seed"
+          ]
+        },
+        {
+          "path": "library/std/vfx/rpg/skill_nova.ashfox",
+          "specifier": "std/vfx/rpg/skill_nova",
+          "sha256": "e2486a68d41173dc068d7b6cf8a03aed86309f920278b31adfef90c3ad4bf751",
+          "exports": [
+            "ArcaneNova",
+            "BlizzardField",
+            "GlacialStorm",
+            "MeteorCrimson",
+            "MeteorDrop",
+            "blizzard_cyclone",
+            "blizzard_sigil",
+            "frost_vortex",
+            "impact_dome",
+            "meteor_debris",
+            "meteor_streak"
           ],
           "imports": [],
           "params": [

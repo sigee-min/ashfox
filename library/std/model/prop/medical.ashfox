@@ -1,0 +1,141 @@
+ashfox 1
+module medical {
+  export socket contract MedicalGrip {
+  }
+
+  export rig contract MedicalRig {
+    joint root { parent = none; role = root; channels = (position, rotation, scale); }
+    joint body { parent = root; role = prop; channels = rotation; }
+    joint detail { parent = body; role = prop; channels = (position, rotation); }
+    anchor use_origin { joint = detail; offset = (0u, 2u, 0u); }
+    socket grip: MedicalGrip { joint = root; capacity = one; }
+  }
+
+  export skeleton MedicalSkeleton implements MedicalRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind body { parent_origin = (0u, 0u, 0u); }
+    bind detail { parent_origin = (0u, 4u, 0u); }
+  }
+
+  export surface contract FirstAidKitSurface {
+    chart case_body box { coverage = opaque; }
+    chart lid box { coverage = opaque; }
+    chart handle box { coverage = opaque; }
+    chart clasp box { coverage = opaque; }
+    chart emblem box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract PainPillsSurface {
+    chart bottle box { coverage = opaque; }
+    chart label box { coverage = opaque; }
+    chart cap box { coverage = opaque; }
+    chart seal box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract AdrenalineShotSurface {
+    chart barrel box { coverage = opaque; }
+    chart grip box { coverage = opaque; }
+    chart fluid box { coverage = opaque; }
+    chart plunger box { coverage = opaque; }
+    chart needle_cap box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract DefibUnitSurface {
+    chart housing box { coverage = opaque; }
+    chart screen box { coverage = opaque; }
+    chart handle box { coverage = opaque; }
+    chart paddle box { coverage = opaque; }
+    chart cable box { coverage = opaque; }
+    material = double;
+  }
+
+  export component FirstAidKit(param scale_factor : ratio = 1.0) {
+    requires rig skeleton: MedicalRig;
+    requires surface skin: FirstAidKitSurface;
+    bind bone root to skeleton.root;
+    bind bone body to skeleton.body;
+    bind bone detail to skeleton.detail;
+    geometry {
+      bone root {
+        bone body {
+          cube lower_shell { origin = (-4u * scale_factor, 0u, -3u * scale_factor); size = (8u * scale_factor, 3u * scale_factor, 6u * scale_factor); surface = skin.case_body; }
+          cube clasp_l { origin = (-3u * scale_factor, 2u * scale_factor, -3.5u * scale_factor); size = (1u, 2u, 1u); surface = skin.clasp; }
+          cube clasp_r { origin = (2u * scale_factor, 2u * scale_factor, -3.5u * scale_factor); size = (1u, 2u, 1u); surface = skin.clasp; }
+          cube carry_handle { origin = (-2u * scale_factor, 1u, 3u * scale_factor); size = (4u * scale_factor, 2u, 1u); surface = skin.handle; }
+          bone detail {
+            cube upper_lid { origin = (-4u * scale_factor, -1u, -3u * scale_factor); size = (8u * scale_factor, 2u * scale_factor, 6u * scale_factor); surface = skin.lid; }
+            cube cross_h { origin = (-2u * scale_factor, 1u, -0.5u); size = (4u * scale_factor, 1u, 1u); surface = skin.emblem; }
+            cube cross_v { origin = (-2u * scale_factor, 1.02u, -0.5u); size = (4u * scale_factor, 1u, 1u); pivot = (0u, 1.52u, 0u); rotation = (0deg, 90deg, 0deg); surface = skin.emblem; }
+          }
+        }
+      }
+    }
+  }
+
+  export component PainPills(param scale_factor : ratio = 1.0) {
+    requires rig skeleton: MedicalRig;
+    requires surface skin: PainPillsSurface;
+    bind bone root to skeleton.root;
+    bind bone body to skeleton.body;
+    bind bone detail to skeleton.detail;
+    geometry {
+      bone root {
+        bone body {
+          cylinder bottle_body { origin = (0u, 0u, 0u); radius = 2u * scale_factor; radius_top = 2u * scale_factor; height = 4u * scale_factor; sides = 8; axis = y; surface = skin.bottle; }
+          cylinder label_wrap { origin = (0u, 0.5u, 0u); radius = 2.1u * scale_factor; radius_top = 2.1u * scale_factor; height = 2.5u * scale_factor; sides = 8; axis = y; surface = skin.label; }
+          cylinder neck_collar { origin = (0u, 3.5u * scale_factor, 0u); radius = 1.5u * scale_factor; radius_top = 1.5u * scale_factor; height = 1u; sides = 8; axis = y; surface = skin.seal; }
+          bone detail {
+            cylinder safety_cap { origin = (0u, 0.5u, 0u); radius = 2u * scale_factor; radius_top = 2u * scale_factor; height = 1.5u * scale_factor; sides = 8; axis = y; surface = skin.cap; }
+          }
+        }
+      }
+    }
+  }
+
+  export component AdrenalineShot(param scale_factor : ratio = 1.0) {
+    requires rig skeleton: MedicalRig;
+    requires surface skin: AdrenalineShotSurface;
+    bind bone root to skeleton.root;
+    bind bone body to skeleton.body;
+    bind bone detail to skeleton.detail;
+    geometry {
+      bone root {
+        bone body {
+          cylinder main_barrel { origin = (0u, 0u, 0u); radius = 1u * scale_factor; radius_top = 1u * scale_factor; height = 5u * scale_factor; sides = 8; axis = y; surface = skin.barrel; }
+          cube grip_sleeve { origin = (-1.5u * scale_factor, 1u, -1.5u * scale_factor); size = (3u * scale_factor, 3u * scale_factor, 3u * scale_factor); surface = skin.grip; }
+          cube fluid_window { origin = (-0.5u, 1.5u, -1.6u * scale_factor); size = (1u, 2u * scale_factor, 1u); surface = skin.fluid; }
+          bone detail {
+            cylinder plunger_cap { origin = (0u, 1u, 0u); radius = 1.2u * scale_factor; radius_top = 1u * scale_factor; height = 2u * scale_factor; sides = 8; axis = y; surface = skin.plunger; }
+            taper needle_guard { origin = (-0.5u, -5u * scale_factor, -0.5u); size = (1u, 2u * scale_factor, 1u); top_scale = (0.4, 0.4); axis = y; surface = skin.needle_cap; }
+          }
+        }
+      }
+    }
+  }
+
+  export component DefibUnit(param scale_factor : ratio = 1.0) {
+    requires rig skeleton: MedicalRig;
+    requires surface skin: DefibUnitSurface;
+    bind bone root to skeleton.root;
+    bind bone body to skeleton.body;
+    bind bone detail to skeleton.detail;
+    geometry {
+      bone root {
+        bone body {
+          cube pack_case { origin = (-4.5u * scale_factor, 0u, -3u * scale_factor); size = (9u * scale_factor, 5u * scale_factor, 6u * scale_factor); surface = skin.housing; }
+          cube status_screen { origin = (-3u * scale_factor, 2u * scale_factor, -3.5u * scale_factor); size = (6u * scale_factor, 2u * scale_factor, 1u); surface = skin.screen; }
+          cube top_handle { origin = (-2.5u * scale_factor, 5u * scale_factor, -1u); size = (5u * scale_factor, 1u, 2u); surface = skin.handle; }
+          cube cable_l { origin = (-5.5u * scale_factor, 1u, -1u); size = (1u, 3u * scale_factor, 2u); surface = skin.cable; }
+          cube cable_r { origin = (4.5u * scale_factor, 1u, -1u); size = (1u, 3u * scale_factor, 2u); surface = skin.cable; }
+          bone detail {
+            cube paddle_l { origin = (-5.5u * scale_factor, -1u, -2u * scale_factor); size = (2u, 2u, 4u * scale_factor); surface = skin.paddle; }
+            cube paddle_r { origin = (3.5u * scale_factor, -1u, -2u * scale_factor); size = (2u, 2u, 4u * scale_factor); surface = skin.paddle; }
+          }
+        }
+      }
+    }
+  }
+}

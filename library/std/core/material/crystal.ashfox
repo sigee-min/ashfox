@@ -1,0 +1,94 @@
+ashfox 1
+module crystal {
+  export design CrystalParams {
+    amethyst_shadow: color = #46286e;
+    amethyst_base: color = #854ec4;
+    amethyst_light: color = #cca3fa;
+    sapphire_shadow: color = #1e3b6e;
+    sapphire_base: color = #3b7ad9;
+    sapphire_light: color = #94caff;
+    frost_shadow: color = #5c8aa8;
+    frost_base: color = #9ad3ed;
+    frost_light: color = #e0f7ff;
+    emerald_shadow: color = #1c5c40;
+    emerald_base: color = #36a672;
+    emerald_light: color = #8cebc0;
+    roughness: ratio = 0.14;
+    frosted_roughness: ratio = 0.38;
+    metallic: ratio = 0.08;
+    normal_strength: ratio = 0.28;
+    edge_wear: ratio = 0.42;
+  }
+
+  export surface contract CrystalSurface {
+    chart facet box { coverage = opaque; }
+    chart core box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract FrostedCrystalSurface {
+    chart facet box { coverage = opaque; }
+    chart rim box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface gem_crystal: CrystalSurface {
+    material double {
+      roughness = 0.14;
+      metallic = 0.08;
+      roughness_variation = 0.08;
+      normal_strength = 0.24;
+      edge_wear = 0.44;
+    }
+    texture atlas {
+      density = 2;
+      background = void; background_alpha = 255;
+      palette {
+        void = #281b3d;
+        facet = (#46286e, #854ec4, #cca3fa);
+        core = (#6736a3, #a66ee6, #e6ccff);
+      }
+      chart facet box {
+        fill = facet;
+        grain = clustered;
+        pattern gradient { to = core; axis = y; space = local; soft = 0.25; }
+        pattern border { paint = core; width = 1px; }
+      }
+      chart core box {
+        fill = core;
+        normal_strength = 0.18;
+        pattern gradient { to = facet; axis = y; space = local; soft = 0.3; }
+      }
+    }
+  }
+
+  export surface frosted_crystal: FrostedCrystalSurface {
+    material double {
+      roughness = 0.38;
+      metallic = 0.04;
+      roughness_variation = 0.14;
+      normal_strength = 0.34;
+      edge_wear = 0.36;
+    }
+    texture atlas {
+      density = 2;
+      background = void; background_alpha = 255;
+      palette {
+        void = #2a3e4d;
+        facet = (#5c8aa8, #9ad3ed, #e0f7ff);
+        rim = (#75a6c4, #b5e3f7, #f0fbff);
+      }
+      chart facet box {
+        fill = facet;
+        grain = soft;
+        pattern blotch { paint = rim; scale = (2px, 2px, 2px); density = 0.32; phase = 0; }
+        pattern ao { strength = 0.35; radius = 0.7u; }
+      }
+      chart rim box {
+        fill = rim;
+        grain = soft;
+        pattern border { paint = facet; width = 1px; }
+      }
+    }
+  }
+}

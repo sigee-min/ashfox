@@ -1,0 +1,69 @@
+ashfox 1
+module field {
+  export schema PlatformAnchor : anchor {
+    field role : enum(deck, ladder, rope, bridge) = deck;
+    field one_way : bool = true;
+    field tag : string = "";
+    mc_block = "minecraft:oak_slab[type=top]";
+  }
+
+  palette {
+    oak_plank = "minecraft:oak_planks";
+    spruce_plank = "minecraft:spruce_planks";
+    oak_slab = "minecraft:oak_slab[type=bottom]";
+    spruce_slab = "minecraft:spruce_slab[type=bottom]";
+    oak_log = "minecraft:oak_log[axis=y]";
+    oak_beam = "minecraft:oak_log[axis=x]";
+    oak_stair = "minecraft:oak_stairs[facing=east,half=bottom]";
+    oak_fence = "minecraft:oak_fence";
+    spruce_fence = "minecraft:spruce_fence";
+    mossy_cobble = mix("minecraft:cobblestone" * 65%, "minecraft:mossy_cobblestone" * 35%);
+    grass_top = "minecraft:grass_block";
+    ladder = "minecraft:ladder[facing=south]";
+    chain = "minecraft:chain[axis=y]";
+    lantern = "minecraft:lantern[hanging=false]";
+    hang_lantern = "minecraft:lantern[hanging=true]";
+  }
+
+  export prefab FloatingDeck {
+    box { from = (1b, 0b, 1b); to = (3b, 0b, 1b); block = spruce_slab; }
+    set { at = (0b, 0b, 1b); block = oak_slab; }
+    set { at = (4b, 0b, 1b); block = oak_slab; }
+    box { from = (0b, 1b, 0b); to = (4b, 1b, 2b); block = grass_top; }
+    box { from = (0b, 1b, 2b); to = (4b, 1b, 2b); block = oak_plank; }
+    set { at = (0b, 2b, 0b); block = oak_fence; }
+    set { at = (4b, 2b, 0b); block = oak_fence; }
+    set { at = (4b, 3b, 0b); block = lantern; }
+  }
+
+  export prefab LadderSpan {
+    box { from = (0b, 0b, 0b); to = (0b, 4b, 0b); block = oak_log; }
+    box { from = (2b, 0b, 0b); to = (2b, 4b, 0b); block = oak_log; }
+    box { from = (1b, 0b, 0b); to = (1b, 4b, 0b); block = spruce_plank; }
+    box { from = (1b, 0b, 1b); to = (1b, 4b, 1b); block = ladder; }
+    box { from = (0b, 5b, 0b); to = (2b, 5b, 1b); block = oak_slab; }
+    set { at = (0b, 5b, 0b); block = spruce_fence; }
+    set { at = (2b, 5b, 0b); block = spruce_fence; }
+  }
+
+  export prefab RopeHang {
+    box { from = (0b, 5b, 1b); to = (2b, 5b, 1b); block = oak_beam; }
+    set { at = (0b, 4b, 1b); block = oak_fence; }
+    set { at = (2b, 4b, 1b); block = oak_fence; }
+    box { from = (1b, 1b, 1b); to = (1b, 4b, 1b); block = chain; }
+    set { at = (1b, 0b, 1b); block = hang_lantern; }
+  }
+
+  export prefab SlopeBridge {
+    box { from = (0b, 0b, 0b); to = (1b, 0b, 2b); block = mossy_cobble; }
+    box { from = (2b, 0b, 0b); to = (3b, 1b, 2b); block = oak_plank; }
+    box { from = (4b, 0b, 0b); to = (5b, 2b, 2b); block = spruce_plank; }
+    box { from = (1b, 1b, 0b); to = (1b, 1b, 2b); block = oak_stair; }
+    box { from = (3b, 2b, 0b); to = (3b, 2b, 2b); block = oak_stair; }
+    box { from = (5b, 3b, 0b); to = (5b, 3b, 2b); block = oak_slab; }
+    set { at = (0b, 1b, 0b); block = spruce_fence; }
+    set { at = (0b, 1b, 2b); block = spruce_fence; }
+    set { at = (5b, 3b, 0b); block = spruce_fence; }
+    set { at = (5b, 3b, 2b); block = spruce_fence; }
+  }
+}

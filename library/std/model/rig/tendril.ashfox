@@ -1,0 +1,46 @@
+ashfox 1
+module tendril {
+  export socket contract TendrilTipMount {
+  }
+
+  export socket contract PustuleMount {
+  }
+
+  export rig contract TendrilRig {
+    joint root { parent = none; role = root; channels = (rotation, scale); }
+    joint pelvis { parent = root; role = pelvis; channels = (position, rotation); }
+    joint torso { parent = pelvis; role = body; channels = (rotation, scale); }
+    joint belly { parent = torso; role = prop; channels = (position, rotation, scale); }
+    joint head { parent = torso; role = head; channels = rotation; }
+    joint tendril_base { parent = head; role = tail; channels = (position, rotation, scale); }
+    joint tendril_tip { parent = tendril_base; role = tail; channels = (position, rotation, scale); }
+    joint left_arm { parent = torso; role = arm; channels = rotation; mirror = right_arm; }
+    joint right_arm { parent = torso; role = arm; channels = rotation; mirror = left_arm; }
+    joint left_leg { parent = pelvis; role = leg; channels = rotation; mirror = right_leg; }
+    joint right_leg { parent = pelvis; role = leg; channels = rotation; mirror = left_leg; }
+
+    chain spine = [pelvis, torso, head];
+    chain tendril = [tendril_base, tendril_tip];
+    anchor tendril_anchor { joint = tendril_tip; offset = (0u, 0u, -6u); }
+    anchor spit_origin { joint = head; offset = (0u, 1u, -5u); }
+    anchor belly_burst { joint = belly; offset = (0u, 0u, -4u); }
+    anchor foot_l { joint = left_leg; offset = (0u, -10u, 0u); }
+    anchor foot_r { joint = right_leg; offset = (0u, -10u, 0u); }
+    socket tendril_mount: TendrilTipMount { joint = tendril_tip; capacity = one; }
+    socket pustule_mount: PustuleMount { joint = belly; capacity = one; }
+  }
+
+  export skeleton TendrilSkeleton implements TendrilRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind pelvis { parent_origin = (0u, 12u, 0u); }
+    bind torso { parent_origin = (0u, 2u, 0u); }
+    bind belly { parent_origin = (0u, 3u, -3u); }
+    bind head { parent_origin = (0u, 10u, -1u); }
+    bind tendril_base { parent_origin = (0u, 2u, -4u); }
+    bind tendril_tip { parent_origin = (0u, 0u, -6u); }
+    bind left_arm { parent_origin = (-6u, 8u, 0u); }
+    bind right_arm { parent_origin = (6u, 8u, 0u); }
+    bind left_leg { parent_origin = (-2u, 0u, 0u); }
+    bind right_leg { parent_origin = (2u, 0u, 0u); }
+  }
+}

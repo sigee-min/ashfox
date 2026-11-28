@@ -1,0 +1,53 @@
+ashfox 1
+module hair {
+  import "std/model/rig/chibi" as chibi;
+
+  export surface contract HairSurface {
+    chart crown box { coverage = opaque; }
+    chart back box { coverage = opaque; }
+    chart bangs box { coverage = opaque; }
+    chart side_bang box { coverage = opaque; }
+    chart side_lock box { coverage = opaque; }
+    chart band box { coverage = opaque; }
+    chart strand flat { coverage = binary; }
+    material = double;
+  }
+
+  export component BangsHair(param hair_scale : ratio = 1.0) {
+    requires socket mount: chibi.HairSocket;
+    requires surface skin: HairSurface;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube crown_cap { origin = (-5.5u * hair_scale, 0u, -5.5u * hair_scale); size = (11u * hair_scale, 3u, 11u * hair_scale); surface = skin.crown; }
+        cube back_curtain { origin = (-5.5u * hair_scale, -5u, 3.5u); size = (11u * hair_scale, 6u, 2u); surface = skin.back; }
+        cube bang_center { origin = (-2.5u, -2.5u, -6u); size = (5u, 4u, 2u); pivot = (0u, 1.5u, -5u); rotation = (-8deg, 0deg, 0deg); surface = skin.bangs; }
+        cube bang_side_l { origin = (-5.5u, -3.5u, -6u); size = (3u, 5u, 2u); pivot = (-4u, 1.5u, -5u); rotation = (-6deg, 0deg, 6deg); mirror_x = bang_side_r; surface = skin.side_bang; }
+        cube temple_lock_l { origin = (-6u, -5.5u, -4.5u); size = (2u, 6u, 3u); pivot = (-5u, 0.5u, -3u); rotation = (0deg, 0deg, 5deg); mirror_x = temple_lock_r; surface = skin.side_lock; }
+        cube headband { origin = (-6u * hair_scale, 1.5u, -6u * hair_scale); size = (12u * hair_scale, 1u, 12u * hair_scale); surface = skin.band; }
+        plane wisp_l { origin = (-4.5u, -4u, -6.2u); size = (3u, 3u); u_axis = (1u, 0u, 0u); v_axis = (0u, 1u, 0u); mirror_x = wisp_r; surface = skin.strand; }
+      }
+    }
+  }
+
+  export component PonytailHair(param tail_length : ratio = 1.0) {
+    requires socket mount: chibi.HairSocket;
+    requires surface skin: HairSurface;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube crown_cap { origin = (-5.5u, 0u, -5.5u); size = (11u, 3u, 11u); surface = skin.crown; }
+        cube bang_center { origin = (-2.5u, -2u, -6u); size = (5u, 3u, 2u); pivot = (0u, 1u, -5u); rotation = (-8deg, 0deg, 0deg); surface = skin.bangs; }
+        cube bang_swept_l { origin = (-5.5u, -3u, -6u); size = (3u, 4u, 2u); pivot = (-4u, 1u, -5u); rotation = (-8deg, 0deg, 10deg); mirror_x = bang_swept_r; surface = skin.side_bang; }
+        cube side_taper_l { origin = (-6u, -5u, -4u); size = (2u, 5u, 3u); mirror_x = side_taper_r; surface = skin.side_lock; }
+        cube hair_tie { origin = (-1.5u, 0.5u, 5u); size = (3u, 3u, 2u); surface = skin.band; }
+        taper tail_upper { origin = (-2.5u, -5u * tail_length, 6u); size = (5u, 7u * tail_length, 3u); top_scale = (0.7, 0.7); axis = y; pivot = (0u, 2u, 6u); rotation = (24deg, 0deg, 0deg); surface = skin.back; }
+        plane tail_fringe { origin = (-2.5u, -10u * tail_length, 8.5u); size = (5u, 4u); u_axis = (1u, 0u, 0u); v_axis = (0u, 1u, 0u); pivot = (0u, 2u, 6u); rotation = (28deg, 0deg, 0deg); surface = skin.strand; }
+      }
+    }
+  }
+}

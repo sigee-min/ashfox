@@ -1,0 +1,193 @@
+ashfox 1
+module urban_hazard {
+  export socket contract HazardMount {
+  }
+
+  export rig contract HazardPropRig {
+    joint root { parent = none; role = root; channels = (position, rotation, scale); }
+    joint body { parent = root; role = prop; channels = rotation; }
+    joint accent { parent = body; role = prop; channels = (position, rotation); }
+    anchor blast_origin { joint = body; offset = (0u, 4u, 0u); }
+    socket mount: HazardMount { joint = root; capacity = one; }
+  }
+
+  export skeleton HazardPropSkeleton implements HazardPropRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind body { parent_origin = (0u, 0u, 0u); }
+    bind accent { parent_origin = (0u, 6u, 0u); }
+  }
+
+  export surface contract GasCanSurface {
+    chart canister box { coverage = opaque; }
+    chart handle box { coverage = opaque; }
+    chart spout box { coverage = opaque; }
+    chart cap box { coverage = opaque; }
+    chart stripe box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract PropaneTankSurface {
+    chart tank box { coverage = opaque; }
+    chart shoulder box { coverage = opaque; }
+    chart collar box { coverage = opaque; }
+    chart valve box { coverage = opaque; }
+    chart base_ring box { coverage = opaque; }
+    chart label box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract AlarmCarSurface {
+    chart chassis box { coverage = opaque; }
+    chart cabin box { coverage = opaque; }
+    chart glass box { coverage = opaque; }
+    chart wheel box { coverage = opaque; }
+    chart bumper box { coverage = opaque; }
+    chart lamp box { coverage = opaque; }
+    chart beacon box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract GeneratorUnitSurface {
+    chart skid box { coverage = opaque; }
+    chart frame box { coverage = opaque; }
+    chart engine box { coverage = opaque; }
+    chart alternator box { coverage = opaque; }
+    chart tank box { coverage = opaque; }
+    chart panel box { coverage = opaque; }
+    chart exhaust box { coverage = opaque; }
+    chart wheel box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract AmmoPileSurface {
+    chart crate box { coverage = opaque; }
+    chart lid box { coverage = opaque; }
+    chart box_label box { coverage = opaque; }
+    chart casing box { coverage = opaque; }
+    chart belt box { coverage = opaque; }
+    material = double;
+  }
+
+  export component GasCan(param scale_factor : ratio = 1.0) {
+    requires rig skeleton: HazardPropRig;
+    requires surface skin: GasCanSurface;
+    bind bone root to skeleton.root;
+    bind bone body to skeleton.body;
+    bind bone accent to skeleton.accent;
+    geometry {
+      bone root {
+        bone body {
+          cube can_body { origin = (-2.5u * scale_factor, 0u, -4u * scale_factor); size = (5u * scale_factor, 7u * scale_factor, 8u * scale_factor); surface = skin.canister; }
+          cube warn_stripe { origin = (-3u * scale_factor, 2u * scale_factor, -3u * scale_factor); size = (6u * scale_factor, 2u, 6u * scale_factor); surface = skin.stripe; }
+          cube grip_bar { origin = (-1u, 7u * scale_factor, -2u * scale_factor); size = (2u, 2u, 5u * scale_factor); surface = skin.handle; }
+          bone accent {
+            cylinder pour_spout { origin = (0u, 1u, -2.5u * scale_factor); radius = 1u; radius_top = 0.75u; height = 3u * scale_factor; sides = 8; axis = y; pivot = (0u, 1u, -2.5u * scale_factor); rotation = (-28deg, 0deg, 0deg); surface = skin.spout; }
+            cylinder vent_cap { origin = (0u, 1u, 2.5u * scale_factor); radius = 1u; radius_top = 1u; height = 1u; sides = 8; axis = y; surface = skin.cap; }
+          }
+        }
+      }
+    }
+  }
+
+  export component PropaneTank(param scale_factor : ratio = 1.0) {
+    requires rig skeleton: HazardPropRig;
+    requires surface skin: PropaneTankSurface;
+    bind bone root to skeleton.root;
+    bind bone body to skeleton.body;
+    bind bone accent to skeleton.accent;
+    geometry {
+      bone root {
+        bone body {
+          cylinder foot_ring { origin = (0u, 0u, 0u); radius = 3.5u * scale_factor; radius_top = 3.5u * scale_factor; height = 1u; sides = 8; axis = y; surface = skin.base_ring; }
+          cylinder tank_shell { origin = (0u, 1u, 0u); radius = 4u * scale_factor; radius_top = 4u * scale_factor; height = 6u * scale_factor; sides = 12; axis = y; surface = skin.tank; }
+          taper dome_cap { origin = (-4u * scale_factor, 7u * scale_factor, -4u * scale_factor); size = (8u * scale_factor, 2u * scale_factor, 8u * scale_factor); top_scale = (0.45, 0.45); axis = y; surface = skin.shoulder; }
+          cylinder warn_band { origin = (0u, 3u * scale_factor, 0u); radius = 4.1u * scale_factor; radius_top = 4.1u * scale_factor; height = 2u; sides = 12; axis = y; surface = skin.label; }
+          bone accent {
+            cylinder guard_collar { origin = (0u, 3u * scale_factor, 0u); radius = 2u * scale_factor; radius_top = 2u * scale_factor; height = 2u; sides = 8; axis = y; surface = skin.collar; }
+            cylinder valve_wheel { origin = (0u, 4.5u * scale_factor, 0u); radius = 1.5u * scale_factor; radius_top = 1.5u * scale_factor; height = 1u; sides = 8; axis = y; surface = skin.valve; }
+          }
+        }
+      }
+    }
+  }
+
+  export component AlarmCarProp(param scale_factor : ratio = 1.0) {
+    requires rig skeleton: HazardPropRig;
+    requires surface skin: AlarmCarSurface;
+    bind bone root to skeleton.root;
+    bind bone body to skeleton.body;
+    bind bone accent to skeleton.accent;
+    geometry {
+      bone root {
+        bone body {
+          cube lower_chassis { origin = (-10u * scale_factor, 3u * scale_factor, -20u * scale_factor); size = (20u * scale_factor, 7u * scale_factor, 40u * scale_factor); surface = skin.chassis; }
+          taper upper_cabin { origin = (-8u * scale_factor, 10u * scale_factor, -10u * scale_factor); size = (16u * scale_factor, 6u * scale_factor, 22u * scale_factor); top_scale = (0.85, 0.72); axis = y; surface = skin.cabin; }
+          cube windshield { origin = (-7u * scale_factor, 10.5u * scale_factor, -10.5u * scale_factor); size = (14u * scale_factor, 5u * scale_factor, 1u); pivot = (0u, 10.5u * scale_factor, -10.5u * scale_factor); rotation = (-22deg, 0deg, 0deg); surface = skin.glass; }
+          cube front_bumper { origin = (-10.5u * scale_factor, 2u * scale_factor, -21u * scale_factor); size = (21u * scale_factor, 3u * scale_factor, 2u); surface = skin.bumper; }
+          cube rear_bumper { origin = (-10.5u * scale_factor, 2u * scale_factor, 19u * scale_factor); size = (21u * scale_factor, 3u * scale_factor, 2u); surface = skin.bumper; }
+          cylinder wheel_fl { origin = (-11u * scale_factor, 3.5u * scale_factor, -13u * scale_factor); radius = 3.5u * scale_factor; radius_top = 3.5u * scale_factor; height = 3u * scale_factor; sides = 8; axis = x; surface = skin.wheel; }
+          cylinder wheel_fr { origin = (8u * scale_factor, 3.5u * scale_factor, -13u * scale_factor); radius = 3.5u * scale_factor; radius_top = 3.5u * scale_factor; height = 3u * scale_factor; sides = 8; axis = x; surface = skin.wheel; }
+          cylinder wheel_rl { origin = (-11u * scale_factor, 3.5u * scale_factor, 13u * scale_factor); radius = 3.5u * scale_factor; radius_top = 3.5u * scale_factor; height = 3u * scale_factor; sides = 8; axis = x; surface = skin.wheel; }
+          cylinder wheel_rr { origin = (8u * scale_factor, 3.5u * scale_factor, 13u * scale_factor); radius = 3.5u * scale_factor; radius_top = 3.5u * scale_factor; height = 3u * scale_factor; sides = 8; axis = x; surface = skin.wheel; }
+          bone accent {
+            cube headlight_l { origin = (-9u * scale_factor, 0u, -20.5u * scale_factor); size = (3u * scale_factor, 2u, 1u); surface = skin.lamp; }
+            cube headlight_r { origin = (6u * scale_factor, 0u, -20.5u * scale_factor); size = (3u * scale_factor, 2u, 1u); surface = skin.lamp; }
+            cube roof_beacon { origin = (-2u * scale_factor, 10u * scale_factor, -1u); size = (4u * scale_factor, 2u, 2u); surface = skin.beacon; }
+          }
+        }
+      }
+    }
+  }
+
+  export component GeneratorUnit(param scale_factor : ratio = 1.0) {
+    requires rig skeleton: HazardPropRig;
+    requires surface skin: GeneratorUnitSurface;
+    bind bone root to skeleton.root;
+    bind bone body to skeleton.body;
+    bind bone accent to skeleton.accent;
+    geometry {
+      bone root {
+        bone body {
+          cube skid_base { origin = (-6u * scale_factor, 1u, -8u * scale_factor); size = (12u * scale_factor, 2u, 16u * scale_factor); surface = skin.skid; }
+          cube engine_core { origin = (-4.5u * scale_factor, 3u * scale_factor, -5u * scale_factor); size = (9u * scale_factor, 6u * scale_factor, 10u * scale_factor); surface = skin.engine; }
+          cylinder alternator { origin = (0u, 5.5u * scale_factor, 4u * scale_factor); radius = 3u * scale_factor; radius_top = 3u * scale_factor; height = 4u * scale_factor; sides = 8; axis = z; surface = skin.alternator; }
+          cube fuel_tank { origin = (-5u * scale_factor, 9u * scale_factor, -6u * scale_factor); size = (10u * scale_factor, 3u * scale_factor, 12u * scale_factor); surface = skin.tank; }
+          cube cage_post_fl { origin = (-6u * scale_factor, 3u, -8u * scale_factor); size = (1u, 9u * scale_factor, 1u); surface = skin.frame; }
+          cube cage_post_fr { origin = (5u * scale_factor, 3u, -8u * scale_factor); size = (1u, 9u * scale_factor, 1u); surface = skin.frame; }
+          cube cage_post_rl { origin = (-6u * scale_factor, 3u, 7u * scale_factor); size = (1u, 9u * scale_factor, 1u); surface = skin.frame; }
+          cube cage_post_rr { origin = (5u * scale_factor, 3u, 7u * scale_factor); size = (1u, 9u * scale_factor, 1u); surface = skin.frame; }
+          cube ctrl_panel { origin = (-4u * scale_factor, 3u, -8.5u * scale_factor); size = (8u * scale_factor, 5u * scale_factor, 1u); surface = skin.panel; }
+          cylinder wheel_l { origin = (-7u * scale_factor, 2u * scale_factor, 5u * scale_factor); radius = 2u * scale_factor; radius_top = 2u * scale_factor; height = 1.5u * scale_factor; sides = 8; axis = x; surface = skin.wheel; }
+          cylinder wheel_r { origin = (5.5u * scale_factor, 2u * scale_factor, 5u * scale_factor); radius = 2u * scale_factor; radius_top = 2u * scale_factor; height = 1.5u * scale_factor; sides = 8; axis = x; surface = skin.wheel; }
+          bone accent {
+            cylinder exhaust_stack { origin = (3u * scale_factor, 6u * scale_factor, 2u * scale_factor); radius = 1u; radius_top = 1u; height = 4u * scale_factor; sides = 8; axis = y; surface = skin.exhaust; }
+          }
+        }
+      }
+    }
+  }
+
+  export component AmmoPile(param scale_factor : ratio = 1.0) {
+    requires rig skeleton: HazardPropRig;
+    requires surface skin: AmmoPileSurface;
+    bind bone root to skeleton.root;
+    bind bone body to skeleton.body;
+    bind bone accent to skeleton.accent;
+    geometry {
+      bone root {
+        bone body {
+          cube crate_base { origin = (-6u * scale_factor, 0u, -4u * scale_factor); size = (12u * scale_factor, 4u * scale_factor, 8u * scale_factor); surface = skin.crate; }
+          cube ammo_box_a { origin = (-5u * scale_factor, 4u * scale_factor, -2.5u * scale_factor); size = (4u * scale_factor, 3u * scale_factor, 5u * scale_factor); surface = skin.box_label; }
+          cube ammo_box_b { origin = (1u * scale_factor, 4u * scale_factor, -2.5u * scale_factor); size = (4u * scale_factor, 3u * scale_factor, 5u * scale_factor); surface = skin.box_label; }
+          cube open_lid { origin = (-6u * scale_factor, 4u * scale_factor, 3u * scale_factor); size = (12u * scale_factor, 1u, 5u * scale_factor); pivot = (0u, 4u * scale_factor, 3.5u * scale_factor); rotation = (-65deg, 0deg, 0deg); surface = skin.lid; }
+          bone accent {
+            cube belt_strip { origin = (-4u * scale_factor, 1u, -3.5u * scale_factor); size = (7u * scale_factor, 1u, 2u); surface = skin.belt; }
+            cylinder shell_1 { origin = (-3u * scale_factor, 1u, -1u); radius = 1u; radius_top = 1u; height = 2u; sides = 6; axis = y; surface = skin.casing; }
+            cylinder shell_2 { origin = (0u, 1u, -1u); radius = 1u; radius_top = 1u; height = 2u; sides = 6; axis = y; surface = skin.casing; }
+            cylinder shell_3 { origin = (3u * scale_factor, 1u, -1u); radius = 1u; radius_top = 1u; height = 2u; sides = 6; axis = y; surface = skin.casing; }
+          }
+        }
+      }
+    }
+  }
+}

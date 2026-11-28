@@ -1,0 +1,163 @@
+ashfox 1
+module town_rpg {
+  export rig contract TownPropRig {
+    joint root { parent = none; role = root; channels = (rotation, scale); }
+  }
+
+  export skeleton TownPropSkeleton implements TownPropRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+  }
+
+  export rig contract PortalPedestalRig {
+    joint root { parent = none; role = root; channels = (rotation, scale); }
+    joint orb { parent = root; role = prop; channels = (position, rotation, scale); }
+  }
+
+  export skeleton PortalPedestalSkeleton implements PortalPedestalRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind orb { parent_origin = (0u, 15u, 0u); }
+  }
+
+  export surface contract SignpostSurface {
+    chart plinth box { coverage = opaque; }
+    chart post box { coverage = opaque; }
+    chart arm box { coverage = opaque; }
+    chart board box { coverage = opaque; }
+    chart cap box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract QuestBoardSurface {
+    chart post box { coverage = opaque; }
+    chart frame box { coverage = opaque; }
+    chart backing box { coverage = opaque; }
+    chart roof box { coverage = opaque; }
+    chart notice box { coverage = opaque; }
+    chart pin box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract MarketStallSurface {
+    chart post box { coverage = opaque; }
+    chart back_post box { coverage = opaque; }
+    chart counter box { coverage = opaque; }
+    chart awning box { coverage = opaque; }
+    chart trim box { coverage = opaque; }
+    chart crate box { coverage = opaque; }
+    chart cloth box { coverage = opaque; }
+    chart valance box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract RestChairSurface {
+    chart leg box { coverage = opaque; }
+    chart back_post box { coverage = opaque; }
+    chart arm_post box { coverage = opaque; }
+    chart seat box { coverage = opaque; }
+    chart back box { coverage = opaque; }
+    chart arm box { coverage = opaque; }
+    chart cushion box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract PortalPedestalSurface {
+    chart plinth box { coverage = opaque; }
+    chart pillar box { coverage = opaque; }
+    chart basin box { coverage = opaque; }
+    chart rune box { coverage = opaque; }
+    chart crystal box { coverage = opaque; }
+    material = double;
+  }
+
+  export component Signpost(param height_scale : ratio = 1.0) {
+    requires rig skeleton: TownPropRig;
+    requires surface skin: SignpostSurface;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        taper base_plinth { origin = (-3u, 0u, -3u); size = (6u, 3u, 6u); top_scale = (0.7, 0.7); axis = y; surface = skin.plinth; }
+        cube post_mast { origin = (-1.5u, 3u, -1.5u); size = (3u, 18u * height_scale, 3u); surface = skin.post; }
+        cube finial_cap { origin = (-2u, 21u * height_scale, -2u); size = (4u, 2u, 4u); surface = skin.cap; }
+        cube upper_board { origin = (-2u, 15u * height_scale, -1u); size = (10u, 4u, 2u); pivot = (0u, 17u * height_scale, 0u); rotation = (0deg, -8deg, 2deg); surface = skin.board; }
+        wedge upper_arrow { origin = (8u, 15u * height_scale, -1u); size = (3u, 4u, 2u); slope = east; pivot = (0u, 17u * height_scale, 0u); rotation = (0deg, -8deg, 2deg); surface = skin.arm; }
+        cube lower_board { origin = (-9u, 10u * height_scale, -1u); size = (10u, 4u, 2u); pivot = (0u, 12u * height_scale, 0u); rotation = (0deg, 10deg, -2deg); surface = skin.board; }
+        wedge lower_arrow { origin = (-12u, 10u * height_scale, -1u); size = (3u, 4u, 2u); slope = west; pivot = (0u, 12u * height_scale, 0u); rotation = (0deg, 10deg, -2deg); surface = skin.arm; }
+      }
+    }
+  }
+
+  export component QuestBoard(param board_scale : ratio = 1.0) {
+    requires rig skeleton: TownPropRig;
+    requires surface skin: QuestBoardSurface;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        cube post_l { origin = (-11u * board_scale, 0u, -1.5u); size = (3u, 22u, 3u); mirror_x = post_r; surface = skin.post; }
+        cube backing { origin = (-8u * board_scale, 8u, -1u); size = (16u * board_scale, 11u, 2u); surface = skin.backing; }
+        cube frame_top { origin = (-9u * board_scale, 19u, -2u); size = (18u * board_scale, 2u, 4u); surface = skin.frame; }
+        cube frame_bot { origin = (-9u * board_scale, 6u, -2u); size = (18u * board_scale, 2u, 4u); surface = skin.frame; }
+        wedge roof_front { origin = (-12u * board_scale, 21u, -5u); size = (24u * board_scale, 4u, 5u); slope = north; surface = skin.roof; }
+        wedge roof_back { origin = (-12u * board_scale, 21u, 0u); size = (24u * board_scale, 4u, 5u); slope = south; surface = skin.roof; }
+        cube notice_a { origin = (-6.5u, 12u, -1.6u); size = (5u, 6u, 1u); pivot = (-4u, 15u, -1.1u); rotation = (0deg, 0deg, -4deg); surface = skin.notice; }
+        cube notice_b { origin = (1u, 10u, -1.6u); size = (5u, 6u, 1u); pivot = (3.5u, 13u, -1.1u); rotation = (0deg, 0deg, 5deg); surface = skin.notice; }
+        cube pin_a { origin = (-4.5u, 17u, -2.1u); size = (1u, 1u, 1u); surface = skin.pin; }
+        cube pin_b { origin = (3u, 15u, -2.1u); size = (1u, 1u, 1u); surface = skin.pin; }
+      }
+    }
+  }
+
+  export component MarketStall(param width_scale : ratio = 1.0) {
+    requires rig skeleton: TownPropRig;
+    requires surface skin: MarketStallSurface;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        cube front_post_l { origin = (-13u * width_scale, 0u, -8u); size = (2u, 22u, 2u); mirror_x = front_post_r; surface = skin.post; }
+        cube back_post_l { origin = (-13u * width_scale, 0u, 6u); size = (2u, 24u, 2u); mirror_x = back_post_r; surface = skin.back_post; }
+        cube counter_base { origin = (-11u * width_scale, 0u, -7u); size = (22u * width_scale, 8u, 10u); surface = skin.counter; }
+        cube counter_top { origin = (-13u * width_scale, 8u, -9u); size = (26u * width_scale, 2u, 13u); surface = skin.trim; }
+        cube runner_cloth { origin = (-6u, 9.5u, -9.2u); size = (12u, 1u, 10u); surface = skin.cloth; }
+        cube display_crate { origin = (-9u, 10u, -6u); size = (6u, 4u, 5u); surface = skin.crate; }
+        wedge awning_slope { origin = (-14u * width_scale, 20u, -10u); size = (28u * width_scale, 5u, 19u); slope = north; surface = skin.awning; }
+        cube valance_front { origin = (-14u * width_scale, 18u, -10u); size = (28u * width_scale, 2u, 1u); surface = skin.valance; }
+      }
+    }
+  }
+
+  export component RestChair(param seat_scale : ratio = 1.0) {
+    requires rig skeleton: TownPropRig;
+    requires surface skin: RestChairSurface;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        cube leg_fl { origin = (-6u * seat_scale, 0u, -6u); size = (2u, 6u, 2u); mirror_x = leg_fr; surface = skin.leg; }
+        cube leg_bl { origin = (-6u * seat_scale, 0u, 4u); size = (2u, 16u, 2u); mirror_x = leg_br; surface = skin.back_post; }
+        cube seat_deck { origin = (-6u * seat_scale, 5u, -6u); size = (12u * seat_scale, 2u, 12u); surface = skin.seat; }
+        cube cushion { origin = (-5u * seat_scale, 7u, -5u); size = (10u * seat_scale, 2u, 10u); surface = skin.cushion; }
+        cube backrest { origin = (-5u * seat_scale, 8u, 4u); size = (10u * seat_scale, 9u, 2u); surface = skin.back; }
+        cube armrest_l { origin = (-6.5u * seat_scale, 9u, -5u); size = (2u, 2u, 10u); mirror_x = armrest_r; surface = skin.arm; }
+        cube arm_post_l { origin = (-6u * seat_scale, 7u, -5u); size = (2u, 2u, 2u); mirror_x = arm_post_r; surface = skin.arm_post; }
+      }
+    }
+  }
+
+  export component PortalPedestal(param scale_factor : ratio = 1.0) {
+    requires rig skeleton: PortalPedestalRig;
+    requires surface skin: PortalPedestalSurface;
+    bind bone root to skeleton.root;
+    bind bone orb to skeleton.orb;
+    geometry {
+      bone root {
+        taper dais_base { origin = (-9u * scale_factor, 0u, -9u * scale_factor); size = (18u * scale_factor, 3u, 18u * scale_factor); top_scale = (0.82, 0.82); axis = y; surface = skin.plinth; }
+        cylinder column { origin = (0u, 3u, 0u); radius = 5u * scale_factor; radius_top = 4u * scale_factor; height = 7u; sides = 8; axis = y; surface = skin.pillar; }
+        taper basin { origin = (-6u * scale_factor, 10u, -6u * scale_factor); size = (12u * scale_factor, 3u, 12u * scale_factor); top_scale = (1.18, 1.18); axis = y; surface = skin.basin; }
+        cube rune_n { origin = (-2u, 11u, -7.2u * scale_factor); size = (4u, 2u, 1u); surface = skin.rune; }
+        cube rune_s { origin = (-2u, 11u, 6.2u * scale_factor); size = (4u, 2u, 1u); surface = skin.rune; }
+        bone orb {
+          taper crystal_top { origin = (-2.5u, 2u, -2.5u); size = (5u, 5u, 5u); top_scale = (0.15, 0.15); axis = y; surface = skin.crystal; }
+          taper crystal_bot { origin = (-2.5u, -3u, -2.5u); size = (5u, 5u, 5u); top_scale = (0.15, 0.15); axis = y; pivot = (0u, -0.5u, 0u); rotation = (180deg, 0deg, 0deg); surface = skin.crystal; }
+        }
+      }
+    }
+  }
+}

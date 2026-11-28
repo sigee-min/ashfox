@@ -1,0 +1,55 @@
+ashfox 1
+module clinic {
+  palette {
+    tile = "minecraft:white_concrete";
+    trim = "minecraft:smooth_quartz";
+    wall = "minecraft:white_terracotta";
+    accent = "minecraft:cyan_concrete";
+    curtain = "minecraft:light_gray_wool";
+    glass = "minecraft:glass_pane";
+    steel = "minecraft:iron_block";
+    bars = "minecraft:iron_bars";
+    bed_h = "minecraft:blue_bed[facing=north,part=head]";
+    bed_f = "minecraft:blue_bed[facing=north,part=foot]";
+    med_stand = "minecraft:brewing_stand";
+    supply_box = "minecraft:chest[facing=south]";
+    lamp = "minecraft:sea_lantern";
+    hazard = "minecraft:exposed_copper";
+    exit_body = "minecraft:gray_concrete";
+    exit_face = "minecraft:green_carpet";
+    slab = "minecraft:smooth_stone_slab[type=bottom]";
+  }
+
+  export prefab ClinicWardBay {
+    box { from = (0b, 0b, 0b); to = (3b, 0b, 3b); block = tile; }
+    box { from = (0b, 1b, 0b); to = (3b, 3b, 0b); block = wall; }
+    box { from = (0b, 2b, 0b); to = (3b, 2b, 0b); block = accent; }
+    set { at = (1b, 1b, 1b); block = bed_h; }
+    set { at = (1b, 1b, 2b); block = bed_f; }
+    set { at = (2b, 1b, 1b); block = trim; }
+    set { at = (2b, 2b, 1b); block = med_stand; }
+    set { at = (0b, 1b, 1b); block = supply_box; }
+    set { at = (1b, 3b, 1b); block = lamp; }
+  }
+
+  export prefab QuarantineCurtain {
+    box { from = (0b, 0b, 0b); to = (3b, 0b, 0b); block = hazard; }
+    set { at = (0b, 1b, 0b); block = steel; }
+    set { at = (3b, 1b, 0b); block = steel; }
+    box { from = (0b, 2b, 0b); to = (0b, 3b, 0b); block = bars; }
+    box { from = (3b, 2b, 0b); to = (3b, 3b, 0b); block = bars; }
+    box { from = (1b, 1b, 0b); to = (2b, 2b, 0b); block = curtain; }
+    box { from = (1b, 3b, 0b); to = (2b, 3b, 0b); block = glass; }
+    set { at = (1b, 4b, 0b); block = lamp; }
+    set { at = (2b, 4b, 0b); block = lamp; }
+  }
+
+  export prefab ExitSignFixture {
+    box { from = (0b, 2b, 0b); to = (2b, 2b, 0b); block = exit_body; }
+    set { at = (0b, 3b, 0b); block = bars; }
+    set { at = (2b, 3b, 0b); block = bars; }
+    set { at = (1b, 2b, 0b); block = lamp; }
+    set { at = (1b, 3b, 0b); block = exit_face; }
+    box { from = (0b, 1b, 0b); to = (2b, 1b, 0b); block = slab; }
+  }
+}

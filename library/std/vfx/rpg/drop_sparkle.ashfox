@@ -1,0 +1,179 @@
+ashfox 1
+module drop_sparkle {
+  params {
+    radius = 8u;
+    height = 28u;
+    duration = 1.1s;
+    seed = 641;
+  }
+
+  export palette RarityGold {
+    core = #fffbe6;
+    mid = #f5c84c;
+    edge = #ad6d1a;
+    smoke = #382e20;
+  }
+
+  export palette ArcaneTeal {
+    core = #ebffff;
+    mid = #52e3d4;
+    edge = #1f738a;
+    smoke = #1d2e36;
+  }
+
+  export palette EmeraldDrop {
+    core = #ebffef;
+    mid = #5ce68a;
+    edge = #1e7d45;
+    smoke = #1a3326;
+  }
+
+  export element loot_column : beam {
+    at = 0s..duration;
+    blend = additive;
+    start = (0u, 0u, 0u);
+    end = (0u, height, 0u);
+    width = 3.2u;
+    style = column;
+    seed = seed;
+    color = core;
+    texture slash_streak { bristles = 35%; seed = seed; posterize = 4; }
+    scale = 0.9 -> 1.08 -> 0.9;
+    alpha = 0.55 -> 0.9 -> 0.55;
+  }
+
+  export element loot_base_ring : ring {
+    at = 0s..duration;
+    blend = additive;
+    radius = (radius * 0.35)..radius;
+    segments = 20;
+    bevel = 0.3;
+    color = mid;
+    spin = 180deg;
+    texture ring_wave { rings = 3; seed = seed + 3; }
+    scale = 0.92 -> 1.06 -> 0.92;
+    alpha = 0.6 -> 0.9 -> 0.6;
+  }
+
+  export emitter loot_motes : voxel_burst {
+    at = 0s..(duration * 0.8);
+    seed = seed;
+    count = 18;
+    shape = ring(radius * 0.55);
+    particle = cross_card;
+    speed = 6u..14u;
+    life = 0.28s..0.5s;
+    gravity = 12u;
+    drag = 2.0;
+    vortex { axis = (0, 1, 0); center = (0u, height * 0.35, 0u); strength = 5; }
+    size_over_life = 0.85u -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = additive;
+  }
+
+  export element glint_star : ring {
+    at = 0s..0.48s;
+    blend = additive;
+    radius = 1u..(radius * 0.85);
+    segments = 16;
+    color = core;
+    spin = 90deg;
+    texture starburst { spikes = 4; seed = seed + 5; posterize = 4; }
+    scale = 0.25 -> 1.25 ease_out -> 0;
+    alpha = 0.8 -> 1.0 snap -> 0;
+  }
+
+  export emitter coin_twinkles : voxel_burst {
+    at = 0.02s..0.42s;
+    seed = seed + 9;
+    count = 14;
+    shape = sphere(radius * 0.45);
+    particle = cross_card;
+    speed = 7u..15u;
+    life = 0.18s..0.34s;
+    gravity = 10u;
+    drag = 2.4;
+    size_over_life = 0.9u -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = additive;
+  }
+
+  export recipe LootBeam {
+    duration = duration;
+    fps = 24;
+    loop = loop;
+    palette = RarityGold;
+    element loot_column : beam {
+      at = 0s..duration;
+      blend = additive;
+      start = (0u, 0u, 0u);
+      end = (0u, height, 0u);
+      width = 3.2u;
+      style = column;
+      seed = seed;
+      color = core;
+      texture slash_streak { bristles = 35%; seed = seed; posterize = 4; }
+      scale = 0.9 -> 1.08 -> 0.9;
+      alpha = 0.55 -> 0.9 -> 0.55;
+    }
+    element loot_base_ring : ring {
+      at = 0s..duration;
+      blend = additive;
+      radius = (radius * 0.35)..radius;
+      segments = 20;
+      bevel = 0.3;
+      color = mid;
+      spin = 180deg;
+      texture ring_wave { rings = 3; seed = seed + 3; }
+      scale = 0.92 -> 1.06 -> 0.92;
+      alpha = 0.6 -> 0.9 -> 0.6;
+    }
+    emitter loot_motes : voxel_burst {
+      at = 0s..(duration * 0.8);
+      seed = seed;
+      count = 18;
+      shape = ring(radius * 0.55);
+      particle = cross_card;
+      speed = 6u..14u;
+      life = 0.28s..0.5s;
+      gravity = 12u;
+      drag = 2.0;
+      vortex { axis = (0, 1, 0); center = (0u, height * 0.35, 0u); strength = 5; }
+      size_over_life = 0.85u -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = additive;
+    }
+  }
+
+  export recipe CoinGlint {
+    duration = 0.55s;
+    fps = 30;
+    loop = once;
+    palette = RarityGold;
+    element glint_star : ring {
+      at = 0s..0.48s;
+      blend = additive;
+      radius = 1u..(radius * 0.85);
+      segments = 16;
+      color = core;
+      spin = 90deg;
+      texture starburst { spikes = 4; seed = seed + 5; posterize = 4; }
+      scale = 0.25 -> 1.25 ease_out -> 0;
+      alpha = 0.8 -> 1.0 snap -> 0;
+    }
+    emitter coin_twinkles : voxel_burst {
+      at = 0.02s..0.42s;
+      seed = seed + 9;
+      count = 14;
+      shape = sphere(radius * 0.45);
+      particle = cross_card;
+      speed = 7u..15u;
+      life = 0.18s..0.34s;
+      gravity = 10u;
+      drag = 2.4;
+      size_over_life = 0.9u -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = additive;
+    }
+  }
+}

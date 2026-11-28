@@ -1,0 +1,68 @@
+ashfox 1
+module storybook {
+  export schema CanopyPortal : anchor {
+    field kind : enum(treehouse, cottage, lookout, garden) = treehouse;
+    field facing : enum(north, south, east, west) = north;
+    field label : string = "";
+    mc_block = "minecraft:oak_door[facing=${facing},half=lower,hinge=left,open=false]";
+  }
+
+  palette {
+    oak_log = "minecraft:oak_log[axis=y]";
+    oak_beam = "minecraft:oak_log[axis=x]";
+    oak_plank = "minecraft:oak_planks";
+    spruce_plank = "minecraft:spruce_planks";
+    oak_slab = "minecraft:oak_slab[type=bottom]";
+    oak_stair = "minecraft:oak_stairs[facing=north,half=bottom]";
+    oak_fence = "minecraft:oak_fence";
+    spruce_fence = "minecraft:spruce_fence";
+    mossy_cobble = mix("minecraft:cobblestone" * 55%, "minecraft:mossy_cobblestone" * 45%);
+    cap_red = mix("minecraft:terracotta" * 80%, "minecraft:bricks" * 20%);
+    cap_spot = "minecraft:calcite";
+    oak_leaves = "minecraft:oak_leaves";
+    hang_lantern = "minecraft:lantern[hanging=true]";
+    lantern = "minecraft:lantern[hanging=false]";
+    flower_pot = "minecraft:flower_pot";
+  }
+
+  export prefab MushroomRoof {
+    set { at = (2b, 0b, 2b); block = oak_log; }
+    set { at = (1b, 0b, 2b); block = oak_fence; }
+    set { at = (3b, 0b, 2b); block = oak_fence; }
+    box { from = (0b, 1b, 0b); to = (4b, 1b, 4b); block = cap_red; }
+    box { from = (1b, 2b, 1b); to = (3b, 2b, 3b); block = cap_red; }
+    set { at = (2b, 3b, 2b); block = cap_red; }
+    set { at = (0b, 1b, 1b); block = cap_spot; }
+    set { at = (4b, 1b, 3b); block = cap_spot; }
+    set { at = (1b, 2b, 2b); block = cap_spot; }
+    set { at = (3b, 2b, 1b); block = cap_spot; }
+    set { at = (2b, 0b, 0b); block = hang_lantern; }
+  }
+
+  export prefab TreehouseArch {
+    set { at = (0b, 0b, 1b); block = mossy_cobble; }
+    set { at = (4b, 0b, 1b); block = mossy_cobble; }
+    box { from = (0b, 1b, 1b); to = (0b, 3b, 1b); block = oak_log; }
+    box { from = (4b, 1b, 1b); to = (4b, 3b, 1b); block = oak_log; }
+    box { from = (0b, 4b, 1b); to = (4b, 4b, 1b); block = oak_beam; }
+    set { at = (1b, 3b, 1b); block = oak_stair; }
+    set { at = (3b, 3b, 1b); block = oak_stair; }
+    set { at = (2b, 3b, 1b); block = hang_lantern; }
+    box { from = (0b, 4b, 0b); to = (4b, 4b, 0b); block = oak_leaves; }
+    box { from = (0b, 4b, 2b); to = (4b, 4b, 2b); block = oak_leaves; }
+    box { from = (1b, 5b, 0b); to = (3b, 5b, 2b); block = oak_leaves; }
+  }
+
+  export prefab TimberBalcony {
+    set { at = (0b, 0b, 1b); block = oak_stair; }
+    set { at = (4b, 0b, 1b); block = oak_stair; }
+    box { from = (0b, 1b, 0b); to = (4b, 1b, 2b); block = oak_plank; }
+    box { from = (0b, 1b, 0b); to = (4b, 1b, 0b); block = spruce_plank; }
+    box { from = (0b, 2b, 2b); to = (4b, 2b, 2b); block = spruce_fence; }
+    set { at = (0b, 2b, 1b); block = spruce_fence; }
+    set { at = (4b, 2b, 1b); block = spruce_fence; }
+    set { at = (1b, 2b, 2b); block = flower_pot; }
+    set { at = (3b, 2b, 2b); block = lantern; }
+    box { from = (1b, 0b, 2b); to = (3b, 0b, 2b); block = oak_slab; }
+  }
+}

@@ -1,0 +1,78 @@
+ashfox 1
+module bow {
+  import "std/model/rig/biped" as biped;
+
+  export rig contract BowRig {
+    joint root { parent = none; role = root; channels = rotation; }
+    socket grip: biped.HandGrip {
+      joint = root;
+      capacity = one;
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+  }
+
+  export skeleton BowSkeleton implements BowRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+  }
+
+  export surface contract ShortBowSurface {
+    chart grip box { coverage = opaque; }
+    chart riser box { coverage = opaque; }
+    chart limb box { coverage = opaque; }
+    chart tip box { coverage = opaque; }
+    chart string box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract CrossbowSurface {
+    chart stock box { coverage = opaque; }
+    chart buttstock box { coverage = opaque; }
+    chart grip box { coverage = opaque; }
+    chart prod box { coverage = opaque; }
+    chart stirrup box { coverage = opaque; }
+    chart string box { coverage = opaque; }
+    chart rail box { coverage = opaque; }
+    chart bolt box { coverage = opaque; }
+    material = double;
+  }
+
+  export component ShortBow(param draw_scale : ratio = 1.0) {
+    requires socket grip: biped.HandGrip;
+    requires surface skin: ShortBowSurface;
+    bind socket grip to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube grip_wrap { origin = (-1u, -2.5u, -1.5u); size = (2u, 5u, 2u); surface = skin.grip; }
+        cube riser_upper { origin = (-1u, 2.5u, -2u); size = (2u, 3u, 2u); pivot = (0u, 2.5u, -1u); rotation = (-10deg, 0deg, 0deg); surface = skin.riser; }
+        cube riser_lower { origin = (-1u, -5.5u, -2u); size = (2u, 3u, 2u); pivot = (0u, -2.5u, -1u); rotation = (10deg, 0deg, 0deg); surface = skin.riser; }
+        taper upper_limb { origin = (-1u, 5u, -1u); size = (2u, 7u, 2u); top_scale = (0.7, 0.7); axis = y; pivot = (0u, 5u, -0.5u); rotation = (24deg * draw_scale, 0deg, 0deg); surface = skin.limb; }
+        taper lower_limb { origin = (-1u, -12u, -1u); size = (2u, 7u, 2u); top_scale = (0.7, 0.7); axis = y; pivot = (0u, -5u, -0.5u); rotation = (-24deg * draw_scale, 0deg, 0deg); surface = skin.limb; }
+        cube upper_nock { origin = (-1u, 11u, 1.5u); size = (2u, 2u, 2u); pivot = (0u, 5u, -0.5u); rotation = (28deg * draw_scale, 0deg, 0deg); surface = skin.tip; }
+        cube lower_nock { origin = (-1u, -13u, 1.5u); size = (2u, 2u, 2u); pivot = (0u, -5u, -0.5u); rotation = (-28deg * draw_scale, 0deg, 0deg); surface = skin.tip; }
+        cube bow_string { origin = (-0.5u, -11u, 3.8u); size = (1u, 22u, 1u); surface = skin.string; }
+      }
+    }
+  }
+
+  export component Crossbow(param prod_scale : ratio = 1.0) {
+    requires socket grip: biped.HandGrip;
+    requires surface skin: CrossbowSurface;
+    bind socket grip to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube tiller_body { origin = (-1u, -1u, -11u); size = (2u, 2u, 14u); surface = skin.stock; }
+        wedge butt_stock { origin = (-1u, -2.5u, 3u); size = (2u, 4u, 5u); slope = south; surface = skin.buttstock; }
+        cube pistol_grip { origin = (-1u, -5u, -1u); size = (2u, 4u, 2u); pivot = (0u, -1u, 0u); rotation = (-16deg, 0deg, 0deg); surface = skin.grip; }
+        cube flight_rail { origin = (-0.5u, 1u, -11u); size = (1u, 1u, 11u); surface = skin.rail; }
+        cube stirrup_front { origin = (-1.5u, -1.5u, -13u); size = (3u, 3u, 2u); surface = skin.stirrup; }
+        cube prod_arm_l { origin = (-8u * prod_scale, -0.5u, -11u); size = (7u * prod_scale, 2u, 2u); pivot = (-1u, 0u, -10.5u); rotation = (0deg, -18deg, 0deg); mirror_x = prod_arm_r; surface = skin.prod; }
+        cube string_l { origin = (-8u * prod_scale, 0.8u, -7.8u); size = (8u * prod_scale, 1u, 1u); pivot = (0u, 1u, -4.5u); rotation = (0deg, 24deg, 0deg); mirror_x = string_r; surface = skin.string; }
+        cylinder loaded_bolt { origin = (0u, 1.5u, -13.5u); radius = 1u; radius_top = 1u; height = 9u; sides = 6; axis = z; surface = skin.bolt; }
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+ashfox 1
+module interaction {
+  export schema Interactable {
+    field action : enum(use, pickup, toggle, hold, breach, heal, resupply, rescue) = use;
+    field hold_time : second = 0s;
+    field cooldown : second = 0s;
+    field single_use : bool = false;
+    field requires_item : string = "";
+    field label : string = "";
+    field facing : enum(north, south, east, west) = north;
+  }
+
+  export schema PromptKey {
+    field key_hint : enum(use, primary, secondary, reload, melee, ping) = use;
+    field prompt_text : string = "Interact";
+    field icon_id : string = "";
+    field priority : int(0..100) = 10;
+    field show_distance : unit = 48u;
+  }
+
+  export schema TriggerRadius {
+    field radius : unit = 24u;
+    field height : unit = 32u;
+    field trigger_on : enum(enter, exit, stay, use) = enter;
+    field filter : enum(player, survivor, infected, any) = survivor;
+    field one_shot : bool = false;
+    field debounce : second = 0.25s;
+  }
+}

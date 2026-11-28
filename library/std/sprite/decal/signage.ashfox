@@ -1,0 +1,97 @@
+ashfox 1
+module signage {
+  export material saferoom_amber {
+    ramp { mode = auto; base = #e69c38; preset = warm; }
+  }
+  export material exit_emerald {
+    ramp { mode = auto; base = #48c96b; preset = emissive; }
+  }
+  export material hazard_yellow {
+    ramp { mode = auto; base = #ebc23d; preset = warm; }
+  }
+  export material chalk_white {
+    ramp { mode = auto; base = #d8dce3; preset = cool; }
+  }
+  export material stencil_red {
+    ramp { mode = auto; base = #d9484e; preset = vivid; }
+  }
+  export material stencil_slate {
+    ramp { mode = auto; base = #4d5461; preset = stone; }
+  }
+
+  export mask saferoom_arrow {
+    rows = [
+      ".....11...",
+      ".....111..",
+      "111111111.",
+      "1111111111",
+      "111111111.",
+      ".....111..",
+      ".....11..."
+    ];
+  }
+
+  export mask exit_sign {
+    rows = [
+      "111111111111",
+      "11........11",
+      "11..1111..11",
+      "11.111111.11",
+      "11.111111.11",
+      "11..1111..11",
+      "11........11",
+      "111111111111"
+    ];
+  }
+
+  export mask hazard_tape {
+    rows = [
+      "111111111111",
+      "111111111111",
+      "111111111111",
+      "111111111111",
+      "111111111111"
+    ];
+  }
+
+  export mask wall_graffiti {
+    rows = [
+      "11......11",
+      "111....111",
+      ".111..111.",
+      "..111111..",
+      "..111111..",
+      ".111..111.",
+      "111....111",
+      "11......11"
+    ];
+  }
+
+  export stamp chevron_stripe {
+    rows = [
+      "yydd",
+      ".yyd",
+      "..yy",
+      "d..y"
+    ];
+    slots = [y, d];
+  }
+
+  export stamp tally_marks {
+    rows = [
+      "w.w.w",
+      "wwwww",
+      "w.w.w"
+    ];
+    slots = [w];
+  }
+
+  export stamp stencil_corner {
+    rows = [
+      "sss",
+      "s..",
+      "s.."
+    ];
+    slots = [s];
+  }
+}

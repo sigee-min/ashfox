@@ -1,0 +1,74 @@
+ashfox 1
+module staff {
+  import "std/model/rig/biped" as biped;
+
+  export rig contract StaffRig {
+    joint root { parent = none; role = root; channels = rotation; }
+    socket grip: biped.HandGrip {
+      joint = root;
+      capacity = one;
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+  }
+
+  export skeleton StaffSkeleton implements StaffRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+  }
+
+  export surface contract MageStaffSurface {
+    chart shaft box { coverage = opaque; }
+    chart wrap box { coverage = opaque; }
+    chart ferrule box { coverage = opaque; }
+    chart cradle box { coverage = opaque; }
+    chart orb box { coverage = opaque; }
+    chart ring box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract CrystalWandSurface {
+    chart handle box { coverage = opaque; }
+    chart pommel box { coverage = opaque; }
+    chart collar box { coverage = opaque; }
+    chart guard box { coverage = opaque; }
+    chart crystal box { coverage = opaque; }
+    chart tip box { coverage = opaque; }
+    material = double;
+  }
+
+  export component MageStaff(param shaft_scale : ratio = 1.0) {
+    requires socket grip: biped.HandGrip;
+    requires surface skin: MageStaffSurface;
+    bind socket grip to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cylinder main_shaft { origin = (0u, -10u * shaft_scale, 0u); radius = 1u; radius_top = 1u; height = 24u * shaft_scale; sides = 8; axis = y; surface = skin.shaft; }
+        cube grip_wrap { origin = (-1.5u, -2.5u, -1.5u); size = (3u, 5u, 3u); surface = skin.wrap; }
+        taper bottom_ferrule { origin = (-1u, -12u * shaft_scale, -1u); size = (2u, 2u, 2u); top_scale = (0.55, 0.55); axis = y; pivot = (0u, -11u * shaft_scale, 0u); rotation = (180deg, 0deg, 0deg); surface = skin.ferrule; }
+        cube crown_collar { origin = (-2u, 13.5u * shaft_scale, -2u); size = (4u, 2u, 4u); surface = skin.ring; }
+        cube cradle_prong_l { origin = (-4u, 15u * shaft_scale, -1u); size = (2u, 5u, 2u); pivot = (-2u, 15u * shaft_scale, 0u); rotation = (0deg, 0deg, -18deg); mirror_x = cradle_prong_r; surface = skin.cradle; }
+        taper focus_orb_top { origin = (-2u, 18.5u * shaft_scale, -2u); size = (4u, 4u, 4u); top_scale = (0.2, 0.2); axis = y; surface = skin.orb; }
+        taper focus_orb_bot { origin = (-2u, 14.5u * shaft_scale, -2u); size = (4u, 4u, 4u); top_scale = (0.2, 0.2); axis = y; pivot = (0u, 16.5u * shaft_scale, 0u); rotation = (180deg, 0deg, 0deg); surface = skin.orb; }
+      }
+    }
+  }
+
+  export component CrystalWand(param wand_scale : ratio = 1.0) {
+    requires socket grip: biped.HandGrip;
+    requires surface skin: CrystalWandSurface;
+    bind socket grip to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cylinder handle_stem { origin = (0u, -3u * wand_scale, 0u); radius = 1u; radius_top = 1u; height = 10u * wand_scale; sides = 8; axis = y; surface = skin.handle; }
+        cube pommel_cap { origin = (-1u, -4u * wand_scale, -1u); size = (2u, 2u, 2u); surface = skin.pommel; }
+        cube collar_band { origin = (-1.5u, 6.5u * wand_scale, -1.5u); size = (3u, 2u, 3u); surface = skin.collar; }
+        wedge guard_l { origin = (-3u, 7.5u * wand_scale, -1u); size = (2u, 3u, 2u); slope = east; mirror_x = guard_r; surface = skin.guard; }
+        taper crystal_prism { origin = (-1.5u, 8u * wand_scale, -1.5u); size = (3u, 4u, 3u); top_scale = (0.65, 0.65); axis = y; surface = skin.crystal; }
+        taper crystal_spire { origin = (-1u, 12u * wand_scale, -1u); size = (2u, 3u, 2u); top_scale = (0.15, 0.15); axis = y; surface = skin.tip; }
+      }
+    }
+  }
+}

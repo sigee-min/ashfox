@@ -1,0 +1,56 @@
+ashfox 1
+module saferoom {
+  palette {
+    wall = "minecraft:gray_concrete";
+    trim = "minecraft:light_gray_concrete";
+    floor = "minecraft:black_concrete";
+    steel = "minecraft:iron_block";
+    door_lo = "minecraft:iron_door[facing=north,half=lower,hinge=left,open=false]";
+    door_hi = "minecraft:iron_door[facing=north,half=upper,hinge=left,open=false]";
+    bars = "minecraft:iron_bars";
+    rust = "minecraft:exposed_copper";
+    lamp = "minecraft:sea_lantern";
+    lantern = "minecraft:lantern[hanging=false]";
+    board = "minecraft:white_concrete";
+    mark_red = "minecraft:terracotta";
+    mark_cyan = "minecraft:cyan_concrete";
+    table = "minecraft:smithing_table";
+    plank = "minecraft:dark_oak_planks";
+    chest = "minecraft:chest[facing=south]";
+    barrel = "minecraft:barrel[facing=up]";
+    pad = "minecraft:heavy_weighted_pressure_plate";
+  }
+
+  export prefab SaferoomSteelDoor {
+    box { from = (0b, 0b, 0b); to = (4b, 0b, 2b); block = floor; }
+    box { from = (0b, 1b, 1b); to = (0b, 3b, 1b); block = wall; }
+    box { from = (4b, 1b, 1b); to = (4b, 3b, 1b); block = wall; }
+    box { from = (1b, 1b, 1b); to = (1b, 3b, 1b); block = steel; }
+    box { from = (3b, 1b, 1b); to = (3b, 3b, 1b); block = steel; }
+    set { at = (2b, 1b, 1b); block = door_lo; }
+    set { at = (2b, 2b, 1b); block = door_hi; }
+    set { at = (2b, 3b, 1b); block = lamp; }
+    set { at = (1b, 2b, 0b); block = rust; }
+    set { at = (3b, 2b, 2b); block = bars; }
+    box { from = (0b, 4b, 0b); to = (4b, 4b, 2b); block = wall; }
+  }
+
+  export prefab GraffitiWallBoard {
+    box { from = (0b, 0b, 0b); to = (4b, 0b, 0b); block = wall; }
+    box { from = (0b, 1b, 0b); to = (4b, 3b, 0b); block = trim; }
+    box { from = (1b, 1b, 0b); to = (3b, 2b, 0b); block = board; }
+    set { at = (1b, 2b, 0b); block = mark_red; }
+    set { at = (3b, 1b, 0b); block = mark_cyan; }
+    set { at = (2b, 3b, 1b); block = lantern; }
+  }
+
+  export prefab WeaponSupplyTable {
+    box { from = (0b, 0b, 0b); to = (3b, 0b, 1b); block = plank; }
+    set { at = (1b, 0b, 0b); block = table; }
+    set { at = (2b, 0b, 0b); block = table; }
+    set { at = (0b, 1b, 0b); block = barrel; }
+    set { at = (1b, 1b, 0b); block = pad; }
+    set { at = (2b, 1b, 0b); block = chest; }
+    set { at = (3b, 1b, 0b); block = lantern; }
+  }
+}
