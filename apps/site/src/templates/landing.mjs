@@ -30,6 +30,27 @@ const computeCatalogCounts = (catalog = []) => {
   };
 };
 
+const CATALOG_HREF_KEYS = [
+  'outputHref',
+  'thumbHref',
+  'previewHref',
+  'alternateHref',
+  'alternateWaveHref',
+];
+
+const buildCatalogVersionMap = (catalog = []) => {
+  const versions = {};
+  for (const item of catalog) {
+    if (!item) continue;
+    for (const key of CATALOG_HREF_KEYS) {
+      const href = item[key];
+      if (typeof href !== 'string' || !href.startsWith('/media/catalog/')) continue;
+      versions[href.split('?')[0]] = href;
+    }
+  }
+  return versions;
+};
+
 const formatCount = (template, count) =>
   escapeHtml(String(template || '').replace('{count}', String(count)));
 
@@ -76,7 +97,7 @@ const renderDiffEditor = (t) => `        <div class="diff-editor source-window" 
           </div>
         </div>`;
 
-const renderDiffOutput = (t, assets, griffin) => `        <div class="diff-output">
+const renderDiffOutput = (t, assets, griffin, catalogHref) => `        <div class="diff-output">
           <div class="diff-stage-3d" data-diff-pane="3d">
             <div class="world-stage-wrap">
               <div class="world-stage" data-live-model data-model-src="${assets.heroModel}"><img src="${griffin.posterSrc}" width="640" height="360" fetchpriority="high" alt="${t('heroAlt')}"></div>
@@ -98,39 +119,39 @@ const renderDiffOutput = (t, assets, griffin) => `        <div class="diff-outpu
           </div>
           <div class="diff-stage-2d" data-diff-pane="2d" hidden>
             <div class="diff-2d-canvas">
-              <img class="diff-2d-sprite" data-diff-image src="/media/catalog/iron-sword.png" width="256" height="256" alt="${t('swordAlt')}">
+              <img class="diff-2d-sprite" data-diff-image src="${escapeHtml(catalogHref('/media/catalog/iron-sword.png'))}" width="256" height="256" alt="${t('swordAlt')}">
               <div class="diff-2d-tile" data-diff-tile hidden></div>
             </div>
             <div class="diff-2d-meta">
-              <img class="diff-2d-native" data-diff-native src="/media/catalog/iron-sword.png" width="32" height="32" alt="">
+              <img class="diff-2d-native" data-diff-native src="${escapeHtml(catalogHref('/media/catalog/iron-sword.png'))}" width="32" height="32" alt="">
               <span data-diff-2d-label>32×32 PNG · material = weapon.steel</span>
             </div>
           </div>
           <div class="diff-stage-sfx" data-diff-pane="sfx" hidden>
-            <img class="diff-sfx-wave" data-diff-wave src="/media/catalog/claw-hit.svg" width="480" height="160" alt="${t('waveAlt')}">
+            <img class="diff-sfx-wave" data-diff-wave src="${escapeHtml(catalogHref('/media/catalog/claw-hit.svg'))}" width="480" height="160" alt="${t('waveAlt')}">
             <div class="diff-sfx-controls">
               <button type="button" class="button button-primary" data-diff-play>▶ ${t('playSound')}</button>
               <span class="workbench-path" data-diff-sfx-label>claw_hit · seed = 42</span>
             </div>
-            <audio data-diff-audio preload="none" src="/media/catalog/claw-hit.wav" hidden></audio>
+            <audio data-diff-audio preload="none" src="${escapeHtml(catalogHref('/media/catalog/claw-hit.wav'))}" hidden></audio>
           </div>
         </div>`;
 
-const renderDiffStatusBar = (t, locale) => `      <div class="workbench-statusbar">
+const renderDiffStatusBar = (t, locale, catalogHref) => `      <div class="workbench-statusbar">
         <span data-model-status role="status">${t('modelStatus')}</span>
         <div class="world-index">
           <a data-diff-studio-link href="${locale.prefix}/assets/?asset=griffin">${t('openInStudio')} →</a>
           <a data-diff-source-link href="/showcase/assets/models/griffin_boss.ashfox">${t('exploreSource')}</a>
-          <a data-diff-download-link href="/media/catalog/griffin.glb" download>${t('downloadModel')}</a>
+          <a data-diff-download-link href="${escapeHtml(catalogHref('/media/catalog/griffin.glb'))}" download>${t('downloadModel')}</a>
         </div>
       </div>`;
 
-const renderLiveDiffStage = (t, locale, assets, griffin) => `
+const renderLiveDiffStage = (t, locale, assets, griffin, catalogVersionMap, catalogHref) => `
   <section class="landing-section stage-section" id="stage" aria-labelledby="diff-stage-title">
     <div class="linear-head linear-head-compact" data-reveal>
       <h2 id="diff-stage-title">${t('diffStageTitle')}</h2>
     </div>
-    <div class="diff-workbench" data-live-diff data-locale="${locale.code}" data-reveal>
+    <div class="diff-workbench" data-live-diff data-locale="${locale.code}" data-catalog-versions="${escapeHtml(JSON.stringify(catalogVersionMap))}" data-reveal>
       <div class="diff-topbar">
         <div class="segmented-strip" role="tablist" aria-label="${t('diffStageTitle')}">
           <button type="button" data-diff-domain="model" aria-pressed="true">${t('diffTabModel')}</button>
@@ -143,13 +164,13 @@ const renderLiveDiffStage = (t, locale, assets, griffin) => `
       </div>
       <div class="diff-split">
 ${renderDiffEditor(t)}
-${renderDiffOutput(t, assets, griffin)}
+${renderDiffOutput(t, assets, griffin, catalogHref)}
       </div>
-${renderDiffStatusBar(t, locale)}
+${renderDiffStatusBar(t, locale, catalogHref)}
     </div>
   </section>`;
 
-const renderFrontierShowcase = (t, messages, counts, locale, showcase) => {
+const renderFrontierShowcase = (t, messages, counts, locale, showcase, catalogHref) => {
   const griffin =
     showcase.entries.find((entry) => entry.entryName === 'griffin_boss') || showcase.entries[0];
 
@@ -166,23 +187,23 @@ const renderFrontierShowcase = (t, messages, counts, locale, showcase) => {
         </div>
       </article>`,
     `<article class="creature-card" data-reveal style="--reveal-delay:70ms">
-        <div class="creature-stage"><img src="/media/catalog/thumbs/scifi-airlock.png" alt="${t('scifiAirlock')}" width="640" height="480" loading="lazy"></div>
+        <div class="creature-stage"><img src="${escapeHtml(catalogHref('/media/catalog/thumbs/scifi-airlock.png'))}" alt="${t('scifiAirlock')}" width="640" height="480" loading="lazy"></div>
         <div class="creature-foot">
           <h3>${t('scifiAirlock')}</h3>
           <div class="col-footer">
             <a href="${githubUrl}/blob/main/showcase/assets/structures/scifi_airlock.ashfox">${t('exploreSource')}</a>
-            <a href="/media/catalog/scifi-airlock.glb" download>${t('downloadGlb')}</a>
+            <a href="${escapeHtml(catalogHref('/media/catalog/scifi-airlock.glb'))}" download>${t('downloadGlb')}</a>
             <a href="${locale.prefix}/assets/?asset=scifi_airlock">${t('openInStudio')} →</a>
           </div>
         </div>
       </article>`,
     `<article class="creature-card" data-reveal style="--reveal-delay:140ms">
-        <div class="creature-stage"><img src="/media/catalog/thumbs/flame-cleave.png" alt="${t('flameCleave')}" width="640" height="480" loading="lazy"></div>
+        <div class="creature-stage"><img src="${escapeHtml(catalogHref('/media/catalog/thumbs/flame-cleave.png'))}" alt="${t('flameCleave')}" width="640" height="480" loading="lazy"></div>
         <div class="creature-foot">
           <h3>${t('flameCleave')}</h3>
           <div class="col-footer">
             <a href="${githubUrl}/blob/main/showcase/assets/vfx/flame_cleave.ashfox">${t('exploreSource')}</a>
-            <a href="/media/catalog/flame-cleave.glb" download>${t('downloadGlb')}</a>
+            <a href="${escapeHtml(catalogHref('/media/catalog/flame-cleave.glb'))}" download>${t('downloadGlb')}</a>
             <a href="${locale.prefix}/assets/?asset=flame_cleave">${t('openInStudio')} →</a>
           </div>
         </div>
@@ -191,7 +212,7 @@ const renderFrontierShowcase = (t, messages, counts, locale, showcase) => {
 
   const mosaicCells = HANDOFF_MOSAIC.map(
     ({ src, kind }) =>
-      `<span class="mosaic-cell mosaic-cell-${kind}"><img src="${src}" width="${kind === 'pixel' ? 32 : 256}" height="${kind === 'pixel' ? 32 : 256}" loading="lazy" alt=""></span>`,
+      `<span class="mosaic-cell mosaic-cell-${kind}"><img src="${escapeHtml(catalogHref(src))}" width="${kind === 'pixel' ? 32 : 256}" height="${kind === 'pixel' ? 32 : 256}" loading="lazy" alt=""></span>`,
   ).join('');
 
   return `
@@ -204,7 +225,7 @@ const renderFrontierShowcase = (t, messages, counts, locale, showcase) => {
       <a class="studio-handoff-card" href="${locale.prefix}/assets/" data-reveal style="--reveal-delay:210ms">
         <div class="handoff-mosaic" aria-hidden="true">
           <div class="mosaic-grid">${mosaicCells}</div>
-          <img class="mosaic-wave" src="/media/catalog/claw-hit.svg" width="480" height="160" loading="lazy" alt="">
+          <img class="mosaic-wave" src="${escapeHtml(catalogHref('/media/catalog/claw-hit.svg'))}" width="480" height="160" loading="lazy" alt="">
         </div>
         <div class="handoff-body">
           <div>
@@ -298,6 +319,8 @@ export const renderLandingPage = ({
   const messages = siteMessages(locale);
   const t = (key) => escapeHtml(messages[key]);
   const counts = computeCatalogCounts(catalog);
+  const catalogVersionMap = buildCatalogVersionMap(catalog);
+  const catalogHref = (pathname) => catalogVersionMap[pathname] || pathname;
   const alternatives = localeRegistry.locales.map((option) => ({
     ...option,
     route: `${option.prefix}/`,
@@ -307,8 +330,8 @@ export const renderLandingPage = ({
   const body = `
   <main id="main" class="world-landing">
     ${renderHero(t)}
-    ${renderLiveDiffStage(t, locale, assets, griffin)}
-    ${renderFrontierShowcase(t, messages, counts, locale, showcase)}
+    ${renderLiveDiffStage(t, locale, assets, griffin, catalogVersionMap, catalogHref)}
+    ${renderFrontierShowcase(t, messages, counts, locale, showcase, catalogHref)}
     ${renderWorkflowSection(t, locale)}
   </main><script defer src="${assets.viewerJs}"></script>`;
   return pageShell({

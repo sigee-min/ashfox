@@ -198,6 +198,15 @@ const DIFF_ITEMS = {
 
 const isThreeDomain = (domain) => domain === 'model' || domain === 'structure' || domain === 'vfx';
 
+const parseCatalogHrefs = (raw) => {
+  try {
+    const parsed = JSON.parse(raw || '{}');
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
 const escapeText = (value) =>
   String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
@@ -259,7 +268,9 @@ const queryDiffElements = (root) => ({
   downloadLink: root.querySelector('[data-diff-download-link]'),
 });
 
-const renderOutputPane = (domain, item, els, skipInitial3d) => {
+const renderOutputPane = (domain, item, els, skipInitial3d, resolveCatalogHref) => {
+  const outputHref = resolveCatalogHref(item.outputHref);
+  const waveHref = resolveCatalogHref(item.waveHref);
   els.audioSfx.pause();
   const show3d = isThreeDomain(domain);
   els.pane3d.hidden = !show3d;
@@ -268,15 +279,15 @@ const renderOutputPane = (domain, item, els, skipInitial3d) => {
   if (domain === '2d') {
     els.img2d.hidden = item.tile;
     els.tile2d.hidden = !item.tile;
-    els.img2d.src = item.outputHref;
-    els.native2d.src = item.outputHref;
-    els.tile2d.style.backgroundImage = item.tile ? `url(${item.outputHref})` : '';
+    els.img2d.src = outputHref;
+    els.native2d.src = outputHref;
+    els.tile2d.style.backgroundImage = item.tile ? `url(${outputHref})` : '';
     els.label2d.textContent = item.meta;
     return;
   }
   if (domain === 'sfx') {
-    els.waveSfx.src = item.waveHref;
-    els.audioSfx.src = item.outputHref;
+    els.waveSfx.src = waveHref;
+    els.audioSfx.src = outputHref;
     els.labelSfx.textContent = item.meta;
     return;
   }
@@ -284,7 +295,7 @@ const renderOutputPane = (domain, item, els, skipInitial3d) => {
   rebuild3dControls(els.controls3d, item.motions);
   void waitForLiveViewer().then((viewer) => {
     if (!viewer) return;
-    void viewer.mount(els.host3d, item.outputHref, {
+    void viewer.mount(els.host3d, outputHref, {
       controlsRoot: els.controls3d,
       domain,
     });
@@ -307,6 +318,8 @@ const bindSfxPlayer = (els) => {
 const initLiveDiffPlayground = () => {
   const root = document.querySelector('[data-live-diff]');
   if (!root) return;
+  const CATALOG_HREFS = parseCatalogHrefs(root.dataset.catalogVersions);
+  const resolveCatalogHref = (href) => (href && CATALOG_HREFS[href]) || href;
   const els = queryDiffElements(root);
   const lang = root.dataset.locale || 'en';
   const prefix = lang === 'ko' ? '/ko' : '';
@@ -324,9 +337,9 @@ const initLiveDiffPlayground = () => {
     els.filepath.textContent = item.file;
     els.studioLink.href = `${prefix}/assets/?asset=${item.studioId}`;
     els.sourceLink.href = item.sourceHref;
-    els.downloadLink.href = item.outputHref;
+    els.downloadLink.href = resolveCatalogHref(item.outputHref);
     renderDiffPatch(prev || DIFF_ITEMS[domain][1] || item, item, els.patch);
-    renderOutputPane(domain, item, els, initial);
+    renderOutputPane(domain, item, els, initial, resolveCatalogHref);
     const token = ++fetchSeq;
     try {
       const response = await fetch(item.sourceHref);
