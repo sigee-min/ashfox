@@ -47,7 +47,7 @@ module genre_kit {
         bone rotor_1 {
           cylinder guard_1 { origin = (-7u, 17u, -7u); radius = 3u * rotor_scale; radius_top = 3u * rotor_scale; height = 1u; sides = 8; axis = y; surface = skin.guard; }
           cube blade_1a { origin = (-9.5u, 18u, -7.5u); size = (5u * rotor_scale, 1u, 1u); pivot = (-7u, 18.5u, -7u); surface = skin.rotor; }
-          cube blade_1b { origin = (-7.5u, 18u, -9.5u); size = (5u * rotor_scale, 1u, 1u); pivot = (-7u, 18.5u, -7u); rotation = (0deg, 90deg, 0deg); surface = skin.rotor; }
+          cube blade_1b { origin = (-9.5u, 18u, -7.5u); size = (5u * rotor_scale, 1u, 1u); pivot = (-7u, 18.5u, -7u); rotation = (0deg, 90deg, 0deg); surface = skin.rotor; }
         }
         bone rotor_2 {
           cylinder guard_2 { origin = (7u, 17u, -7u); radius = 3u * rotor_scale; radius_top = 3u * rotor_scale; height = 1u; sides = 8; axis = y; surface = skin.guard; }
@@ -117,8 +117,8 @@ module genre_kit {
           cube belt { origin = (-4u, 12.5u, -3u); size = (8u, 2u, 6u); surface = skin.belt; }
           plane shred_front { origin = (2.5u, 6.5u, -3.1u); size = (5u, 4u); u_axis = (-1u, 0u, 0u); v_axis = (0u, 1u, 0u); surface = skin.rag; }
           bone torso {
-            cube chest { origin = (-4.5u, 14u, -3u); size = (9u, 10u, 6u); pivot = (0u, 14u, 0u); rotation = (1deg * hunch, 0deg, 0deg); surface = skin.chest; }
-            cube exposed_ribs { origin = (-2.5u, 16u, -3.5u); size = (5u, 4u, 1u); pivot = (0u, 14u, 0u); rotation = (1deg * hunch, 0deg, 0deg); surface = skin.rib; }
+            cube chest { origin = (-4.5u, 14u, -3u); size = (9u, 10u, 6u); pivot = (0u, 14u, 0u); rotation = (-1deg * hunch, 0deg, 0deg); surface = skin.chest; }
+            cube exposed_ribs { origin = (-2.5u, 16u, -3.5u); size = (5u, 4u, 1u); pivot = (0u, 14u, 0u); rotation = (-1deg * hunch, 0deg, 0deg); surface = skin.rib; }
             cube collar_l { origin = (-4.5u, 22.5u, -3u); size = (2u, 2u, 6u); mirror_x = collar_r; surface = skin.collar; }
             bone head {
               cube skull { origin = (-4u, 24u, -4u); size = (8u, 8u, 8u); surface = skin.head; }
@@ -135,7 +135,7 @@ module genre_kit {
             }
             bone left_arm {
               cube l_shoulder { origin = (-8.5u, 18u, -2u); size = (4u, 5u, 4u); surface = skin.shoulder; }
-              cube l_forearm { origin = (-8u, 11.5u, -2u); size = (3u, 7u, 4u); pivot = (-6.5u, 18u, 0u); rotation = (-12deg, 0deg, 0deg); surface = skin.arm; }
+              cube l_forearm { origin = (-8u, 11.5u, -2u); size = (3u, 7u, 4u); pivot = (-6.5u, 18u, 0u); rotation = (12deg, 0deg, 0deg); surface = skin.arm; }
               cube l_hand { origin = (-8u, 9.5u, -2u); size = (3u, 3u, 4u); surface = skin.hand; }
             }
             bone right_arm {

@@ -38,9 +38,9 @@ module locomotion {
   export motion biped_run for biped.BipedRig {
     duration = 0.8s; fps = 30; loop = loop;
     track torso.rotation {
-      key 0s = (12deg, -4deg, 0deg) catmullrom;
-      key 0.4s = (12deg, 4deg, 0deg) catmullrom;
-      key 0.8s = (12deg, -4deg, 0deg) catmullrom;
+      key 0s = (-12deg, -4deg, 0deg) catmullrom;
+      key 0.4s = (-12deg, 4deg, 0deg) catmullrom;
+      key 0.8s = (-12deg, -4deg, 0deg) catmullrom;
     }
     track left_leg.rotation {
       key 0s = (38deg, 0deg, 0deg) catmullrom;

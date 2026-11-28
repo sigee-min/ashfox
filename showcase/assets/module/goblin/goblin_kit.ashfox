@@ -180,8 +180,8 @@ module goblin_kit {
 
   export motion goblin_challenge for biped.BipedRig {
     duration = 2.0s; fps = 30; loop = once; rest_relative = true;
-    pose windup { torso.rotation = (-16deg, 22deg, 0deg); right_arm.rotation = (-64deg, -10deg, 20deg); left_arm.rotation = (16deg, 0deg, -12deg); head.rotation = (5deg, -18deg, 0deg); }
-    pose strike { torso.rotation = (20deg, -24deg, 0deg); right_arm.rotation = (44deg, 8deg, -12deg); left_arm.rotation = (-14deg, 0deg, -16deg); head.rotation = (-6deg, 16deg, 0deg); }
+    pose windup { torso.rotation = (14deg, 22deg, 0deg); right_arm.rotation = (-64deg, -10deg, 20deg); left_arm.rotation = (16deg, 0deg, -12deg); head.rotation = (5deg, -18deg, 0deg); }
+    pose strike { torso.rotation = (-18deg, -24deg, 0deg); right_arm.rotation = (44deg, 8deg, -12deg); left_arm.rotation = (-14deg, 0deg, -16deg); head.rotation = (-6deg, 16deg, 0deg); }
     at 0s pose windup smooth;
     at 0.55s pose windup anticipate(0.28);
     at 1.0s pose strike snap;

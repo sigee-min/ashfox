@@ -7,7 +7,7 @@
     {
       "input": "library/std",
       "ok": true,
-      "sourceHash": "22e85c995be56713b0b2144bad03ac7f8acea8d087ae4ed04f8e8aeb716b8f6e",
+      "sourceHash": "d9fabcfc03ecf1f7aff608810dfedaf30e419c4e02f99debca1c54cafdd03529",
       "modules": [
         {
           "path": "library/std/core/hook/combat.ashfox",
@@ -482,7 +482,7 @@
         {
           "path": "library/std/model/motion/combat.ashfox",
           "specifier": "std/model/motion/combat",
-          "sha256": "6b365dd7f819c7639f482170d809e7301e47437a036372c33e62c4f480e65d1d",
+          "sha256": "38adcb4d4f8dd2990915ca18375ec204b5d8fd12dfc30b920fb56d497ecb5564",
           "exports": [
             "guard",
             "slash",
@@ -525,7 +525,7 @@
         {
           "path": "library/std/model/motion/locomotion.ashfox",
           "specifier": "std/model/motion/locomotion",
-          "sha256": "fa05a3e9e34803348b13d766b364a62e830583ef1fcb9f8004804398fec78ca4",
+          "sha256": "942362b20c63569f70f3560e8e7018f8c04aff5d1f896f495c32d6c2acb8ce2f",
           "exports": [
             "biped_run",
             "biped_walk",
@@ -542,7 +542,7 @@
         {
           "path": "library/std/model/motion/mech.ashfox",
           "specifier": "std/model/motion/mech",
-          "sha256": "e0979fdf384da366dd7f9c11662d1c198591980ca547b18e703936d571cdf682",
+          "sha256": "0af8778b05137850ef4a566170d494b141098685eeabce0ca62f397195fb3e83",
           "exports": [
             "drone_hover",
             "mech_stomp",
@@ -584,7 +584,7 @@
         {
           "path": "library/std/model/motion/zombie.ashfox",
           "specifier": "std/model/motion/zombie",
-          "sha256": "294a0d1325648fc26df13439d5e75a1d22ea7c52e4077dbbe119e98f11269551",
+          "sha256": "af67d34b593d15b1eb3d64b7c92269641f502639d11bda395bf5620c5cedc25b",
           "exports": [
             "bite_lunge",
             "collapse",
@@ -689,7 +689,7 @@
         {
           "path": "library/std/model/prop/container.ashfox",
           "specifier": "std/model/prop/container",
-          "sha256": "4669e79f819a05506ff659023315bb36049d8ca0355d6d4ef9e96ba00ba37284",
+          "sha256": "eeb00ce9deaf0271f994c26e86212705a62c66cf6696aca0762d7116f502b611",
           "exports": [
             "ChestRig",
             "ChestSkeleton",

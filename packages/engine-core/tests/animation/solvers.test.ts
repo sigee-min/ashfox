@@ -6,6 +6,7 @@ import { compileGait } from '../../src/animation/gait';
 import { solveFootLock, solveTwoBoneIk } from '../../src/animation/ik';
 import {
   IDENTITY_QUAT,
+  mirrorQuatAcrossX,
   mulQuat,
   quatAngleDeg,
   quatFromEulerXyzDeg,
@@ -424,3 +425,35 @@ assert.ok(
   quatAngleDeg(pendRot, rest30) < 1e-2,
   `expected stationary pendulum frame 0 to remain near 30 deg restRotation, got diff=${quatAngleDeg(pendRot, rest30)}`,
 );
+
+// 9. Explicit-only mirrorMode + gait forward lean sign
+const makeMirrorClip = (mirrorMode?: 'antiphase' | 'sync') =>
+  bakeClip({
+    ...clipSpec,
+    combat: undefined,
+    secondaries: undefined,
+    layers: [{ ...clipSpec.layers[0]!, mirrorMode }],
+  });
+const noMirrorR = makeMirrorClip(undefined).channels.find(
+  (c) => c.jointId === 'shoulder_r' && c.property === 'rotation',
+);
+assert.ok(noMirrorR?.keys.every((k) => quatAngleDeg(k.value as Quat, IDENTITY_QUAT) < 1e-4));
+const syncBaked = makeMirrorClip('sync');
+const syncL = syncBaked.channels.find(
+  (c) => c.jointId === 'shoulder_l' && c.property === 'rotation',
+)!;
+const syncR = syncBaked.channels.find(
+  (c) => c.jointId === 'shoulder_r' && c.property === 'rotation',
+)!;
+const at04 = (ch: typeof syncL) =>
+  ch.keys.find((k) => Math.abs(k.time - 0.4) < 0.02)!.value as Quat;
+assert.ok(quatAngleDeg(at04(syncR), mirrorQuatAcrossX(at04(syncL))) < 1e-2);
+
+const runGait = compileGait({ kind: 'biped_run' }, 0.8, 30);
+for (const jid of ['torso', 'pelvis']) {
+  assert.ok(
+    runGait.tracks
+      .find((t) => t.jointId === jid && t.property === 'rotation')!
+      .keys.every((k) => k.value[0] < 0),
+  );
+}

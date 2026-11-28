@@ -14,9 +14,9 @@ module mech {
       key 1.4s = (0u, 0u, 0u) ease_in_out;
     }
     track torso.rotation {
-      key 0s = (4deg, -6deg, 0deg) smooth;
-      key 0.7s = (4deg, 6deg, 0deg) smooth;
-      key 1.4s = (4deg, -6deg, 0deg) smooth;
+      key 0s = (-4deg, -6deg, 0deg) smooth;
+      key 0.7s = (-4deg, 6deg, 0deg) smooth;
+      key 1.4s = (-4deg, -6deg, 0deg) smooth;
     }
     track leg_l.rotation {
       key 0s = (22deg, 0deg, 0deg) ease_in_out;
@@ -86,9 +86,9 @@ module mech {
       key 1.2s = (0deg, 720deg, 0deg) linear;
     }
     track gimbal_cam.rotation {
-      key 0s = (6deg, -18deg, 0deg) smooth;
-      key 0.6s = (10deg, 18deg, 0deg) smooth;
-      key 1.2s = (6deg, -18deg, 0deg) smooth;
+      key 0s = (-6deg, -18deg, 0deg) smooth;
+      key 0.6s = (-10deg, 18deg, 0deg) smooth;
+      key 1.2s = (-6deg, -18deg, 0deg) smooth;
     }
   }
 }

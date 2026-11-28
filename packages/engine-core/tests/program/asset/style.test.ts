@@ -8,7 +8,7 @@ import { compileAssetWorkspaceEntry } from '../../../src/compiler/program/asset/
 // Hashes cover canonical geometry, all texture recipe/raster data, and all authored animation channels.
 const baseline = {
   red_fox: 'sha256:5c6107c48a0ad3a9465ed3add1b1a1b2bb30245c7b26809f3967c15269a5ef2d',
-  goblin_raider: 'sha256:a95fd2abcafb22eceec4bc0ed51dcdd11c531df11390a5f64a56c038896de9dc',
+  goblin_raider: 'sha256:c322734a99379a32b6da6ef34db0b6d0c0d469ec4f52ac98defd2e118b7c2552',
 };
 const source = readFileSync(
   resolve(__dirname, '../../../../../assets/workspaces/shared-creatures.ashfoxworkspace'),

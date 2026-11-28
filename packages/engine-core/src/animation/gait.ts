@@ -204,8 +204,8 @@ const sampleGaitFrame = (
   const pelvisPos: Vec3 = [swayX, bounceY, 0];
   const pelvisYaw = Math.cos(a) * (p.counterTwist * 0.45);
   const pelvisRoll = Math.sin(a) * p.hipSway;
-  const pelvisRot: Vec3 = [p.lean * 0.25, pelvisYaw, pelvisRoll];
-  const torsoRot: Vec3 = [p.lean * 0.75, -Math.cos(a) * p.counterTwist, -pelvisRoll * 0.5];
+  const pelvisRot: Vec3 = [-p.lean * 0.25, pelvisYaw, pelvisRoll];
+  const torsoRot: Vec3 = [-p.lean * 0.75, -Math.cos(a) * p.counterTwist, -pelvisRoll * 0.5];
 
   const swingScale = Math.min(48, p.stride * 3.4);
   const liftScale = Math.max(0.6, p.lift / 2.5);
