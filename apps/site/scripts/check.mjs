@@ -335,8 +335,42 @@ for (const required of [
   if (!landingHtml.includes(required)) failures.push(`Landing is missing ${required}`);
 }
 const studioHtml = await readFile(path.join(outputRoot, 'assets/index.html'), 'utf8');
-for (const required of ['data-inspector-sprite', 'data-studio-audio']) {
+const koreanLandingHtml = await readFile(path.join(outputRoot, 'ko/index.html'), 'utf8');
+const koreanStudioHtml = await readFile(path.join(outputRoot, 'ko/assets/index.html'), 'utf8');
+for (const required of [
+  'data-studio-app',
+  'data-studio-gallery',
+  'data-studio-workbench',
+  'data-inspector-sprite',
+  'data-studio-audio',
+]) {
   if (!studioHtml.includes(required)) failures.push(`Studio is missing ${required}`);
+}
+const studioScriptMatch = studioHtml.match(
+  /<script defer src="(\/static\/studio-[a-f0-9]{12}\.js)"/,
+);
+if (!studioScriptMatch || !(await exists(path.join(outputRoot, studioScriptMatch[1])))) {
+  failures.push('Missing content-hashed studio.js');
+}
+for (const [label, pageHtml] of [
+  ['EN landing', landingHtml],
+  ['KO landing', koreanLandingHtml],
+  ['EN studio', studioHtml],
+  ['KO studio', koreanStudioHtml],
+]) {
+  for (const stale of [
+    '31종',
+    '31 assets',
+    '3D · 4',
+    '2D · 12',
+    'SFX · 15',
+    '15 studio WAVs',
+    '2D Material Diff (8)',
+  ]) {
+    if (pageHtml.includes(stale)) {
+      failures.push(`${label} still contains stale copy: ${stale}`);
+    }
+  }
 }
 for (const [pattern, extension] of [
   [/<script defer src="(\/static\/viewer-[a-f0-9]{12}\.js)"/, 'js'],
@@ -365,15 +399,38 @@ if (!(await exists(catalogPath))) {
   failures.push('Missing media/catalog/catalog.json');
 } else {
   const catalogEntries = JSON.parse(await readFile(catalogPath, 'utf8'));
-  if (catalogEntries.length !== 22) {
-    failures.push(`Expected 22 catalog entries, got ${catalogEntries.length}`);
+  if (catalogEntries.length !== 35) {
+    failures.push(`Expected 35 catalog entries, got ${catalogEntries.length}`);
   }
+  const expectedDomainCounts = {
+    model: 12,
+    structure: 6,
+    vfx: 5,
+    sprite: 4,
+    tile: 1,
+    sound: 7,
+  };
+  const actualDomainCounts = {};
   for (const entry of catalogEntries) {
+    actualDomainCounts[entry.domain] = (actualDomainCounts[entry.domain] || 0) + 1;
     if (!(await exists(path.join(outputRoot, entry.outputHref)))) {
       failures.push(`Missing compiled catalog output: ${entry.outputHref}`);
     }
     if (!(await exists(path.join(outputRoot, entry.sourceHref)))) {
       failures.push(`Missing catalog source: ${entry.sourceHref}`);
+    }
+    if (entry.thumbHref && !(await exists(path.join(outputRoot, entry.thumbHref)))) {
+      failures.push(`Missing catalog thumbnail: ${entry.thumbHref}`);
+    }
+    if (['model', 'structure', 'vfx'].includes(entry.domain) && !entry.thumbHref) {
+      failures.push(`Missing thumbHref for 3D/Structure/VFX catalog entry: ${entry.id}`);
+    }
+  }
+  for (const [domain, expectedCount] of Object.entries(expectedDomainCounts)) {
+    if ((actualDomainCounts[domain] || 0) !== expectedCount) {
+      failures.push(
+        `Expected ${expectedCount} ${domain} catalog entries, got ${actualDomainCounts[domain] || 0}`,
+      );
     }
   }
 }

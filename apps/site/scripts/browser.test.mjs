@@ -157,30 +157,89 @@ const studioHarness = `<!doctype html><meta charset="utf-8"><style>body{margin:0
 const test = async () => {
   const w = document.querySelector('iframe').contentWindow, d = w.document;
   const q = s => d.querySelector(s), qa = s => [...d.querySelectorAll(s)];
-  const until = async (fn, m) => { for(let i=0;i<150;i++){if(fn())return;await new Promise(r=>setTimeout(r,50));}throw Error(m); };
+  const until = async (fn, m) => { for(let i=0;i<200;i++){if(fn())return;await new Promise(r=>setTimeout(r,50));}throw Error(m); };
   const check = (v, m) => { if(!v) throw Error(m); };
-  await until(() => qa('[data-catalog-row]').length === 22, 'Catalog rows missing');
-  await until(() => q('[data-inspector-3d]').dataset.ready === 'true' && q('[data-inspector-3d] canvas'), 'Studio 3D model did not mount');
-  const countVisible = () => qa('[data-catalog-row]').filter(r => !r.hidden && w.getComputedStyle(r).display !== 'none').length;
-  q('[data-domain-tab="sprite"]').click(); check(countVisible() === 2, 'Expected 2 sprites');
-  await until(() => q('[data-inspector-sprite]').complete && q('[data-inspector-sprite]').naturalWidth === 32, 'Studio 32x32 PNG failed');
-  q('[data-domain-tab="tile"]').click(); check(countVisible() === 1, 'Expected 1 tile');
-  q('[data-domain-tab="sound"]').click(); check(countVisible() === 5, 'Expected 5 sounds');
-  const audio = q('[data-studio-audio]'); check(audio.paused && audio.preload === 'none', 'Studio audio must not autoplay');
-  q('[data-inspector-controls] .button-primary')?.click();
-  await until(() => !audio.paused && audio.readyState >= 2, 'Studio audio playback failed');
+  await until(() => qa('[data-gallery-card]').length === 35 && qa('[data-catalog-row]').length === 35, 'Expected 35 catalog items');
+  check(q('[data-studio-app]').dataset.studioMode === 'gallery' && !q('[data-studio-gallery]').hidden, 'Gallery must be default without ?asset=');
+  const visibleCards = () => qa('[data-gallery-card]').filter(c => !c.hidden && w.getComputedStyle(c).display !== 'none').length;
+  check(visibleCards() === 35, 'Expected 35 visible cards initially');
+  for (const [domain, expected] of [['model', 12], ['structure', 6], ['vfx', 5], ['sprite', 4], ['tile', 1], ['sound', 7], ['all', 35]]) {
+    q(\`[data-domain-tab="\${domain}"]\`).click();
+    check(visibleCards() === expected, \`Expected \${expected} cards for domain \${domain}, got \${visibleCards()}\`);
+  }
+  const search = q('[data-studio-search]');
+  search.value = 'zzzz_missing_asset'; search.dispatchEvent(new w.Event('input', {bubbles:true}));
+  await until(() => visibleCards() === 0 && !q('[data-gallery-empty]').hidden, 'Empty state did not appear');
+  q('[data-gallery-reset]').click();
+  await until(() => visibleCards() === 35 && q('[data-gallery-empty]').hidden, 'Reset filters failed');
+
+  q('[data-gallery-card="griffin"]').click();
+  await until(() => q('[data-studio-app]').dataset.studioMode === 'workbench' && !q('[data-studio-workbench]').hidden, 'Workbench did not open from card');
+  check(w.location.search.includes('asset=griffin'), 'URL did not sync ?asset=griffin');
+  await until(() => q('[data-inspector-3d] canvas'), '3D WebGL canvas did not mount for griffin');
+  q('[data-hud-wireframe]').click(); check(q('[data-hud-wireframe]').getAttribute('aria-pressed') === 'true', 'Wireframe toggle failed');
+  q('[data-hud-grid]').click(); check(q('[data-hud-grid]').getAttribute('aria-pressed') === 'false', 'Grid toggle failed');
+  q('[data-hud-rotate]').click(); check(q('[data-hud-rotate]').getAttribute('aria-pressed') === 'true', 'Auto-rotate toggle failed');
+  q('[data-hud-backdrop="slate"]').click(); check(q('[data-stage-3d]').dataset.viewerBackdrop === 'slate', 'Backdrop switch failed');
+  q('[data-hud-cam="front"]').click();
+  q('[data-motion-speed="2"]').click(); check(q('[data-motion-speed="2"]').getAttribute('aria-pressed') === 'true', 'Speed 2x failed');
+
+  q('[data-catalog-row="tavern"]').click();
+  await until(() => w.location.search.includes('asset=tavern') && q('[data-inspector-title]').textContent.length > 0, 'Tavern structure failed');
+  q('[data-catalog-row="flame_cleave"]').click();
+  await until(() => w.location.search.includes('asset=flame_cleave') && !q('[data-vfx-replay]').hidden, 'Flame cleave VFX replay button missing');
+
+  q('[data-catalog-row="ui_inventory_panel"]').click();
+  await until(() => !q('[data-stage-2d]').hidden && !q('[data-nineslice-stage]').hidden, '9-slice stage failed');
+  const nsSlider = q('[data-nineslice-width]');
+  nsSlider.value = '300'; nsSlider.dispatchEvent(new w.Event('input', {bubbles:true}));
+  check(q('[data-nineslice-box]').style.width === '300px', '9-slice width slider did not resize preview');
+
+  q('[data-catalog-row="oak_planks"]').click();
+  await until(() => !q('[data-inspector-tile]').hidden, 'Oak planks 3x3 tile failed');
+  q('[data-2d-tile-toggle]').click();
+  check(q('[data-inspector-tile]').hidden && !q('[data-inspector-sprite]').hidden, 'Tile 1x/3x3 toggle failed');
+
+  q('[data-catalog-row="claw_hit"]').click();
+  await until(() => !q('[data-stage-audio]').hidden && q('[data-audio-canvas]'), 'Audio stage failed');
+  const audio = q('[data-studio-audio]');
+  check(audio.paused && audio.preload === 'none', 'Audio must not autoplay');
+  q('[data-audio-play]').click();
+  await until(() => !audio.paused && audio.readyState >= 2, 'Audio play failed');
+  q('[data-audio-loop]').click(); check(audio.loop === true, 'Audio loop toggle failed');
+  q('[data-audio-variant="alternate"]').click();
+  check(audio.src.includes('claw-alternate.wav'), 'Audio alternate seed switch failed');
   audio.pause();
-  q('[data-domain-tab="model"]').click(); check(countVisible() === 14, 'Expected 14 models');
-  q('[data-domain-tab="all"]').click(); check(countVisible() === 22, 'Expected 22 total assets');
-  const search = q('[data-studio-search]'); search.value = 'oak'; search.dispatchEvent(new w.Event('input', {bubbles:true}));
-  await until(() => countVisible() === 1 && !q('[data-inspector-tile]').hidden, 'Search/tile inspector failed');
-  check(w.location.search.includes('asset=oak_planks'), 'Deep link did not sync');
-  await until(() => q('[data-inspector-code]').textContent.includes('oak_planks'), 'Real .ashfox source failed to load');
+  const canvas = q('[data-audio-canvas]');
+  const rect = canvas.getBoundingClientRect();
+  canvas.dispatchEvent(new w.PointerEvent('pointerdown', {clientX: rect.left + rect.width * 0.5, clientY: rect.top + 20, bubbles:true}));
+
+  q('[data-inspector-tab="source"]').click();
+  await until(() => qa('[data-inspector-code] .code-line').length > 5, 'Syntax-highlighted source lines missing');
+  q('[data-inspector-tab="specs"]').click();
+  check(!q('[data-panel-specs]').hidden && qa('[data-specs-table] dt').length >= 3, 'Specs tab failed');
+  q('[data-inspector-tab="use"]').click();
+  check(!q('[data-panel-use]').hidden && qa('[data-use-snippets] .use-card').length >= 4, 'Use snippets tab failed');
+
   let copied = ''; Object.defineProperty(w.navigator, 'clipboard', {configurable:true, value:{writeText:async t => {copied=t;}}});
   q('[data-copy-asset-prompt]').click();
-  await until(() => copied.includes('https://ashfox.io/agent.md') && copied.includes('oak_planks.ashfox'), 'Agent reference prompt copy failed');
+  await until(() => copied.includes('https://ashfox.io/agent.md'), 'Agent prompt copy failed');
+
   check(d.documentElement.scrollWidth <= w.innerWidth + 1, 'Studio horizontal overflow');
-  document.documentElement.dataset.result = 'passed'; document.querySelector('#status').textContent = 'passed: studio 22 catalog + search + source + prompt';
+  document.documentElement.dataset.result = 'passed'; document.querySelector('#status').textContent = 'passed: studio 35 catalog + gallery/workbench + 3d/2d/audio + tabs';
+};
+document.querySelector('iframe').addEventListener('load', () => test().catch(e => { document.documentElement.dataset.result = 'failed'; document.querySelector('#status').textContent = e.stack; }).finally(() => fetch('/done')));
+</script>`;
+const studioDeeplinkHarness = `<!doctype html><meta charset="utf-8"><style>body{margin:0}iframe{border:0;width:100vw;height:100vh}</style><img src="/hold" hidden><iframe src="/assets/?asset=griffin"></iframe><pre id="status">running</pre><script>
+const test = async () => {
+  const w = document.querySelector('iframe').contentWindow, d = w.document;
+  const q = s => d.querySelector(s);
+  const until = async (fn, m) => { for(let i=0;i<200;i++){if(fn())return;await new Promise(r=>setTimeout(r,50));}throw Error(m); };
+  const check = (v, m) => { if(!v) throw Error(m); };
+  await until(() => q('[data-studio-app]')?.dataset.studioMode === 'workbench' && q('[data-inspector-3d] canvas'), 'Deep-link ?asset=griffin did not open workbench');
+  check(q('[data-studio-gallery]').hidden && !q('[data-studio-workbench]').hidden, 'Deep-link must hide gallery and show workbench');
+  check(d.documentElement.scrollWidth <= w.innerWidth + 1, 'Deep-link horizontal overflow');
+  document.documentElement.dataset.result = 'passed'; document.querySelector('#status').textContent = 'passed: studio ?asset=griffin deep-link';
 };
 document.querySelector('iframe').addEventListener('load', () => test().catch(e => { document.documentElement.dataset.result = 'failed'; document.querySelector('#status').textContent = e.stack; }).finally(() => fetch('/done')));
 </script>`;
@@ -226,11 +285,17 @@ const server = createServer(async (request, response) => {
     if (url.pathname === '/test') {
       response.setHeader('Content-Type', 'text/html');
       const tpl =
-        testMode === 'studio' ? studioHarness : testMode === 'docs' ? docsHarness : harness;
+        testMode === 'studio'
+          ? studioHarness
+          : testMode === 'studio-deeplink'
+            ? studioDeeplinkHarness
+            : testMode === 'docs'
+              ? docsHarness
+              : harness;
       response.end(
         tpl
           .replace('data-missing="false"', `data-missing="${missingModel}"`)
-          .replace('iframe src="/"', `iframe src="${localePath}"`),
+          .replace(/iframe src="[^"]+"/, `iframe src="${localePath}"`),
       );
       return;
     }
@@ -272,6 +337,8 @@ try {
     ['landing', 320, true, true, '/ko/'],
     ['studio', 1440, false, false, '/assets/'],
     ['studio', 390, false, false, '/ko/assets/'],
+    ['studio', 320, false, false, '/assets/'],
+    ['studio-deeplink', 1440, false, false, '/assets/?asset=griffin'],
     ['docs', 1440, false, false, '/ko/docs/guides/install/'],
     ['docs', 390, false, false, '/docs/guides/install/'],
   ]) {
