@@ -94,11 +94,28 @@ for (const route of ['', 'ko/']) {
 }
 assert.doesNotMatch(korean, /class="docs-languages"/);
 assert.match(korean, /class="language-menu" data-language-menu/);
+const englishLanding = await readFile(new URL('index.html', output), 'utf8');
 const englishStudio = await readFile(new URL('assets/index.html', output), 'utf8');
 const koreanLanding = await readFile(new URL('ko/index.html', output), 'utf8');
 const koreanStudio = await readFile(new URL('ko/assets/index.html', output), 'utf8');
-assert.match(koreanLanding, /코드에서 게임까지/);
-assert.match(koreanLanding, /크리처 하나를 온전히/);
+assert.match(
+  englishLanding,
+  /3D models, structures, VFX, 2D UI, and stereo SFX — compiled from code, tracked in Git\./,
+);
+assert.match(englishLanding, /121 std\/ Modules &amp; Parametric DSL/);
+assert.match(englishLanding, /Built-in Craft Floor Gate/);
+assert.match(englishLanding, /Engine-Ready SDK &amp; Hooks/);
+assert.match(englishLanding, /Sci-Fi Airlock/);
+assert.match(englishLanding, /Flame Cleave/);
+assert.match(
+  koreanLanding,
+  /3D 모델·건축물·VFX·2D UI·스테레오 SFX — 코드로 컴파일하고 Git으로 관리하세요\./,
+);
+assert.match(koreanLanding, /121종 std\/ 모듈 &amp; 파라메트릭 DSL/);
+assert.match(koreanLanding, /내장 Craft Floor 품질 게이트/);
+assert.match(koreanLanding, /엔진 연동 SDK &amp; 훅/);
+assert.match(koreanLanding, /SF 에어록/);
+assert.match(koreanLanding, /화염 베기/);
 assert.match(koreanStudio, /에셋 스튜디오/);
 for (const [label, html, tabs] of [
   ['en', englishStudio, ['All', 'Models', 'Structures', 'VFX', 'Sprites', 'Tiles', 'SFX']],

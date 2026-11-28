@@ -1,7 +1,7 @@
 const HERO_COPY = JSON.parse(document.body.dataset.siteCopy || '{}');
 
 const DIFF_ITEMS = {
-  '3d': [
+  model: [
     {
       id: 'griffin',
       token: 'griffin_boss',
@@ -14,44 +14,103 @@ const DIFF_ITEMS = {
       codeLine: 'model griffin_boss { import "std/model/rig/winged_quadruped" as wq; }',
     },
     {
-      id: 'fox',
-      token: 'red_fox',
-      label: { en: 'red_fox', ko: 'red_fox' },
-      file: 'showcase/assets/models/red_fox.ashfox',
-      sourceHref: '/showcase/assets/models/red_fox.ashfox',
-      outputHref: '/media/catalog/fox.glb',
-      studioId: 'fox',
-      motions: ['quad_idle', 'quad_trot', 'tail_wag'],
-      codeLine: 'model red_fox { import "std/model/rig/quadruped" as quad; }',
+      id: 'scifi_drone',
+      token: 'scifi_drone',
+      label: { en: 'scifi_drone', ko: 'scifi_drone' },
+      file: 'showcase/assets/models/scifi_drone.ashfox',
+      sourceHref: '/showcase/assets/models/scifi_drone.ashfox',
+      outputHref: '/media/catalog/scifi-drone.glb',
+      studioId: 'scifi_drone',
+      motions: ['drone_hover'],
+      codeLine: 'model scifi_drone { import "std/model/rig/drone" as drone_rig; }',
     },
     {
-      id: 'goblin',
-      token: 'goblin_raider',
-      label: { en: 'goblin_raider', ko: 'goblin_raider' },
-      file: 'showcase/assets/models/goblin_raider.ashfox',
-      sourceHref: '/showcase/assets/models/goblin_raider.ashfox',
-      outputHref: '/media/catalog/goblin.glb',
-      studioId: 'goblin',
-      motions: ['goblin_idle', 'biped_walk', 'slash', 'goblin_challenge'],
-      codeLine: 'model goblin_raider { import "shared_modules/goblin_kit" as kit; }',
+      id: 'zombie_walker',
+      token: 'zombie_walker',
+      label: { en: 'zombie_walker', ko: 'zombie_walker' },
+      file: 'showcase/assets/models/zombie_walker.ashfox',
+      sourceHref: '/showcase/assets/models/zombie_walker.ashfox',
+      outputHref: '/media/catalog/zombie-walker.glb',
+      studioId: 'zombie_walker',
+      motions: ['shamble', 'bite_lunge'],
+      codeLine: 'model zombie_walker { motions = [zmotion.shamble, zmotion.bite_lunge]; }',
     },
+  ],
+  structure: [
     {
-      id: 'lantern',
-      token: 'wall_lantern',
-      label: { en: 'wall_lantern', ko: 'wall_lantern' },
-      file: 'showcase/assets/models/wall_lantern.ashfox',
-      sourceHref: '/showcase/assets/models/wall_lantern.ashfox',
-      outputHref: '/media/catalog/lantern.glb',
-      studioId: 'lantern',
+      id: 'tavern',
+      token: 'tavern',
+      label: { en: 'tavern', ko: 'tavern' },
+      file: 'showcase/assets/structures/tavern.ashfox',
+      sourceHref: '/showcase/assets/structures/tavern.ashfox',
+      outputHref: '/media/catalog/tavern.glb',
+      studioId: 'tavern',
       motions: [],
-      codeLine: 'model wall_lantern { profile = prop; }',
+      codeLine: 'structure tavern { import "std/structure/arch/medieval" as arch; }',
+    },
+    {
+      id: 'scifi_airlock',
+      token: 'scifi_airlock',
+      label: { en: 'scifi_airlock', ko: 'scifi_airlock' },
+      file: 'showcase/assets/structures/scifi_airlock.ashfox',
+      sourceHref: '/showcase/assets/structures/scifi_airlock.ashfox',
+      outputHref: '/media/catalog/scifi-airlock.glb',
+      studioId: 'scifi_airlock',
+      motions: [],
+      codeLine: 'structure scifi_airlock { import "std/structure/arch/scifi" as scifi; }',
+    },
+    {
+      id: 'dungeon_gate',
+      token: 'dungeon_gate',
+      label: { en: 'dungeon_gate', ko: 'dungeon_gate' },
+      file: 'showcase/assets/structures/dungeon_gate.ashfox',
+      sourceHref: '/showcase/assets/structures/dungeon_gate.ashfox',
+      outputHref: '/media/catalog/dungeon-gate.glb',
+      studioId: 'dungeon_gate',
+      motions: [],
+      codeLine: 'structure dungeon_gate { import "std/structure/dungeon/trap_gate" as trap; }',
+    },
+  ],
+  vfx: [
+    {
+      id: 'flame_cleave',
+      token: 'flame_cleave',
+      label: { en: 'flame_cleave', ko: 'flame_cleave' },
+      file: 'showcase/assets/vfx/flame_cleave.ashfox',
+      sourceHref: '/showcase/assets/vfx/flame_cleave.ashfox',
+      outputHref: '/media/catalog/flame-cleave.glb',
+      studioId: 'flame_cleave',
+      motions: ['flame_cleave'],
+      codeLine: 'vfx flame_cleave { palette = fire.EmberSolar; blend = additive; }',
+    },
+    {
+      id: 'plasma_bolt',
+      token: 'plasma_bolt',
+      label: { en: 'plasma_bolt', ko: 'plasma_bolt' },
+      file: 'showcase/assets/vfx/plasma_bolt.ashfox',
+      sourceHref: '/showcase/assets/vfx/plasma_bolt.ashfox',
+      outputHref: '/media/catalog/plasma-bolt.glb',
+      studioId: 'plasma_bolt',
+      motions: ['plasma_bolt'],
+      codeLine: 'vfx plasma_bolt { import "std/vfx/weapon/plasma_bolt" as plasma; }',
+    },
+    {
+      id: 'arcane_shockwave',
+      token: 'arcane_shockwave',
+      label: { en: 'arcane_shockwave', ko: 'arcane_shockwave' },
+      file: 'showcase/assets/vfx/arcane_shockwave.ashfox',
+      sourceHref: '/showcase/assets/vfx/arcane_shockwave.ashfox',
+      outputHref: '/media/catalog/arcane-shockwave.glb',
+      studioId: 'arcane_shockwave',
+      motions: ['arcane_shockwave'],
+      codeLine: 'vfx arcane_shockwave { palette = arc.ArcaneViolet; blend = additive; }',
     },
   ],
   '2d': [
     {
       id: 'iron_sword',
-      token: 'weapon.steel',
-      label: { en: 'weapon.steel', ko: 'weapon.steel' },
+      token: 'iron_sword',
+      label: { en: 'iron_sword', ko: 'iron_sword' },
       file: 'showcase/assets/sprites/iron_sword.ashfox',
       sourceHref: '/showcase/assets/sprites/iron_sword.ashfox',
       outputHref: '/media/catalog/iron-sword.png',
@@ -61,16 +120,16 @@ const DIFF_ITEMS = {
       codeLine: '  material = weapon.steel;',
     },
     {
-      id: 'ruby_potion',
-      token: 'ruby_potion',
-      label: { en: 'ruby_potion', ko: 'ruby_potion' },
-      file: 'showcase/assets/sprites/ruby_potion.ashfox',
-      sourceHref: '/showcase/assets/sprites/ruby_potion.ashfox',
-      outputHref: '/media/catalog/ruby-potion.png',
-      studioId: 'ruby_potion',
+      id: 'ui_inventory_panel',
+      token: 'ui_inventory_panel',
+      label: { en: 'ui_inventory_panel', ko: 'ui_inventory_panel' },
+      file: 'showcase/assets/sprites/ui_inventory_panel.ashfox',
+      sourceHref: '/showcase/assets/sprites/ui_inventory_panel.ashfox',
+      outputHref: '/media/catalog/ui-inventory-panel.png',
+      studioId: 'ui_inventory_panel',
       tile: false,
-      meta: '32×32 PNG · material = pot.bottle_glass',
-      codeLine: '  material = pot.bottle_glass;',
+      meta: '32×32 PNG · profile = ui_9slice · slice = 6px',
+      codeLine: '  profile = ui_9slice; slice = (6px, 6px, 6px, 6px);',
     },
     {
       id: 'oak_planks',
@@ -87,7 +146,7 @@ const DIFF_ITEMS = {
   ],
   sfx: [
     {
-      id: 'claw_base',
+      id: 'claw_hit',
       token: 'seed = 42',
       label: { en: 'seed = 42', ko: 'seed = 42' },
       file: 'showcase/assets/sounds/claw_hit.ashfox',
@@ -111,43 +170,33 @@ const DIFF_ITEMS = {
       codeLine: '  variants { base = 42; alternate = 43; }',
     },
     {
-      id: 'sword_slash',
-      token: 'sword_slash',
-      label: { en: 'sword_slash', ko: 'sword_slash' },
-      file: 'showcase/assets/sounds/sword_slash.ashfox',
-      sourceHref: '/showcase/assets/sounds/sword_slash.ashfox',
-      outputHref: '/media/catalog/sword-slash.wav',
-      waveHref: '/media/catalog/sword-slash.svg',
-      studioId: 'sword_slash',
-      meta: 'sword_slash · profile = impact',
-      codeLine: '  sound sword_slash { profile = impact; }',
+      id: 'energy',
+      token: 'energy',
+      label: { en: 'energy', ko: 'energy' },
+      file: 'showcase/assets/sounds/energy.ashfox',
+      sourceHref: '/showcase/assets/sounds/energy.ashfox',
+      outputHref: '/media/catalog/energy.wav',
+      waveHref: '/media/catalog/energy.svg',
+      studioId: 'energy',
+      meta: 'energy · sci-fi blaster',
+      codeLine: '  sound energy { space { preset = stone_hall; } }',
     },
     {
-      id: 'fire_loop',
-      token: 'fire_loop',
-      label: { en: 'fire_loop', ko: 'fire_loop' },
-      file: 'showcase/assets/sounds/fire_loop.ashfox',
-      sourceHref: '/showcase/assets/sounds/fire_loop.ashfox',
-      outputHref: '/media/catalog/fire-loop.wav',
-      waveHref: '/media/catalog/fire-loop.svg',
-      studioId: 'fire_loop',
-      meta: 'fire_loop · seamless loop',
+      id: 'storm',
+      token: 'storm',
+      label: { en: 'storm', ko: 'storm' },
+      file: 'showcase/assets/sounds/storm.ashfox',
+      sourceHref: '/showcase/assets/sounds/storm.ashfox',
+      outputHref: '/media/catalog/storm.wav',
+      waveHref: '/media/catalog/storm.svg',
+      studioId: 'storm',
+      meta: 'storm · seamless stereo loop',
       codeLine: '  loop { at = 0.35s..2.75s; xfade = 80ms; }',
-    },
-    {
-      id: 'griffin_call',
-      token: 'griffin_call',
-      label: { en: 'griffin_call', ko: 'griffin_call' },
-      file: 'showcase/assets/sounds/griffin_call.ashfox',
-      sourceHref: '/showcase/assets/sounds/griffin_call.ashfox',
-      outputHref: '/media/catalog/griffin-call.wav',
-      waveHref: '/media/catalog/griffin-call.svg',
-      studioId: 'griffin_call',
-      meta: 'griffin_call · formant roar',
-      codeLine: '  sound griffin_call { profile = creature; }',
     },
   ],
 };
+
+const isThreeDomain = (domain) => domain === 'model' || domain === 'structure' || domain === 'vfx';
 
 const escapeText = (value) =>
   String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
@@ -212,7 +261,8 @@ const queryDiffElements = (root) => ({
 
 const renderOutputPane = (domain, item, els, skipInitial3d) => {
   els.audioSfx.pause();
-  els.pane3d.hidden = domain !== '3d';
+  const show3d = isThreeDomain(domain);
+  els.pane3d.hidden = !show3d;
   els.pane2d.hidden = domain !== '2d';
   els.paneSfx.hidden = domain !== 'sfx';
   if (domain === '2d') {
@@ -234,7 +284,10 @@ const renderOutputPane = (domain, item, els, skipInitial3d) => {
   rebuild3dControls(els.controls3d, item.motions);
   void waitForLiveViewer().then((viewer) => {
     if (!viewer) return;
-    void viewer.mount(els.host3d, item.outputHref, { controlsRoot: els.controls3d });
+    void viewer.mount(els.host3d, item.outputHref, {
+      controlsRoot: els.controls3d,
+      domain,
+    });
   });
 };
 
@@ -257,8 +310,8 @@ const initLiveDiffPlayground = () => {
   const els = queryDiffElements(root);
   const lang = root.dataset.locale || 'en';
   const prefix = lang === 'ko' ? '/ko' : '';
-  let activeDomain = '3d';
-  let activeItem = DIFF_ITEMS['3d'][0];
+  let activeDomain = 'model';
+  let activeItem = DIFF_ITEMS.model[0];
   let fetchSeq = 0;
 
   const selectItem = async (domain, item, initial) => {
@@ -287,6 +340,7 @@ const initLiveDiffPlayground = () => {
   };
 
   const switchDomain = (domain, initial) => {
+    if (!DIFF_ITEMS[domain]) return;
     for (const btn of root.querySelectorAll('[data-diff-domain]')) {
       btn.setAttribute('aria-pressed', String(btn.dataset.diffDomain === domain));
     }
@@ -308,7 +362,7 @@ const initLiveDiffPlayground = () => {
     btn.addEventListener('click', () => switchDomain(btn.dataset.diffDomain, false));
   }
   bindSfxPlayer(els);
-  switchDomain('3d', true);
+  switchDomain('model', true);
 };
 
 const initDragCue = () => {

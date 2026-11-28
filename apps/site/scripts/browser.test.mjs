@@ -12,6 +12,9 @@ const chrome =
 const harness = `<!doctype html><html data-missing="false"><meta charset="utf-8"><style>body{margin:0}iframe{border:0;width:100vw;height:100vh}</style><img src="/hold" hidden><iframe src="/"></iframe><pre id="status">running</pre><script>
 const test = async () => {
   const w = document.querySelector('iframe').contentWindow, d = w.document;
+  const pageErrors = [];
+  w.addEventListener('error', (event) => pageErrors.push(event.message || 'Runtime error'));
+  w.addEventListener('unhandledrejection', (event) => pageErrors.push(String(event.reason)));
   const q = selector => d.querySelector(selector);
   const copy = JSON.parse(d.body.dataset.siteCopy);
   const until = async (fn, message) => { for(let i=0;i<200;i++){if(fn())return;await new Promise(r=>setTimeout(r,50));}throw Error(message); };
@@ -58,7 +61,7 @@ const test = async () => {
   await until(() => [...menu.querySelectorAll('a')].every(link => link.hash === '#frontier'), 'Language switch lost current section');
   if (d.documentElement.lang === 'ko') {
     check(q('.header-setup').getAttribute('href') === '/ko/#quick-start', 'Korean install link lost locale');
-    check(q('.hero-subtitle').textContent === '복셀 게임의 에셋을 코드로.', 'Korean landing copy missing');
+    check(q('.hero-subtitle').textContent === '3D 모델·건축물·VFX·2D UI·스테레오 SFX — 코드로 컴파일하고 Git으로 관리하세요.', 'Korean landing copy missing');
   }
   check(!q('[data-model-pause]') && !q('[data-native-size]'), 'Retired preview controls must not appear');
   const ready = q('[data-live-model]').dataset.ready === 'true';
@@ -95,36 +98,59 @@ const test = async () => {
   check(!sourcePanel.querySelector('details') && codeArea.getBoundingClientRect().height > 0, 'Source must be visible without expanding');
   check(codeArea.tabIndex === 0, 'Code scrolling must be keyboard accessible');
   const sourceHeight = sourcePanel.getBoundingClientRect().height;
+  q('[data-diff-domain="structure"]').click();
+  await until(() => q('[data-diff-token="scifi_airlock"]'), 'Structure diff tokens missing');
+  q('[data-diff-token="scifi_airlock"]').click();
+  await until(() => q('[data-source-code]').textContent.includes('scifi_airlock') && q('[data-diff-filepath]').textContent === 'showcase/assets/structures/scifi_airlock.ashfox', 'Structure live diff did not update');
+  check(!q('[data-diff-pane="3d"]').hidden && q('[data-diff-studio-link]').href.endsWith('?asset=scifi_airlock'), 'Structure diff pane or link mismatch');
+
+  q('[data-diff-domain="vfx"]').click();
+  await until(() => q('[data-diff-token="plasma_bolt"]'), 'VFX diff tokens missing');
+  q('[data-diff-token="plasma_bolt"]').click();
+  await until(() => q('[data-source-code]').textContent.includes('plasma_bolt') && q('[data-diff-filepath]').textContent === 'showcase/assets/vfx/plasma_bolt.ashfox', 'VFX live diff did not update');
+  check(!q('[data-diff-pane="3d"]').hidden, 'VFX diff pane should stay 3D');
+
   q('[data-diff-domain="2d"]').click();
-  await until(() => q('[data-diff-token="ruby_potion"]'), '2D diff tokens missing');
-  q('[data-diff-token="ruby_potion"]').click();
-  await until(() => q('[data-source-code]').textContent.includes('ruby_potion') && q('[data-diff-image]').src.endsWith('ruby-potion.png'), '2D live diff did not update');
+  await until(() => q('[data-diff-token="ui_inventory_panel"]'), '2D diff tokens missing');
+  q('[data-diff-token="ui_inventory_panel"]').click();
+  await until(() => q('[data-source-code]').textContent.includes('ui_inventory_panel') && q('[data-diff-image]').src.endsWith('ui-inventory-panel.png'), '2D live diff did not update');
+  q('[data-diff-token="oak_planks"]').click();
+  await until(() => !q('[data-diff-tile]').hidden, '2D 3x3 tile diff did not render');
+
   q('[data-diff-domain="sfx"]').click();
   await until(() => q('[data-diff-token="claw_alt"]'), 'SFX diff tokens missing');
   q('[data-diff-token="claw_alt"]').click();
   await until(() => q('[data-source-code]').textContent.includes('sound claw_hit') && q('[data-diff-wave]').src.endsWith('claw-alternate.svg'), 'SFX live diff did not update');
+  q('[data-diff-token="energy"]').click();
+  await until(() => q('[data-source-code]').textContent.includes('sound energy') && q('[data-diff-wave]').src.endsWith('energy.svg'), 'SFX energy diff did not update');
+
   check(Math.abs(sourcePanel.getBoundingClientRect().height - sourceHeight) < 2, 'Source tabs must preserve panel height');
-  q('[data-diff-domain="3d"]').click();
+  q('[data-diff-domain="model"]').click();
   check(q('h1').textContent.includes('as Code.') && q('#workflow'), 'Assets as Code positioning is missing');
-  check(d.querySelectorAll('.frontier-grid article').length===3, 'Advanced source examples are missing');
+  check(d.querySelectorAll('.frontier-grid article').length === 3, 'Showcase proof cards are missing');
   check(q('.studio-handoff-card[href$="/assets/"]'), 'Asset Studio handoff card missing');
+  const mosaicSrcs = [...d.querySelectorAll('.mosaic-grid img')].map(img => img.getAttribute('src'));
+  check(mosaicSrcs.length === 6 && new Set(mosaicSrcs).size === 6, 'Studio mosaic must contain 6 distinct images');
+  const pillarLinks = [...d.querySelectorAll('#workflow a.brand-pillar')].map(a => a.getAttribute('href'));
+  check(pillarLinks.length === 3 && pillarLinks[0].endsWith('/docs/language/reference/') && pillarLinks[1].endsWith('/docs/guides/observe/') && pillarLinks[2].endsWith('/docs/guides/sdk/'), 'Engineering moat links mismatch');
   q('#frontier').scrollIntoView({behavior:'instant',block:'start'});
   await until(() => q('#frontier [data-reveal]')?.dataset.revealed === 'true', 'Scroll reveal did not trigger');
   if (w.matchMedia('(prefers-reduced-motion: reduce)').matches) check(q('#frontier [data-reveal]').getAnimations().length === 0, 'Reduced motion must skip reveal animation');
   const replay = q('[data-replay-dialog]'), replayVideo = q('[data-replay-video]');
   check(!replay.open && !replayVideo.hasAttribute('src'), 'Replay must start closed without loading video');
-  for (const [index, article] of [...d.querySelectorAll('.frontier-grid article')].entries()) {
-    const trigger = article.querySelector('[data-replay]');
-    const height = article.getBoundingClientRect().height;
-    const width = article.getBoundingClientRect().width;
+  const replayArticle = q('[data-replay]').closest('article');
+  for (let index = 0; index < 3; index += 1) {
+    const trigger = replayArticle.querySelector('[data-replay]');
+    const height = replayArticle.getBoundingClientRect().height;
+    const width = replayArticle.getBoundingClientRect().width;
     trigger.focus(); trigger.click();
     check(replay.open && d.body.classList.contains('replay-open'), 'Replay must open a modal and lock background scrolling');
     check(replay.contains(d.activeElement), 'Focus must enter replay');
     check(q('[data-replay-title]').textContent === trigger.dataset.replayName, 'Wrong replay title');
     check(replayVideo.src === trigger.href && replayVideo.poster.endsWith(trigger.dataset.replayPoster), 'Wrong replay video or poster');
     check(replayVideo.controls && !replayVideo.autoplay && replayVideo.paused, 'Replay must use explicit playback');
-    check(article.getBoundingClientRect().width === width, 'Replay must preserve card width when locking scroll');
-    check(article.getBoundingClientRect().height === height && !article.querySelector('details'), 'Replay must not expand the card');
+    check(replayArticle.getBoundingClientRect().width === width, 'Replay must preserve card width when locking scroll');
+    check(replayArticle.getBoundingClientRect().height === height && !replayArticle.querySelector('details'), 'Replay must not expand the card');
     check(q('[data-replay-file]').href === trigger.href, 'Direct replay fallback missing');
     await replayVideo.play();
     await until(() => !replayVideo.paused && replayVideo.readyState >= 2, 'Replay video did not play');
@@ -148,6 +174,7 @@ const test = async () => {
   check(q('[data-replay-error]').hidden && replayVideo.src === replayTrigger.href, 'Reopening must clear the error and restore the chosen video');
   q('[data-replay-close]').click();
   await until(() => !replayVideo.hasAttribute('src'), 'Reopened replay must close');
+  check(pageErrors.length === 0, 'Uncaught page errors: ' + pageErrors.join('; '));
   check(d.documentElement.scrollWidth<=w.innerWidth+1, 'Horizontal overflow');
   document.documentElement.dataset.result='passed';document.querySelector('#status').textContent='passed: live model/fallback, motion, views, native PNG, source, sound, responsive layout';
 };

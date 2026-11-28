@@ -2,15 +2,13 @@ import { defaultLocale, localeRegistry } from '../locales.mjs';
 import { siteMessages } from '../messages.mjs';
 import { absoluteUrl, escapeHtml, githubUrl, pageShell } from './shell.mjs';
 
-const CREATURE_ORDER = { red_fox: 0, goblin_raider: 1, griffin_boss: 2 };
-
-const MOSAIC_ASSETS = [
-  '/media/catalog/iron-sword.png',
-  '/media/catalog/ruby-potion.png',
-  '/media/catalog/oak-planks.png',
-  '/media/catalog/iron-sword.png',
-  '/media/catalog/ruby-potion.png',
-  '/media/catalog/oak-planks.png',
+const HANDOFF_MOSAIC = [
+  { src: '/media/catalog/thumbs/griffin.png', kind: 'thumb' },
+  { src: '/media/catalog/thumbs/tavern.png', kind: 'thumb' },
+  { src: '/media/catalog/thumbs/scifi-drone.png', kind: 'thumb' },
+  { src: '/media/catalog/thumbs/flame-cleave.png', kind: 'thumb' },
+  { src: '/media/catalog/iron-sword.png', kind: 'pixel' },
+  { src: '/media/catalog/ui-inventory-panel.png', kind: 'pixel' },
 ];
 
 const computeCatalogCounts = (catalog = []) => {
@@ -69,9 +67,9 @@ const renderDiffEditor = (t) => `        <div class="diff-editor source-window" 
             <div class="diff-tokens" data-diff-tokens></div>
           </div>
           <div class="diff-patch" aria-label="git diff">
-            <pre><code data-diff-patch><span class="diff-ctx">  2  ashfox 1</span>
-<span class="diff-del">- 3  model fox { import "./shared.ashfox"; }</span>
-<span class="diff-add">+ 3  model griffin { import "./animation.ashfox" as animation; }</span></code></pre>
+            <pre><code data-diff-patch><span class="diff-ctx">  1  ashfox 1</span>
+<span class="diff-del">-    model scifi_drone { import "std/model/rig/drone" as drone_rig; }</span>
+<span class="diff-add">+    model griffin_boss { import "std/model/rig/winged_quadruped" as wq; }</span></code></pre>
           </div>
           <div class="source-code">
             <pre tabindex="0" aria-label="${t('sourceExcerpt')}"><code data-source-code>${t('loadingSource')}</code></pre>
@@ -105,7 +103,7 @@ const renderDiffOutput = (t, assets, griffin) => `        <div class="diff-outpu
             </div>
             <div class="diff-2d-meta">
               <img class="diff-2d-native" data-diff-native src="/media/catalog/iron-sword.png" width="32" height="32" alt="">
-              <span data-diff-2d-label>32×32 PNG · weapon.steel</span>
+              <span data-diff-2d-label>32×32 PNG · material = weapon.steel</span>
             </div>
           </div>
           <div class="diff-stage-sfx" data-diff-pane="sfx" hidden>
@@ -127,16 +125,17 @@ const renderDiffStatusBar = (t, locale) => `      <div class="workbench-statusba
         </div>
       </div>`;
 
-const renderLiveDiffStage = (t, messages, counts, locale, assets, griffin) => `
+const renderLiveDiffStage = (t, locale, assets, griffin) => `
   <section class="landing-section stage-section" id="stage" aria-labelledby="diff-stage-title">
     <div class="linear-head linear-head-compact" data-reveal>
       <h2 id="diff-stage-title">${t('diffStageTitle')}</h2>
-      <a class="linear-link" href="${locale.prefix}/assets/">${formatCount(messages.browseAllAssets, counts.all)} →</a>
     </div>
     <div class="diff-workbench" data-live-diff data-locale="${locale.code}" data-reveal>
       <div class="diff-topbar">
         <div class="segmented-strip" role="tablist" aria-label="${t('diffStageTitle')}">
-          <button type="button" data-diff-domain="3d" aria-pressed="true">${t('diffTab3d')}</button>
+          <button type="button" data-diff-domain="model" aria-pressed="true">${t('diffTabModel')}</button>
+          <button type="button" data-diff-domain="structure" aria-pressed="false">${t('diffTabStructure')}</button>
+          <button type="button" data-diff-domain="vfx" aria-pressed="false">${t('diffTabVfx')}</button>
           <button type="button" data-diff-domain="2d" aria-pressed="false">${t('diffTab2d')}</button>
           <button type="button" data-diff-domain="sfx" aria-pressed="false">${t('diffTabSfx')}</button>
         </div>
@@ -150,35 +149,58 @@ ${renderDiffStatusBar(t, locale)}
     </div>
   </section>`;
 
-const renderCreatureShowcase = (t, messages, counts, locale, showcase) => {
-  const ordered = [...showcase.entries].sort(
-    (a, b) => (CREATURE_ORDER[a.entryName] ?? 9) - (CREATURE_ORDER[b.entryName] ?? 9),
-  );
-  const labels = {
-    griffin_boss: [t('griffin'), 'assets/models/griffin_boss.ashfox'],
-    red_fox: [t('fox'), 'assets/models/red_fox.ashfox'],
-    goblin_raider: [t('goblin'), 'assets/models/goblin_raider.ashfox'],
-  };
-  const cards = ordered
-    .map((entry, idx) => {
-      const [name, source] = labels[entry.entryName];
-      return `<article class="creature-card" data-reveal style="--reveal-delay:${idx * 70}ms"><div class="creature-stage"><img class="specimen-poster" src="${entry.posterSrc}" alt="${name}" width="640" height="360" loading="lazy"></div><div class="creature-foot"><h3>${name}</h3><div class="col-footer"><a href="${githubUrl}/blob/main/showcase/${source}">${t('exploreSource')}</a><a href="${entry.glbHref}" download>${t('downloadGlb')}</a><a href="${entry.replayVideoSrc}" data-replay data-replay-name="${name}" data-replay-poster="${entry.posterSrc}" aria-haspopup="dialog">▶ ${t('watchReplay')}</a></div></div></article>`;
-    })
-    .join('');
+const renderFrontierShowcase = (t, messages, counts, locale, showcase) => {
+  const griffin =
+    showcase.entries.find((entry) => entry.entryName === 'griffin_boss') || showcase.entries[0];
 
-  const mosaicCells = MOSAIC_ASSETS.map(
-    (src) =>
-      `<span class="mosaic-cell"><img src="${src}" width="32" height="32" loading="lazy" alt=""></span>`,
+  const proofCards = [
+    `<article class="creature-card" data-reveal style="--reveal-delay:0ms">
+        <div class="creature-stage"><img class="specimen-poster" src="${griffin.posterSrc}" alt="${t('griffin')}" width="640" height="360" loading="lazy"></div>
+        <div class="creature-foot">
+          <h3>${t('griffin')}</h3>
+          <div class="col-footer">
+            <a href="${githubUrl}/blob/main/showcase/assets/models/griffin_boss.ashfox">${t('exploreSource')}</a>
+            <a href="${griffin.glbHref}" download>${t('downloadGlb')}</a>
+            <a href="${griffin.replayVideoSrc}" data-replay data-replay-name="${t('griffin')}" data-replay-poster="${griffin.posterSrc}" aria-haspopup="dialog">▶ ${t('watchReplay')}</a>
+          </div>
+        </div>
+      </article>`,
+    `<article class="creature-card" data-reveal style="--reveal-delay:70ms">
+        <div class="creature-stage"><img src="/media/catalog/thumbs/scifi-airlock.png" alt="${t('scifiAirlock')}" width="640" height="480" loading="lazy"></div>
+        <div class="creature-foot">
+          <h3>${t('scifiAirlock')}</h3>
+          <div class="col-footer">
+            <a href="${githubUrl}/blob/main/showcase/assets/structures/scifi_airlock.ashfox">${t('exploreSource')}</a>
+            <a href="/media/catalog/scifi-airlock.glb" download>${t('downloadGlb')}</a>
+            <a href="${locale.prefix}/assets/?asset=scifi_airlock">${t('openInStudio')} →</a>
+          </div>
+        </div>
+      </article>`,
+    `<article class="creature-card" data-reveal style="--reveal-delay:140ms">
+        <div class="creature-stage"><img src="/media/catalog/thumbs/flame-cleave.png" alt="${t('flameCleave')}" width="640" height="480" loading="lazy"></div>
+        <div class="creature-foot">
+          <h3>${t('flameCleave')}</h3>
+          <div class="col-footer">
+            <a href="${githubUrl}/blob/main/showcase/assets/vfx/flame_cleave.ashfox">${t('exploreSource')}</a>
+            <a href="/media/catalog/flame-cleave.glb" download>${t('downloadGlb')}</a>
+            <a href="${locale.prefix}/assets/?asset=flame_cleave">${t('openInStudio')} →</a>
+          </div>
+        </div>
+      </article>`,
+  ].join('');
+
+  const mosaicCells = HANDOFF_MOSAIC.map(
+    ({ src, kind }) =>
+      `<span class="mosaic-cell mosaic-cell-${kind}"><img src="${src}" width="${kind === 'pixel' ? 32 : 256}" height="${kind === 'pixel' ? 32 : 256}" loading="lazy" alt=""></span>`,
   ).join('');
 
   return `
   <section class="landing-section" id="frontier" aria-labelledby="frontier-title">
     <div class="linear-head linear-head-compact" data-reveal>
       <h2 id="frontier-title">${t('builtShowcaseTitle')}</h2>
-      <a class="button button-ghost" href="${locale.prefix}/assets/">${formatCount(messages.browseAllAssets, counts.all)} →</a>
     </div>
     <div class="frontier-grid">
-      ${cards}
+      ${proofCards}
       <a class="studio-handoff-card" href="${locale.prefix}/assets/" data-reveal style="--reveal-delay:210ms">
         <div class="handoff-mosaic" aria-hidden="true">
           <div class="mosaic-grid">${mosaicCells}</div>
@@ -209,24 +231,52 @@ const renderCreatureShowcase = (t, messages, counts, locale, showcase) => {
   </dialog>`;
 };
 
-const renderWorkflowSection = (t, messages, counts, locale) => `
+const renderWorkflowSection = (t, locale) => `
   <section class="landing-section" id="workflow" aria-labelledby="workflow-title">
     <div class="linear-head linear-head-compact" data-reveal>
       <h2 id="workflow-title">${t('workflowShortTitle')}</h2>
       <a class="linear-link" href="${locale.prefix}/docs/">${escapeHtml(locale.ui.docs)} →</a>
     </div>
     <div class="brand-pillars">
-      <a class="brand-pillar" href="${locale.prefix}/docs/guides/assets-as-code/" data-reveal style="--reveal-delay:0ms">
-        <div class="brand-pillar-art"><img src="/brand/brand-code-compile.png" width="1280" height="720" loading="lazy" alt=""></div>
-        <div class="brand-pillar-meta"><strong>${t('pillarCodeTitle')}</strong><span>${t('pillarCodeMeta')}</span></div>
+      <a class="brand-pillar" href="${locale.prefix}/docs/language/reference/" data-reveal style="--reveal-delay:0ms">
+        <div class="brand-pillar-art">
+          <div class="pillar-spec pillar-spec-code" aria-hidden="true">
+            <div class="pillar-spec-head"><span>ashfox 1 · stdlib</span><span class="pillar-badge">121 std/</span></div>
+            <div class="pillar-code-lines">
+              <span><i>import</i> "std/model/rig/biped";</span>
+              <span><i>param</i> scale = 1.2x;</span>
+              <span><i>for</i> i in 0..3 { <i>use</i> kit.Arm; }</span>
+            </div>
+          </div>
+        </div>
+        <div class="brand-pillar-meta"><strong>${t('pillarStdTitle')}</strong><span>${t('pillarStdMeta')}</span></div>
       </a>
-      <div class="brand-pillar" data-reveal style="--reveal-delay:70ms">
-        <div class="brand-pillar-art"><img src="/brand/brand-git-branch.png" width="1280" height="720" loading="lazy" alt=""></div>
-        <div class="brand-pillar-meta"><strong>${t('pillarGitTitle')}</strong><span>${t('pillarGitMeta')}</span></div>
-      </div>
-      <a class="brand-pillar" href="${locale.prefix}/assets/?domain=sound" data-reveal style="--reveal-delay:140ms">
-        <div class="brand-pillar-art"><img src="/brand/brand-audio-synth.png" width="1280" height="720" loading="lazy" alt=""></div>
-        <div class="brand-pillar-meta"><strong>${t('pillarAudioTitle')}</strong><span>${formatCount(messages.pillarAudioMeta, counts.sound)}</span></div>
+      <a class="brand-pillar" href="${locale.prefix}/docs/guides/observe/" data-reveal style="--reveal-delay:70ms">
+        <div class="brand-pillar-art">
+          <div class="pillar-spec pillar-spec-gate" aria-hidden="true">
+            <div class="pillar-spec-head"><span>$ ashfox check --all</span><span class="pillar-badge pillar-badge-pass">PASS</span></div>
+            <div class="pillar-gate-rows">
+              <div><span>Scharr PBR</span><strong>OKLCH · R/M</strong></div>
+              <div><span>LOD0–2</span><strong>budget ok</strong></div>
+              <div><span>Diagnostics</span><strong>0 errors</strong></div>
+            </div>
+          </div>
+        </div>
+        <div class="brand-pillar-meta"><strong>${t('pillarGateTitle')}</strong><span>${t('pillarGateMeta')}</span></div>
+      </a>
+      <a class="brand-pillar" href="${locale.prefix}/docs/guides/sdk/" data-reveal style="--reveal-delay:140ms">
+        <div class="brand-pillar-art">
+          <div class="pillar-spec pillar-spec-sdk" aria-hidden="true">
+            <div class="pillar-spec-head"><span>cue hit_arc · hooks</span><span class="pillar-badge">4 targets</span></div>
+            <div class="pillar-target-grid">
+              <span>Three.js<i>.glb · .d.ts</i></span>
+              <span>Unity<i>.cs bindings</i></span>
+              <span>Godot<i>.gd script</i></span>
+              <span>Minecraft<i>pack.mcmeta</i></span>
+            </div>
+          </div>
+        </div>
+        <div class="brand-pillar-meta"><strong>${t('pillarSdkTitle')}</strong><span>${t('pillarSdkMeta')}</span></div>
       </a>
     </div>
   </section>
@@ -234,7 +284,6 @@ const renderWorkflowSection = (t, messages, counts, locale) => `
     <h2 id="finale-title">${t('finaleShortTitle')}</h2>
     <div class="finale-actions">
       <a class="button button-primary" href="#quick-start">${t('getStarted')}</a>
-      <a class="linear-link" href="${locale.prefix}/assets/">${formatCount(messages.browseAllAssets, counts.all)} →</a>
       <a class="linear-link" href="${locale.prefix}/docs/">${escapeHtml(locale.ui.documentation)} →</a>
     </div>
   </section>`;
@@ -253,13 +302,14 @@ export const renderLandingPage = ({
     ...option,
     route: `${option.prefix}/`,
   }));
-  const griffin = showcase.entries[0];
+  const griffin =
+    showcase.entries.find((entry) => entry.entryName === 'griffin_boss') || showcase.entries[0];
   const body = `
   <main id="main" class="world-landing">
     ${renderHero(t)}
-    ${renderLiveDiffStage(t, messages, counts, locale, assets, griffin)}
-    ${renderCreatureShowcase(t, messages, counts, locale, showcase)}
-    ${renderWorkflowSection(t, messages, counts, locale)}
+    ${renderLiveDiffStage(t, locale, assets, griffin)}
+    ${renderFrontierShowcase(t, messages, counts, locale, showcase)}
+    ${renderWorkflowSection(t, locale)}
   </main><script defer src="${assets.viewerJs}"></script>`;
   return pageShell({
     active: 'product',
@@ -293,10 +343,10 @@ export const renderLandingPage = ({
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
       featureList: [
         messages.pageTitle,
-        messages.heroIntro,
-        messages.heroPromise,
-        messages.inspectBody,
-        messages.gameBody,
+        messages.heroSubtitle,
+        messages.diffStageTitle,
+        messages.builtShowcaseTitle,
+        messages.workflowShortTitle,
       ],
     },
   });
