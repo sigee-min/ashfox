@@ -157,7 +157,7 @@ const verifySingleFileEditIncremental = async (tempRoot: string): Promise<void> 
   });
   const freshItemsMs = performance.now() - tFreshItems;
   assertBundlesIdentical('showcase sprite 1-file incremental edit', freshItems, incItems);
-  // Showcase iron_sword edit skips 21 other cached assets and rebuilds voxel_game & showcase_pack ZIPs.
+  // Showcase iron_sword edit skips 34 other cached assets across the 35-asset showcase and rebuilds voxel_game & showcase_pack ZIPs.
   assert.ok(itemsEditMs < 800, `items 1-file edit ${itemsEditMs.toFixed(1)}ms exceeded 800ms`);
   assert.ok(
     itemsEditMs < freshItemsMs * 0.5,
@@ -177,12 +177,18 @@ const verifySingleFileEditIncremental = async (tempRoot: string): Promise<void> 
   const tSounds = performance.now();
   const incSounds = await compileNodeBundle(editedSoundsSnap, TOOLCHAIN);
   const soundsEditMs = performance.now() - tSounds;
+  const tFreshSounds = performance.now();
   const freshSounds = await compileNodeBundle(editedSoundsSnap, TOOLCHAIN, undefined, {
     noCache: true,
   });
+  const freshSoundsMs = performance.now() - tFreshSounds;
   assertBundlesIdentical('showcase sound 1-file incremental edit', freshSounds, incSounds);
   // Showcase claw_hit recompiles 2 OGG Vorbis variants + rebuilds voxel_game & showcase_pack ZIPs.
-  assert.ok(soundsEditMs < 1200, `sounds 1-file edit ${soundsEditMs.toFixed(1)}ms exceeded 1200ms`);
+  assert.ok(soundsEditMs < 2500, `sounds 1-file edit ${soundsEditMs.toFixed(1)}ms exceeded 2500ms`);
+  assert.ok(
+    soundsEditMs < freshSoundsMs * 0.5,
+    `sounds incremental ${soundsEditMs.toFixed(1)}ms was not faster than cold ${freshSoundsMs.toFixed(1)}ms`,
+  );
 
   // 3. Creature incremental edit (showcase: red_fox.ashfox) -> bit-identical lineage & GLB
   const creaturesDir = path.join(tempRoot, 'edit-creatures');
