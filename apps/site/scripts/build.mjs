@@ -511,6 +511,13 @@ ${localeRegistry.locales.map((locale) => `${locale.prefix}/assets/*\n  Cache-Con
 /media/*
   Cache-Control: public, max-age=604800
 
+/media/catalog/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/media/catalog/*.glb
+  Content-Type: model/gltf-binary
+  Cache-Control: public, max-age=0, must-revalidate
+
 /media/showcase/*
   Cache-Control: public, max-age=31536000, immutable
 

@@ -113,16 +113,16 @@ const test = async () => {
   q('[data-diff-domain="2d"]').click();
   await until(() => q('[data-diff-token="ui_inventory_panel"]'), '2D diff tokens missing');
   q('[data-diff-token="ui_inventory_panel"]').click();
-  await until(() => q('[data-source-code]').textContent.includes('ui_inventory_panel') && q('[data-diff-image]').src.endsWith('ui-inventory-panel.png'), '2D live diff did not update');
+  await until(() => q('[data-source-code]').textContent.includes('ui_inventory_panel') && new URL(q('[data-diff-image]').src).pathname.endsWith('ui-inventory-panel.png') && /[?]v=[a-f0-9]{12}$/.test(q('[data-diff-image]').src), '2D live diff did not update');
   q('[data-diff-token="oak_planks"]').click();
   await until(() => !q('[data-diff-tile]').hidden, '2D 3x3 tile diff did not render');
 
   q('[data-diff-domain="sfx"]').click();
   await until(() => q('[data-diff-token="claw_alt"]'), 'SFX diff tokens missing');
   q('[data-diff-token="claw_alt"]').click();
-  await until(() => q('[data-source-code]').textContent.includes('sound claw_hit') && q('[data-diff-wave]').src.endsWith('claw-alternate.svg'), 'SFX live diff did not update');
+  await until(() => q('[data-source-code]').textContent.includes('sound claw_hit') && new URL(q('[data-diff-wave]').src).pathname.endsWith('claw-alternate.svg') && /[?]v=[a-f0-9]{12}$/.test(q('[data-diff-wave]').src), 'SFX live diff did not update');
   q('[data-diff-token="energy"]').click();
-  await until(() => q('[data-source-code]').textContent.includes('sound energy') && q('[data-diff-wave]').src.endsWith('energy.svg'), 'SFX energy diff did not update');
+  await until(() => q('[data-source-code]').textContent.includes('sound energy') && new URL(q('[data-diff-wave]').src).pathname.endsWith('energy.svg') && /[?]v=[a-f0-9]{12}$/.test(q('[data-diff-wave]').src), 'SFX energy diff did not update');
 
   check(Math.abs(sourcePanel.getBoundingClientRect().height - sourceHeight) < 2, 'Source tabs must preserve panel height');
   q('[data-diff-domain="model"]').click();

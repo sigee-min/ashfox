@@ -1,4 +1,5 @@
 'use strict';
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -184,6 +185,10 @@ const parseWavInfo = (wav) => {
   return { channels, sampleRate, durationSec, peaks, byteLength: wav.byteLength };
 };
 
+const hashDigest = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex').slice(0, 12);
+
+const withVersion = (href, bytes) => `${href}?v=${hashDigest(bytes)}`;
+
 const writeWaveSvg = (peaks, svgName, color) => {
   const maximum = Math.max(...peaks, 1e-8);
   const bars = peaks
@@ -192,10 +197,11 @@ const writeWaveSvg = (peaks, svgName, color) => {
       return `<rect x="${i * 5}" y="${(80 - height / 2).toFixed(1)}" width="3" height="${height.toFixed(1)}" rx="1.5" fill="${color}"/>`;
     })
     .join('');
-  fs.writeFileSync(
-    path.join(out, svgName),
+  const svgBytes = Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${PEAK_BAR_COUNT * 5} 160">${bars}</svg>`,
   );
+  fs.writeFileSync(path.join(out, svgName), svgBytes);
+  return svgBytes;
 };
 
 const formatGlbSpecs = (entry, meta) => {
@@ -309,23 +315,31 @@ const buildEntryRecord = (entry, compiled) => {
   let meta;
   let specs;
   let peaks;
+  const outputHref = withVersion(entry.outputHref, asset.bytes);
+  let thumbHref = withVersion(entry.thumbHref, asset.bytes);
+  let previewHref = thumbHref;
   let alternateHref = null;
   let alternateWaveHref = null;
 
   if (GLB_DOMAINS.has(entry.domain)) {
     meta = inspectGlbMeta(asset.bytes);
     specs = formatGlbSpecs(entry, meta);
+    const thumbBytes = fs.readFileSync(path.join(thumbsSourceDir, `${entry.slug}.png`));
+    thumbHref = withVersion(entry.thumbHref, thumbBytes);
+    previewHref = thumbHref;
   } else if (entry.domain === 'sound') {
     const wav = parseWavInfo(asset.bytes);
     peaks = wav.peaks;
-    writeWaveSvg(peaks, entry.waveFile, '#e69a43');
+    const waveBytes = writeWaveSvg(peaks, entry.waveFile, '#e69a43');
+    thumbHref = withVersion(entry.thumbHref, waveBytes);
+    previewHref = withVersion(`/media/catalog/${entry.waveFile}`, waveBytes);
     const hasAlternate = Boolean(entry.alternateFile && asset.altBytes);
     if (hasAlternate) {
       fs.writeFileSync(path.join(out, entry.alternateFile), asset.altBytes);
       const altWav = parseWavInfo(asset.altBytes);
-      writeWaveSvg(altWav.peaks, entry.alternateWaveFile, '#e69a43');
-      alternateHref = `/media/catalog/${entry.alternateFile}`;
-      alternateWaveHref = `/media/catalog/${entry.alternateWaveFile}`;
+      const altWaveBytes = writeWaveSvg(altWav.peaks, entry.alternateWaveFile, '#e69a43');
+      alternateHref = withVersion(`/media/catalog/${entry.alternateFile}`, asset.altBytes);
+      alternateWaveHref = withVersion(`/media/catalog/${entry.alternateWaveFile}`, altWaveBytes);
     }
     meta = {
       durationSec: wav.durationSec,
@@ -363,9 +377,9 @@ const buildEntryRecord = (entry, compiled) => {
     ...(peaks ? { peaks } : {}),
     sourcePath: entry.sourcePath,
     sourceHref: entry.sourceHref,
-    outputHref: entry.outputHref,
-    thumbHref: entry.thumbHref,
-    previewHref: entry.waveFile ? `/media/catalog/${entry.waveFile}` : entry.thumbHref,
+    outputHref,
+    thumbHref,
+    previewHref,
     alternateHref,
     alternateWaveHref,
     motions: meta.clips ?? entry.motions,

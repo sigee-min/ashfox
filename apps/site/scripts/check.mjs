@@ -410,17 +410,34 @@ if (!(await exists(catalogPath))) {
     tile: 1,
     sound: 7,
   };
+  const versionQueryPattern = /\?v=[a-f0-9]{12}$/;
+  const stripQuery = (href) => href.split('?')[0];
+  const verifyCatalogHref = async (href, label, requireVersion = true) => {
+    if (requireVersion && !versionQueryPattern.test(href)) {
+      failures.push(`Missing ?v=<hash> query on catalog ${label}: ${href}`);
+    }
+    if (!(await exists(path.join(outputRoot, stripQuery(href))))) {
+      failures.push(`Missing compiled catalog ${label}: ${href}`);
+    }
+  };
   const actualDomainCounts = {};
   for (const entry of catalogEntries) {
     actualDomainCounts[entry.domain] = (actualDomainCounts[entry.domain] || 0) + 1;
-    if (!(await exists(path.join(outputRoot, entry.outputHref)))) {
-      failures.push(`Missing compiled catalog output: ${entry.outputHref}`);
-    }
+    await verifyCatalogHref(entry.outputHref, 'output');
     if (!(await exists(path.join(outputRoot, entry.sourceHref)))) {
       failures.push(`Missing catalog source: ${entry.sourceHref}`);
     }
-    if (entry.thumbHref && !(await exists(path.join(outputRoot, entry.thumbHref)))) {
-      failures.push(`Missing catalog thumbnail: ${entry.thumbHref}`);
+    if (entry.thumbHref) {
+      await verifyCatalogHref(entry.thumbHref, 'thumbnail');
+    }
+    if (entry.previewHref) {
+      await verifyCatalogHref(entry.previewHref, 'preview');
+    }
+    if (entry.alternateHref !== null) {
+      await verifyCatalogHref(entry.alternateHref, 'alternate');
+    }
+    if (entry.alternateWaveHref !== null) {
+      await verifyCatalogHref(entry.alternateWaveHref, 'alternateWave');
     }
     if (['model', 'structure', 'vfx'].includes(entry.domain) && !entry.thumbHref) {
       failures.push(`Missing thumbHref for 3D/Structure/VFX catalog entry: ${entry.id}`);
@@ -485,7 +502,7 @@ if (committedPublicWorkspaces.length !== 0) {
   failures.push('apps/site/public must not own a workspace copy');
 }
 if (
-  !landingHtml.includes('href="/media/catalog/griffin.glb"') ||
+  !/href="\/media\/catalog\/griffin\.glb\?v=[a-f0-9]{12}"/.test(landingHtml) ||
   !landingHtml.includes('href="/showcase/assets/models/griffin_boss.ashfox"')
 ) {
   failures.push('Landing must offer the actual model and example source');
@@ -557,12 +574,35 @@ for (const required of [
   if (!landingHtml.includes(required))
     failures.push(`Assets as Code landing is missing ${required}`);
 }
-for (const output of [
-  '/showcase/griffin.glb',
-  '/media/catalog/scifi-airlock.glb',
-  '/media/catalog/flame-cleave.glb',
+if (!landingHtml.includes('/showcase/griffin.glb')) {
+  failures.push('Frontier showcase output missing: /showcase/griffin.glb');
+}
+for (const outputPattern of [
+  /href="\/media\/catalog\/scifi-airlock\.glb\?v=[a-f0-9]{12}"/,
+  /href="\/media\/catalog\/flame-cleave\.glb\?v=[a-f0-9]{12}"/,
 ]) {
-  if (!landingHtml.includes(output)) failures.push(`Frontier showcase output missing: ${output}`);
+  if (!outputPattern.test(landingHtml)) {
+    failures.push(`Frontier showcase output missing versioned href: ${outputPattern}`);
+  }
+}
+const headersContent = await readFile(path.join(outputRoot, '_headers'), 'utf8');
+if (
+  !/\/media\/catalog\/\*\r?\n\s+Cache-Control:\s*public,\s*max-age=0,\s*must-revalidate/u.test(
+    headersContent,
+  )
+) {
+  failures.push(
+    '_headers must configure Cache-Control: public, max-age=0, must-revalidate for /media/catalog/*',
+  );
+}
+if (
+  !/\/media\/catalog\/\*\.glb\r?\n\s+Content-Type:\s*model\/gltf-binary\r?\n\s+Cache-Control:\s*public,\s*max-age=0,\s*must-revalidate/u.test(
+    headersContent,
+  )
+) {
+  failures.push(
+    '_headers must configure Content-Type: model/gltf-binary and revalidation for /media/catalog/*.glb',
+  );
 }
 const mosaicSection = landingHtml.match(/<div class="mosaic-grid">([\s\S]*?)<\/div>/)?.[1] ?? '';
 const mosaicSrcs = [...mosaicSection.matchAll(/\ssrc="([^"]+)"/g)].map((match) => match[1]);
