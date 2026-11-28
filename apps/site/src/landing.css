@@ -795,6 +795,7 @@
 .creature-stage {
   height: clamp(280px, 28vw, 400px);
   display: grid;
+  grid-template-rows: minmax(0, 1fr);
   place-items: center;
   padding: 20px;
   background: radial-gradient(ellipse 64% 64% at 50% 52%, rgba(255, 255, 255, 0.032), transparent 72%), #08090a;
@@ -802,7 +803,9 @@
 }
 
 .creature-stage img {
+  height: auto;
   max-height: 100%;
+  min-height: 0;
   width: auto;
   max-width: 100%;
   object-fit: contain;
@@ -853,7 +856,7 @@
   max-width: 440px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -861,14 +864,30 @@
   aspect-ratio: 1;
   border-radius: 10px;
   border: 1px solid var(--line-soft);
-  background: rgba(255, 255, 255, 0.025);
+  background: #08090a;
   display: grid;
   place-items: center;
-  padding: 8px;
+  overflow: hidden;
   transition: transform 280ms var(--ease-out), border-color 220ms var(--ease-out);
 }
 
-.mosaic-cell img {
+.mosaic-cell-thumb {
+  padding: 0;
+}
+
+.mosaic-cell-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: auto;
+}
+
+.mosaic-cell-pixel {
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.mosaic-cell-pixel img {
   width: 78%;
   height: 78%;
   object-fit: contain;
@@ -950,23 +969,130 @@ a.brand-pillar:hover {
 
 .brand-pillar-art {
   aspect-ratio: 16 / 9;
-  background: var(--bg-l1);
+  background: radial-gradient(ellipse 72% 72% at 50% 42%, rgba(255, 255, 255, 0.03), transparent 72%), #08090a;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
 }
 
-.brand-pillar-art img {
-  display: block;
+.pillar-spec {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  border-radius: 9px;
+  border: 1px solid var(--line-soft);
+  background: rgba(15, 16, 17, 0.92);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.pillar-spec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.pillar-badge {
+  padding: 2px 7px;
+  border-radius: 9999px;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--copper);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pillar-badge-pass {
+  color: #7cc6a6;
+  border-color: rgba(39, 166, 68, 0.35);
+  background: rgba(39, 166, 68, 0.12);
+}
+
+.pillar-code-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-2);
+  overflow: hidden;
+}
+
+.pillar-code-lines span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pillar-code-lines i {
+  font-style: normal;
+  color: var(--copper);
+}
+
+.pillar-gate-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pillar-gate-rows div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pillar-gate-rows span {
+  color: var(--text-3);
+}
+
+.pillar-gate-rows strong {
+  font-weight: 560;
+  color: #7cc6a6;
+}
+
+.pillar-target-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.pillar-target-grid span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line-soft);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-1);
+  font-size: 11px;
+  font-weight: 560;
+}
+
+.pillar-target-grid i {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--text-3);
 }
 
 .brand-pillar-meta {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 13px 16px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 16px;
   border-top: 1px solid var(--line-soft);
 }
 
@@ -979,7 +1105,6 @@ a.brand-pillar:hover {
 .brand-pillar-meta span {
   font-size: var(--text-sm);
   color: var(--text-3);
-  white-space: nowrap;
 }
 
 /* Prefooter & Replay Dialog */

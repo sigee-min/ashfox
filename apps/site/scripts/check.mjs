@@ -546,18 +546,36 @@ if (!landingHtml.includes('id="quick-start"') || !landingHtml.includes('class="h
 }
 for (const required of [
   'Assets<br><span>as Code.</span>',
-  'Built for voxel games.',
+  landingMessages.heroSubtitle,
   'id="workflow"',
   'id="frontier"',
-  '/docs/guides/assets-as-code/',
+  '/docs/language/reference/',
+  '/docs/guides/observe/',
+  '/docs/guides/sdk/',
   landingMessages.provenance,
 ]) {
   if (!landingHtml.includes(required))
     failures.push(`Assets as Code landing is missing ${required}`);
 }
-for (const entry of ['griffin', 'fox', 'goblin']) {
-  if (!landingHtml.includes(`/showcase/${entry}.glb`))
-    failures.push(`Advanced example ${entry} has no output`);
+for (const output of [
+  '/showcase/griffin.glb',
+  '/media/catalog/scifi-airlock.glb',
+  '/media/catalog/flame-cleave.glb',
+]) {
+  if (!landingHtml.includes(output)) failures.push(`Frontier showcase output missing: ${output}`);
+}
+const mosaicSection = landingHtml.match(/<div class="mosaic-grid">([\s\S]*?)<\/div>/)?.[1] ?? '';
+const mosaicSrcs = [...mosaicSection.matchAll(/\ssrc="([^"]+)"/g)].map((match) => match[1]);
+if (mosaicSrcs.length !== 6 || new Set(mosaicSrcs).size !== 6) {
+  failures.push(
+    `Studio handoff mosaic must have 6 unique images, got ${mosaicSrcs.length} (${new Set(mosaicSrcs).size} unique)`,
+  );
+}
+if (
+  landingHtml.includes('Browse all 35 assets') ||
+  koreanLandingHtml.includes('전체 35종 에셋 보기')
+) {
+  failures.push('Landing page must not repeat redundant Browse all 35 assets CTAs');
 }
 const siteScriptSource = landingHtml.match(/<script type="module" src="([^"]+)"/)?.[1];
 if (!siteScriptSource) {
