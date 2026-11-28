@@ -18,7 +18,7 @@
     {
       "video": {
         "artifact": "griffin-build-replay.mp4",
-        "sha256": "sha256:75357810a3f648ae30f4bd05e6a3f993e39b8fce2e916b6a8e4b33470a314b22",
+        "sha256": "sha256:dd6487c7da8e857ed6647b938f206e1ce525a3e172e947556b5519bf6c61b99e",
         "byteLength": 490935
       },
       "motions": [
@@ -26,21 +26,21 @@
           "name": "wing_flap",
           "duration": 0.8,
           "artifact": "griffin-wing_flap.mp4",
-          "sha256": "sha256:b55ea80f8119c677006fbc550012f512d2d2cc233ffb2d9191df3e271e209bd4",
+          "sha256": "sha256:975fa0f80f3e3bbddab2ae9a624c763dab52c68fc102ca72e42c71fa2d38cde9",
           "byteLength": 76981
         },
         {
           "name": "idle",
           "duration": 3,
           "artifact": "griffin-idle.mp4",
-          "sha256": "sha256:9bf7ccbff03b134e178f47f9053c2a9119317d4193372f54884ac791f37852d3",
+          "sha256": "sha256:e369dd9d059e2734a45b98cd8dc286ecfe68c6e14ae4ef862ef1ae2b612e36f8",
           "byteLength": 257959
         },
         {
           "name": "wing_display",
           "duration": 2.4,
           "artifact": "griffin-wing_display.mp4",
-          "sha256": "sha256:efe823d29c20bac1e2a5f262c0b6ad73efbbc18331bd59d8c8f6d6ad3a79f7f1",
+          "sha256": "sha256:129fde3944abd9bb5748eaa0e93c0b0585534b7b957be6476496370e3bdb27f2",
           "byteLength": 170291
         }
       ],
@@ -62,7 +62,7 @@
     {
       "video": {
         "artifact": "fox-build-replay.mp4",
-        "sha256": "sha256:82a319dcf8b67f0c011a566e61c40bac0656585f7c3a91dfe181ddb5cbc0a459",
+        "sha256": "sha256:e6eb2e42fd3834ca374d6651b7db4cf7ab243156488a041e373ac8ed533ba7aa",
         "byteLength": 221550
       },
       "motions": [
@@ -70,21 +70,21 @@
           "name": "tail_wag",
           "duration": 2.4,
           "artifact": "fox-tail_wag.mp4",
-          "sha256": "sha256:28d8d6607cbe0fdd9bb7147a8955d257a36cd594f205cab49198352e34b2aa1d",
+          "sha256": "sha256:1be391f81edc6cbe36e5c0c343947a6cfffe4aedcf5fd5c6cd70968cc4a8dc92",
           "byteLength": 171530
         },
         {
           "name": "quad_idle",
           "duration": 2.4,
           "artifact": "fox-quad_idle.mp4",
-          "sha256": "sha256:be2990a1559fda49e3ac7fca5327db9e13445f1d69b5584dd855435627dea4b6",
+          "sha256": "sha256:f5b33d50e1fcab9decabcbc4967a71eaf23bf31e4dc735847b2a5d9962c5da7d",
           "byteLength": 152247
         },
         {
           "name": "quad_trot",
           "duration": 1,
           "artifact": "fox-quad_trot.mp4",
-          "sha256": "sha256:96b30da8261146fbe116d4cd07bd552b205619584c33ca04ee9e9c480e81d283",
+          "sha256": "sha256:89696dee784c8f196c9acabebd534e4922f6f65860bda35e5599cd9657c709d8",
           "byteLength": 46717
         }
       ],
@@ -106,7 +106,7 @@
     {
       "video": {
         "artifact": "goblin-build-replay.mp4",
-        "sha256": "sha256:3edffaf1bbf2f31b2c594df76dcee756f5fe866e8f2ed7c662c87e49c72c42d0",
+        "sha256": "sha256:92f97a426eb2e8d3f5640344f046a9a732a517bb41c86bfd1eea36333213c209",
         "byteLength": 236650
       },
       "motions": [
@@ -114,28 +114,28 @@
           "name": "goblin_idle",
           "duration": 2.4,
           "artifact": "goblin-goblin_idle.mp4",
-          "sha256": "sha256:969697458f0e7515bb454e5a0916a78e06107dbc859de4f7492228e956d661a6",
+          "sha256": "sha256:838a376e28eb09f91dd58540b2046ba0ad79a779c249fdccba86e7d66d5ecc7a",
           "byteLength": 205849
         },
         {
           "name": "goblin_challenge",
           "duration": 2,
           "artifact": "goblin-goblin_challenge.mp4",
-          "sha256": "sha256:9a442f2c1015963d117ca74545c5c167d2a3d471aef6ec95273460af1affd22e",
-          "byteLength": 183072
+          "sha256": "sha256:101cff50d019a60c704c43d62b432bba1f3366b37971ebbdaf0144ab118b35a4",
+          "byteLength": 178368
         },
         {
           "name": "slash",
           "duration": 0.7,
           "artifact": "goblin-slash.mp4",
-          "sha256": "sha256:bb0c9688cceabd37962ea6ef093c2cb65db37c522d15c931ce135414f6bd3487",
-          "byteLength": 49798
+          "sha256": "sha256:aca6370dc9a228fc8a7c05ec83351b43ec28961ebbdf2f60f3ffc45a86298f95",
+          "byteLength": 52756
         },
         {
           "name": "biped_walk",
           "duration": 1.2,
           "artifact": "goblin-biped_walk.mp4",
-          "sha256": "sha256:7dff5bd12dee5483fdc03991f5f083784cf49c8fc241164344e2b4cc944867eb",
+          "sha256": "sha256:3712330e29bd8683c7a7fc040bafb46a53439ee5cfaadca100a9c84266e9a5cf",
           "byteLength": 123986
         }
       ],
